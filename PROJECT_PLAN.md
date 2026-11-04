@@ -1145,7 +1145,7 @@ Each phase ends with something you can demo. Tick the **Exit** box only when tha
   - `tsconfig.json`: typechecks `src`, `tests` and `prisma`
   - `tsconfig.build.json`: emits `src` → `dist`
 - [x] `server/src/config/env.ts` (Zod-validated, fail fast), plus `.env.example` files for both workspaces (§8.4)
-- [ ] Error handling and logging:
+- [x] Error handling and logging:
   - `AppError` hierarchy
   - error middleware with the JSON error format (§5.1)
   - `pino-http` request logging
