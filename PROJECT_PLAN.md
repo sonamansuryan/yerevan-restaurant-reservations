@@ -1135,7 +1135,7 @@ Each phase ends with something you can demo. Tick the **Exit** box only when tha
   - Express 5 + TypeScript: `tsx watch` for dev, `tsc` for builds
   - split `app.ts` and `index.ts`
   - add `GET /api/health`
-- [ ] Server package scripts:
+- [x] Server package scripts:
   - `dev`, `build`, `start`
   - `db:migrate` (`prisma migrate dev`) plus `postdb:migrate` (`prisma generate`)
   - `db:generate`, `db:deploy`, `db:seed` (`tsx prisma/seed.ts`), `db:studio`, `db:reset`
