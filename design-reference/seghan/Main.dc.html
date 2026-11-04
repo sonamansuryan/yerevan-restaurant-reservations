@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Seghan — Home</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=Instrument+Serif:ital@0;1&amp;display=swap">
+<style>
+body{margin:0;background:#FBFAF7;color:#17140F;font-family:'Geist',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#17140F;text-decoration:none}a:hover{color:#9E2B25}
+.serif{font-family:'Instrument Serif',ui-serif,Georgia,serif;font-weight:400;letter-spacing:-0.01em}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;border-radius:10px;font-family:inherit;font-size:14px;font-weight:500;border:1px solid transparent;cursor:pointer;transition:background .18s,border-color .18s,color .18s;text-decoration:none;white-space:nowrap}
+.btn-primary{background:#17140F;color:#FBFAF7}.btn-primary:hover{background:#2E2922;color:#fff}
+.btn-accent{background:#9E2B25;color:#fff}.btn-accent:hover{background:#85221D;color:#fff}
+.btn-ghost{background:transparent;color:#17140F;border-color:#DDD8CE}.btn-ghost:hover{border-color:#17140F;color:#17140F}
+.btn-light{background:#FBFAF7;color:#17140F}.btn-light:hover{background:#fff;color:#17140F}
+.btn:focus-visible,.slot:focus-visible,.icon-btn:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid #9E2B25;outline-offset:2px}
+.slot{height:34px;padding:0 12px;border-radius:8px;background:#F1EEE8;border:1px solid transparent;color:#17140F;font-family:inherit;font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;cursor:pointer;transition:background .15s,color .15s}
+.slot:hover{background:#17140F;color:#FBFAF7}
+.ph{position:relative;overflow:hidden;background-image:radial-gradient(120% 90% at 28% 18%,rgba(255,236,214,.2),rgba(255,236,214,0) 58%)}
+.ph-cap{position:absolute;left:14px;bottom:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.82)}
+.card .ph{transition:filter .4s}.card:hover .ph{filter:brightness(1.1)}
+.icon-btn{width:36px;height:36px;border-radius:999px;border:0;display:inline-flex;align-items:center;justify-content:center;background:rgba(251,250,247,.92);color:#17140F;cursor:pointer;transition:background .15s,color .15s}
+.icon-btn:hover{background:#fff;color:#9E2B25}
+.navlink{font-size:14px;color:#4A453D}.navlink:hover{color:#17140F}
+.field{display:flex;flex-direction:column;gap:4px;padding:10px 18px;min-width:0;border-radius:10px;transition:background .15s}
+.field:hover{background:#F6F4EF}
+.field label{font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:#6F6A60}
+.field input,.field select{border:0;background:transparent;padding:0;font-family:inherit;font-size:15px;color:#17140F;outline:none;appearance:none;-webkit-appearance:none}
+.field input::placeholder{color:#8A8478}
+.tile .ph{transition:transform .5s cubic-bezier(.2,.7,.2,1)}.tile:hover .ph{transform:translateY(-4px)}
+.foot a{font-size:14px;color:#4A453D}.foot a:hover{color:#17140F}
+@media (max-width:760px){.hide-sm{display:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column">
+
+<header style="border-bottom: 1px solid #ECE8E0; background: #FBFAF7">
+<div style="max-width: 1280px; margin: 0 auto; padding: 0 32px; height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px">
+<div style="display: flex; align-items: center; gap: 40px">
+<a href="Main.dc.html" style="display: flex; align-items: baseline; gap: 6px"><span class="serif" style="font-size: 30px; line-height: 1">seghan</span><span style="width: 6px; height: 6px; border-radius: 999px; background: #9E2B25; display: inline-block"></span></a>
+<nav class="hide-sm" style="display: flex; gap: 28px">
+<a class="navlink" href="Discover.dc.html">Discover</a>
+<a class="navlink" href="Discover.dc.html">Neighborhoods</a>
+<a class="navlink" href="DashOverview.dc.html">For restaurants</a>
+</nav>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<a class="navlink hide-sm" href="Auth.dc.html" style="padding: 0 12px">Sign in</a>
+<a class="btn btn-primary" href="Discover.dc.html">Reserve a table</a>
+</div>
+</div>
+</header>
+
+<main style="flex: 1">
+
+<section style="max-width: 1280px; margin: 0 auto; padding: 72px 32px 88px; display: flex; flex-wrap: wrap; gap: 56px; align-items: center">
+<div style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #6F6A60"><span style="width: 24px; height: 1px; background: #B9B2A5; display: inline-block"></span>Yerevan · 214 restaurants taking bookings tonight</div>
+<h1 class="serif" style="margin: 0; font-size: clamp(52px, 7vw, 92px); line-height: 0.98; letter-spacing: -0.025em; text-wrap: balance">A table in Yerevan, <em style="color: #9E2B25">tonight.</em></h1>
+<p style="margin: 0; max-width: 460px; font-size: 18px; line-height: 1.55; color: #4A453D; text-wrap: pretty">From candle-lit wine rooms on Saryan Street to khorovats in Arabkir — see real availability and book in seconds.</p>
+<form style="margin-top: 8px; display: flex; flex-wrap: wrap; align-items: stretch; gap: 4px; padding: 6px; background: #fff; border: 1px solid #E4DFD6; border-radius: 16px; box-shadow: 0 1px 2px rgba(23,20,15,.04), 0 12px 32px -16px rgba(23,20,15,.16)">
+<div class="field" style="flex: 2 1 220px">
+<label for="h-q">Where or what</label>
+<input id="h-q" type="text" placeholder="Restaurant, cuisine or area">
+</div>
+<div class="field" style="flex: 1 1 120px; border-left: 1px solid #EFEBE4">
+<label for="h-d">Date</label>
+<select id="h-d"><option>Tonight</option><option>Tomorrow</option><option>Thu, 5 Nov</option></select>
+</div>
+<div class="field" style="flex: 1 1 96px; border-left: 1px solid #EFEBE4">
+<label for="h-t">Time</label>
+<select id="h-t"><option>20:00</option><option>19:30</option><option>20:30</option><option>21:00</option></select>
+</div>
+<div class="field" style="flex: 1 1 96px; border-left: 1px solid #EFEBE4">
+<label for="h-g">Guests</label>
+<select id="h-g"><option>2 guests</option><option>1 guest</option><option>3 guests</option><option>4 guests</option><option>6+ guests</option></select>
+</div>
+<a class="btn btn-accent" href="Discover.dc.html" style="height: auto; min-height: 56px; padding: 0 26px; border-radius: 12px; flex: 0 0 auto">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+Find a table</a>
+</form>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; color: #6F6A60; align-items: center">
+<span>Popular:</span>
+<a href="Discover.dc.html" style="color: #4A453D; text-decoration: underline; text-decoration-color: #D3CDC2; text-underline-offset: 3px">Wine bars in Kentron</a><span aria-hidden="true">·</span>
+<a href="Discover.dc.html" style="color: #4A453D; text-decoration: underline; text-decoration-color: #D3CDC2; text-underline-offset: 3px">Terraces near Cascade</a><span aria-hidden="true">·</span>
+<a href="Discover.dc.html" style="color: #4A453D; text-decoration: underline; text-decoration-color: #D3CDC2; text-underline-offset: 3px">Late dinner</a>
+</div>
+</div>
+
+<div style="flex: 1 1 440px; min-width: 0; position: relative">
+<div class="ph" style="aspect-ratio: 4 / 5; border-radius: 20px; background-color: #3E2620">
+<span class="ph-cap">Photo · Nurr, main dining room</span>
+</div>
+<div class="ph hide-sm" style="position: absolute; right: -24px; top: 40px; width: 38%; aspect-ratio: 1 / 1; border-radius: 14px; background-color: #6B4A2C; border: 6px solid #FBFAF7">
+<span class="ph-cap">Photo · Dolma, apricot</span>
+</div>
+<div style="position: absolute; left: -28px; bottom: 36px; width: min(320px, 80%); background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 24px 48px -20px rgba(23,20,15,.35); display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<div><div class="serif" style="font-size: 22px; line-height: 1.1">Nurr</div><div style="font-size: 13px; color: #6F6A60; margin-top: 2px">Modern Armenian · Kentron</div></div>
+<div style="font-size: 12px; font-weight: 500; color: #9E2B25">3 left</div>
+</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<a class="slot" href="Restaurant.dc.html" style="display: inline-flex; align-items: center">19:30</a>
+<a class="slot" href="Restaurant.dc.html" style="display: inline-flex; align-items: center">20:00</a>
+<a class="slot" href="Restaurant.dc.html" style="display: inline-flex; align-items: center">21:15</a>
+</div>
+</div>
+</div>
+</section>
+
+<section style="max-width: 1280px; margin: 0 auto; padding: 0 32px 96px">
+<div style="display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 28px; flex-wrap: wrap">
+<h2 class="serif" style="margin: 0; font-size: 40px; line-height: 1.05">Browse by craving</h2>
+<a href="Discover.dc.html" style="font-size: 14px; font-weight: 500; display: inline-flex; gap: 6px; align-items: center">All categories <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 16px">
+<sc-for list="{{categories}}" as="c" hint-placeholder-count="6">
+<a class="tile" href="Discover.dc.html" style="display: flex; flex-direction: column; gap: 12px">
+<div class="ph" style="aspect-ratio: 4 / 5; border-radius: 14px; background-color: {{c.tone}}"></div>
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 15px; font-weight: 500">{{c.name}}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A8478" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"></path></svg></div>
+</a>
+</sc-for>
+</div>
+</section>
+
+<section style="background: #F3F0EA">
+<div style="max-width: 1280px; margin: 0 auto; padding: 88px 32px 96px">
+<div style="display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 32px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 13px; color: #6F6A60">Tonight, 3 November · 2 guests</div>
+<h2 class="serif" style="margin: 0; font-size: 40px; line-height: 1.05">Booking well this week</h2>
+</div>
+<a class="btn btn-ghost" href="Discover.dc.html">See all restaurants</a>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(270px, 100%), 1fr)); gap: 28px 20px">
+<sc-for list="{{featured}}" as="r" hint-placeholder-count="4">
+<article class="card" style="display: flex; flex-direction: column; gap: 14px">
+<a href="Restaurant.dc.html" style="display: block; position: relative; border-radius: 14px; overflow: hidden">
+<div class="ph" style="aspect-ratio: 4 / 3; background-color: {{r.tone}}"><span class="ph-cap">{{r.cap}}</span></div>
+</a>
+<div style="display: flex; justify-content: space-between; align-items: start; gap: 12px">
+<div style="min-width: 0">
+<a href="Restaurant.dc.html" class="serif" style="font-size: 24px; line-height: 1.1">{{r.name}}</a>
+<div style="font-size: 13px; color: #6F6A60; margin-top: 4px">{{r.cuisine}} · {{r.area}} · {{r.price}}</div>
+</div>
+<div style="display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; flex: 0 0 auto; padding-top: 4px">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="#17140F" aria-hidden="true"><path d="m12 2.8 2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4L2.8 9.5l6.4-.8z"></path></svg>{{r.rating}}
+</div>
+</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<sc-for list="{{r.slots}}" as="s" hint-placeholder-count="3">
+<a class="slot" href="Restaurant.dc.html" style="display: inline-flex; align-items: center">{{s}}</a>
+</sc-for>
+</div>
+</article>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="max-width: 1280px; margin: 0 auto; padding: 96px 32px; display: flex; flex-wrap: wrap; gap: 56px; align-items: center">
+<div class="ph" style="flex: 1 1 520px; min-width: 0; aspect-ratio: 16 / 11; border-radius: 20px; background-color: #3B2430"><span class="ph-cap">Photo · Saryan Street at dusk</span></div>
+<div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: #9E2B25">The collection</div>
+<h2 class="serif" style="margin: 0; font-size: 48px; line-height: 1.02; text-wrap: balance">Wine evenings on Saryan Street</h2>
+<p style="margin: 0; font-size: 16px; line-height: 1.6; color: #4A453D">Three rooms pouring Areni and Voskehat, a few doors apart. Book the first, walk to the next.</p>
+</div>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid #E4DFD6">
+<sc-for list="{{collection}}" as="w" hint-placeholder-count="3">
+<li style="border-bottom: 1px solid #E4DFD6">
+<a href="Restaurant.dc.html" style="display: flex; align-items: center; gap: 20px; padding: 18px 0">
+<span class="serif" style="font-size: 20px; color: #8A8478; width: 24px">{{w.n}}</span>
+<span style="flex: 1; min-width: 0"><span style="display: block; font-size: 16px; font-weight: 500">{{w.name}}</span><span style="display: block; font-size: 13px; color: #6F6A60; margin-top: 2px">{{w.note}}</span></span>
+<span style="font-size: 13px; color: #4A453D; font-variant-numeric: tabular-nums">Next {{w.next}}</span>
+</a>
+</li>
+</sc-for>
+</ol>
+</div>
+</section>
+
+<section style="padding: 0 32px 96px">
+<div style="max-width: 1216px; margin: 0 auto; background: #17140F; color: #FBFAF7; border-radius: 24px; padding: 64px; display: flex; flex-wrap: wrap; gap: 48px; align-items: center; justify-content: space-between">
+<div style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 16px; min-width: 0">
+<div style="font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: #C9C2B5">For restaurants</div>
+<h2 class="serif" style="margin: 0; font-size: 48px; line-height: 1.02">Your whole floor, in one calm view.</h2>
+<p style="margin: 0; font-size: 16px; line-height: 1.6; color: #C9C2B5; max-width: 480px">Tables, hours, walk-ins and no-shows — managed from a dashboard your hosts will actually enjoy using.</p>
+</div>
+<div style="display: flex; gap: 10px; flex-wrap: wrap">
+<a class="btn btn-light" href="DashOverview.dc.html">List your restaurant</a>
+<a class="btn" href="DashOverview.dc.html" style="color: #FBFAF7; border-color: #4A453D">See the dashboard</a>
+</div>
+</div>
+</section>
+</main>
+
+<footer class="foot" style="border-top: 1px solid #ECE8E0">
+<div style="max-width: 1280px; margin: 0 auto; padding: 56px 32px 40px; display: flex; flex-wrap: wrap; gap: 48px; justify-content: space-between">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 280px">
+<span class="serif" style="font-size: 28px; line-height: 1">seghan</span>
+<span style="font-size: 14px; line-height: 1.55; color: #6F6A60">Restaurant reservations across Yerevan.</span>
+</div>
+<div style="display: flex; gap: 64px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 10px"><span style="font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: #6F6A60">Explore</span><a href="Discover.dc.html">All restaurants</a><a href="Discover.dc.html">Kentron</a><a href="Discover.dc.html">Arabkir</a><a href="Discover.dc.html">Cascade</a></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><span style="font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: #6F6A60">Account</span><a href="Auth.dc.html">Sign in</a><a href="Account.dc.html">My reservations</a><a href="Account.dc.html">Saved places</a></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><span style="font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: #6F6A60">Business</span><a href="DashOverview.dc.html">For restaurants</a><a href="DashOverview.dc.html">Dashboard</a></div>
+</div>
+</div>
+<div style="max-width: 1280px; margin: 0 auto; padding: 20px 32px 32px; font-size: 13px; color: #6F6A60; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px"><span>© 2026 Seghan</span><span>Հայերեն · English · Русский</span></div>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":3020}}'>
+class Component extends DCLogic {
+renderVals() {
+return {
+categories: [
+{ name: 'Armenian kitchen', tone: '#5A2E24' },
+{ name: 'Wine bars', tone: '#4B2B33' },
+{ name: 'Khorovats & grill', tone: '#3A3027' },
+{ name: 'Seafood', tone: '#26363B' },
+{ name: 'Cafés & brunch', tone: '#6B5A45' },
+{ name: 'Fine dining', tone: '#2A2622' }
+],
+featured: [
+{ name: 'Nurr', cuisine: 'Modern Armenian', area: 'Kentron', price: '֏֏֏', rating: '4.9', tone: '#4A2A22', cap: 'Photo · Lamb, pomegranate', slots: ['19:30', '20:00', '21:15'] },
+{ name: 'Tsiran Wine Room', cuisine: 'Wine bar', area: 'Saryan St', price: '֏֏', rating: '4.8', tone: '#5A3B1E', cap: 'Photo · Cellar bar', slots: ['18:45', '20:30', '22:00'] },
+{ name: 'Lori Smokehouse', cuisine: 'Khorovats', area: 'Arabkir', price: '֏֏', rating: '4.7', tone: '#2E2A24', cap: 'Photo · Open grill', slots: ['19:00', '19:45', '20:15'] },
+{ name: 'Sevan & Salt', cuisine: 'Seafood', area: 'Cascade', price: '֏֏֏', rating: '4.8', tone: '#24343A', cap: 'Photo · Ishkhan trout', slots: ['20:00', '21:00', '21:30'] }
+],
+collection: [
+{ n: '1', name: 'Tsiran Wine Room', note: 'Natural wines, apricot-wood bar', next: '18:45' },
+{ n: '2', name: 'Areni Cellar', note: 'Vaulted basement, 300 labels', next: '20:15' },
+{ n: '3', name: 'Kond House', note: 'Small plates, courtyard seating', next: '21:00' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

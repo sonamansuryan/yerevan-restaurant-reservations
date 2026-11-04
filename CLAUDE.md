@@ -90,6 +90,8 @@ Older tutorials and model training data often get these wrong. The notes on the 
 ├── CLAUDE.md · PROJECT_PLAN.md · README.md
 ├── package.json              # npm workspaces + root scripts (dev, build, test, lint, typecheck)
 ├── docker-compose.yml        # local PostgreSQL 17 (yerevan_dev + yerevan_test)
+├── docker/postgres-init/     # SQL that runs once on first DB start (creates yerevan_test)
+├── design-reference/seghan/  # read-only Seghan UI mockup (visual reference, not app code)
 ├── client/                   # React SPA (Vite)
 │   └── src/
 │       ├── main.tsx · router.tsx · index.css
@@ -123,6 +125,7 @@ The scripts are created in Phase 1. If one is missing or behaves differently, fi
 ```bash
 # First-time setup
 npm install
+cp .env.example .env                          # then set POSTGRES_PASSWORD
 docker compose up -d                          # PostgreSQL on localhost:5432
 cp server/.env.example server/.env            # then fill in the secrets
 cp client/.env.example client/.env
@@ -151,7 +154,7 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 ## Coding guidelines
 
 ### Secrets and security
-- **Where secrets live:** only in `server/.env`, read only through `server/src/config/env.ts`. That file validates them with Zod and refuses to start if one is missing.
+- **Where secrets live:** app secrets live only in `server/.env`, read only through `server/src/config/env.ts`. That file validates them with Zod and refuses to start if one is missing. The root `.env` holds only `POSTGRES_PASSWORD`: Docker Compose reads it to set up the local database, the app never reads it, and `DATABASE_URL` in `server/.env` must use the same password.
 - **The client holds no secrets.** Every `VITE_*` variable is bundled into public JavaScript, so only public values go there (today that is just `VITE_GOOGLE_CLIENT_ID`).
 - **External calls:** Google Places, Cloudinary signing and deletion, and Resend are called only from `server/src/integrations/`. The browser talks only to our `/api`. The two exceptions are the signed direct upload to Cloudinary and the Google Sign-In button.
 - **Env files:** never commit `.env` files. Every new variable gets a placeholder in the matching `.env.example`.
@@ -200,6 +203,7 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 - All HTTP goes through `client/src/lib/api.ts`. It sends `credentials: "include"`, returns typed responses, and on a `401` refreshes once and retries.
 - Forms use React Hook Form with the Zod resolver, and every field has a visible label and error message.
 - Style with Tailwind utilities, mobile-first. Extract a component instead of repeating long class lists. Use inline styles only for dynamic values.
+- **Visual design:** `design-reference/seghan/` is the read-only Seghan mockup, the visual reference for frontend work in later phases (not Phase 1). Read its `README.md` and `Main.dc.html`, then recreate the colors, type, spacing and components with our own React components and Tailwind `@theme` tokens. Never copy its exported code or edit the folder. If the mockup conflicts with these guidelines, such as visible focus, the guidelines win.
 - Cover the accessibility basics:
   - semantic HTML
   - a label on every input

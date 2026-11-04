@@ -1,0 +1,11 @@
+# Planning docs are formatted by hand. Prettier would realign every table in them.
+CLAUDE.md
+PROJECT_PLAN.md
+
+# Installed or generated files, never edited by hand.
+node_modules/
+dist/
+server/src/generated/
+
+# Design reference files stay exactly as exported.
+design-reference/

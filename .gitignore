@@ -1,0 +1,15 @@
+# Dependencies, rebuilt by `npm install`
+node_modules/
+
+# Environment files hold secrets. Only the .env.example templates are committed.
+.env*
+!.env.example
+
+# Build output
+dist/
+
+# Prisma client, rebuilt by `npm run db:generate -w server`
+server/src/generated/
+
+# WebStorm settings
+.idea/

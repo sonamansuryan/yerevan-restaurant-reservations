@@ -1035,7 +1035,7 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
 
 - **Validation and authorization:** Zod validates every input. Authorization happens in middleware (role) and in queries (ownership scoping). Other owners' resources return `404`.
 - **Privacy:** owners see a guest's name and phone only on reservations at their own restaurant. Public reviews show first name and last initial.
-- **Secrets:** they live only in `server/.env` and are validated at boot. Phase 8 checks that the client build contains none.
+- **Secrets:** app secrets live only in `server/.env` and are validated at boot. The root `.env` holds only `POSTGRES_PASSWORD`, which Docker Compose uses for the local database. Phase 8 checks that the client build contains no secrets.
 
 ### 8.4 Configuration
 
@@ -1044,6 +1044,7 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
 | `NODE_ENV`, `PORT` | server | no | Runtime mode, port 4000 |
 | `APP_URL` | server | no | Public base URL, used for links in emails |
 | `DATABASE_URL` | server | **yes** | PostgreSQL connection (also read by `prisma7.config.ts`) |
+| `POSTGRES_PASSWORD` | root | **yes** | Local Docker database password. Docker Compose reads it from the root `.env`; `DATABASE_URL` must use the same value |
 | `JWT_ACCESS_SECRET` | server | **yes** | Signs access tokens (≥ 32 random bytes) |
 | `GOOGLE_CLIENT_ID` | server | no | Expected audience of Google ID tokens |
 | `GOOGLE_PLACES_API_KEY` | server | **yes** | Places API (New). Restrict the key to that API |
@@ -1114,45 +1115,45 @@ Each phase ends with something you can demo. Tick the **Exit** box only when tha
 
 ### Phase 1: Foundation and tooling
 
-- [ ] Root `package.json` with npm workspaces (`client`, `server`) and root scripts:
+- [x] Root `package.json` with npm workspaces (`client`, `server`) and root scripts:
   - `dev`, via `concurrently`
   - `build`
   - `typecheck`
   - `lint`
   - `test`
-- [ ] Config files:
+- [x] Config files:
   - `.nvmrc` (`24`)
   - `.editorconfig`
   - Prettier config
   - `.gitignore` covering `node_modules`, `.env*` (except `.env.example`), `dist`, `server/src/generated`, `.idea/`
-- [ ] `docker-compose.yml` with `postgres:17-alpine`, a named volume, and an init script that also creates `yerevan_test`
-- [ ] Client:
+- [x] `docker-compose.yml` with `postgres:17-alpine`, a named volume, and an init script that also creates `yerevan_test`
+- [x] Client:
   - run `npm create vite@latest client -- --template react-ts`
   - add Tailwind 4 (`@tailwindcss/vite`), React Router 8 and TanStack Query
   - set up the `@/` → `src/` alias
-- [ ] Server:
+- [x] Server:
   - Express 5 + TypeScript: `tsx watch` for dev, `tsc` for builds
   - split `app.ts` and `index.ts`
   - add `GET /api/health`
-- [ ] Server package scripts:
+- [x] Server package scripts:
   - `dev`, `build`, `start`
   - `db:migrate` (`prisma migrate dev`) plus `postdb:migrate` (`prisma generate`)
   - `db:generate`, `db:deploy`, `db:seed` (`tsx prisma/seed.ts`), `db:studio`, `db:reset`
   - `test`, `typecheck`, `lint`
   - these must match the CLAUDE.md commands
-- [ ] Server tsconfigs, using the options below:
+- [x] Server tsconfigs, using the options below:
   - `tsconfig.json`: typechecks `src`, `tests` and `prisma`
   - `tsconfig.build.json`: emits `src` → `dist`
-- [ ] `server/src/config/env.ts` (Zod-validated, fail fast), plus `.env.example` files for both workspaces (§8.4)
-- [ ] Error handling and logging:
+- [x] `server/src/config/env.ts` (Zod-validated, fail fast), plus `.env.example` files for both workspaces (§8.4)
+- [x] Error handling and logging:
   - `AppError` hierarchy
   - error middleware with the JSON error format (§5.1)
   - `pino-http` request logging
   - `helmet`
-- [ ] Vite dev proxy: `/api` → `http://localhost:4000`
-- [ ] Vitest in both workspaces, with one trivial test each, and oxlint in both
-- [ ] GitHub Actions CI: `npm ci` → lint → typecheck → test (with a Postgres service container) → build
-- [ ] **Exit:** `npm run dev` shows a page that reads "API: ok" from `/api/health`, and CI is green
+- [x] Vite dev proxy: `/api` → `http://localhost:4000`
+- [x] Vitest in both workspaces, with one trivial test each, and oxlint in both
+- [x] GitHub Actions CI: `npm ci` → lint → typecheck → test (with a Postgres service container) → build
+- [x] **Exit:** `npm run dev` shows a page that reads "API: ok" from `/api/health`, and CI is green
 
 Planned server compiler options (Phase 1 confirms them with `npm run typecheck`):
 
@@ -1160,6 +1161,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 {
   "compilerOptions": {
     "target": "es2023",
+    "lib": ["es2023"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "strict": true,
