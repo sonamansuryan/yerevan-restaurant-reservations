@@ -1151,7 +1151,7 @@ Each phase ends with something you can demo. Tick the **Exit** box only when tha
   - `pino-http` request logging
   - `helmet`
 - [x] Vite dev proxy: `/api` → `http://localhost:4000`
-- [ ] Vitest in both workspaces, with one trivial test each, and oxlint in both
+- [x] Vitest in both workspaces, with one trivial test each, and oxlint in both
 - [ ] GitHub Actions CI: `npm ci` → lint → typecheck → test (with a Postgres service container) → build
 - [ ] **Exit:** `npm run dev` shows a page that reads "API: ok" from `/api/health`, and CI is green
 
