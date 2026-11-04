@@ -1131,7 +1131,7 @@ Each phase ends with something you can demo. Tick the **Exit** box only when tha
   - run `npm create vite@latest client -- --template react-ts`
   - add Tailwind 4 (`@tailwindcss/vite`), React Router 8 and TanStack Query
   - set up the `@/` → `src/` alias
-- [ ] Server:
+- [x] Server:
   - Express 5 + TypeScript: `tsx watch` for dev, `tsc` for builds
   - split `app.ts` and `index.ts`
   - add `GET /api/health`
