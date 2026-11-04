@@ -1114,13 +1114,13 @@ Each phase ends with something you can demo. Tick the **Exit** box only when tha
 
 ### Phase 1: Foundation and tooling
 
-- [ ] Root `package.json` with npm workspaces (`client`, `server`) and root scripts:
+- [x] Root `package.json` with npm workspaces (`client`, `server`) and root scripts:
   - `dev`, via `concurrently`
   - `build`
   - `typecheck`
   - `lint`
   - `test`
-- [ ] Config files:
+- [x] Config files:
   - `.nvmrc` (`24`)
   - `.editorconfig`
   - Prettier config
