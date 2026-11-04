@@ -91,6 +91,7 @@ Older tutorials and model training data often get these wrong. The notes on the 
 ├── package.json              # npm workspaces + root scripts (dev, build, test, lint, typecheck)
 ├── docker-compose.yml        # local PostgreSQL 17 (yerevan_dev + yerevan_test)
 ├── docker/postgres-init/     # SQL that runs once on first DB start (creates yerevan_test)
+├── design-reference/seghan/  # read-only Seghan UI mockup (visual reference, not app code)
 ├── client/                   # React SPA (Vite)
 │   └── src/
 │       ├── main.tsx · router.tsx · index.css
@@ -202,6 +203,7 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 - All HTTP goes through `client/src/lib/api.ts`. It sends `credentials: "include"`, returns typed responses, and on a `401` refreshes once and retries.
 - Forms use React Hook Form with the Zod resolver, and every field has a visible label and error message.
 - Style with Tailwind utilities, mobile-first. Extract a component instead of repeating long class lists. Use inline styles only for dynamic values.
+- **Visual design:** `design-reference/seghan/` is the read-only Seghan mockup, the visual reference for frontend work in later phases (not Phase 1). Read its `README.md` and `Main.dc.html`, then recreate the colors, type, spacing and components with our own React components and Tailwind `@theme` tokens. Never copy its exported code or edit the folder. If the mockup conflicts with these guidelines, such as visible focus, the guidelines win.
 - Cover the accessibility basics:
   - semantic HTML
   - a label on every input
