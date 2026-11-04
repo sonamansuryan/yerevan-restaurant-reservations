@@ -6,3 +6,6 @@ PROJECT_PLAN.md
 node_modules/
 dist/
 server/src/generated/
+
+# Design reference files stay exactly as exported.
+design-reference/

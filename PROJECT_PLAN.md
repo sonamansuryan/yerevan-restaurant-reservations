@@ -1127,7 +1127,7 @@ Each phase ends with something you can demo. Tick the **Exit** box only when tha
   - Prettier config
   - `.gitignore` covering `node_modules`, `.env*` (except `.env.example`), `dist`, `server/src/generated`, `.idea/`
 - [x] `docker-compose.yml` with `postgres:17-alpine`, a named volume, and an init script that also creates `yerevan_test`
-- [ ] Client:
+- [x] Client:
   - run `npm create vite@latest client -- --template react-ts`
   - add Tailwind 4 (`@tailwindcss/vite`), React Router 8 and TanStack Query
   - set up the `@/` → `src/` alias
