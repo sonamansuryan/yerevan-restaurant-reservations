@@ -9,4 +9,10 @@ export default defineConfig({
     // Reads the "@/" alias from tsconfig.app.json, so it's defined in one place only.
     tsconfigPaths: true,
   },
+  server: {
+    // Forwards API calls to Express, so the browser only ever talks to one origin.
+    proxy: {
+      "/api": "http://localhost:4000",
+    },
+  },
 });
