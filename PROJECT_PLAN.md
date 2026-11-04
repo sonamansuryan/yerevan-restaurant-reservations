@@ -1141,7 +1141,7 @@ Each phase ends with something you can demo. Tick the **Exit** box only when tha
   - `db:generate`, `db:deploy`, `db:seed` (`tsx prisma/seed.ts`), `db:studio`, `db:reset`
   - `test`, `typecheck`, `lint`
   - these must match the CLAUDE.md commands
-- [ ] Server tsconfigs, using the options below:
+- [x] Server tsconfigs, using the options below:
   - `tsconfig.json`: typechecks `src`, `tests` and `prisma`
   - `tsconfig.build.json`: emits `src` → `dist`
 - [ ] `server/src/config/env.ts` (Zod-validated, fail fast), plus `.env.example` files for both workspaces (§8.4)
@@ -1161,6 +1161,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 {
   "compilerOptions": {
     "target": "es2023",
+    "lib": ["es2023"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "strict": true,
