@@ -1,9 +1,10 @@
-# Yerevan Restaurant Reservation Platform: Project Plan
+# Seghan: Project Plan
 
 | | |
 |---|---|
 | **Status** | Draft v2, 3 November 2026: Core/Advanced split, overnight availability, one locking protocol, version check, verification plan |
-| **Project** | Internship project, full-stack web application |
+| **Project** | Yerevan Restaurant Reservation Platform: internship project, full-stack web application |
+| **Public name** | Seghan ([§1.2](#12-product-name)) |
 | **Stack** | React (Vite, TS), React Router, Tailwind · Express (TS) REST API · PostgreSQL + Prisma · JWT + Google OAuth · Google Places, Cloudinary, Resend |
 | **Core challenge** | Zero double bookings, enforced by PostgreSQL transactions and constraints ([§7](#7-double-booking-prevention)) |
 
@@ -58,6 +59,22 @@ Working conventions (commands, folder structure, coding rules) are in [CLAUDE.md
 | Visual design | The Seghan design system (tokens and shared components), recreated in our stack; every Core screen built in that style (§13) | — |
 
 None of the Advanced items affect integrity: the constraint and the locks stop overlaps on their own. For example, without idempotency keys a repeated booking request can't create a second reservation. It gets `409 SLOT_TAKEN`, and the UI disables **Book** while a request is pending.
+
+### 1.2 Product name
+
+The public name is **Seghan**. It goes on everything a customer or restaurant owner can see. Internal names don't change: users never see them, and renaming them would only add risk.
+
+| Where | Use | Examples |
+|---|---|---|
+| Text people read | `Seghan` | Page titles, headings, emails, `© 2026 Seghan` |
+| The logo | `seghan`, in lowercase | The wordmark in the site header and footer, as in the mockup |
+| Internal identifiers | Unchanged | The `yerevan-reservations` repository and package, the `yerevan_dev` and `yerevan_test` databases, the `yerevan` database user, Docker names |
+
+- **Project title:** "Yerevan Restaurant Reservation Platform" describes the internship project. Users don't see it.
+- **Retired names:** "Yerevan Reservations" and "Yerevan Tables" are no longer used.
+- **The city:** Yerevan in copy and seed data, and the `Asia/Yerevan` time zone, aren't product names, so they stay.
+- **Language:** the v1 UI has one language (§11), so the name is written in Latin letters only.
+- **Set outside this repository:** the app name on Google's sign-in consent screen (Phase 3), and the email sender name and domain (Phase 7).
 
 ---
 
@@ -150,7 +167,7 @@ flowchart LR
 | PostgreSQL is the single source of truth for availability | Nothing that could cause a double booking is cached. Availability is computed on each request |
 | External APIs are called only from the server | Keys never reach the browser. The two exceptions, Cloudinary signed uploads and the Google Sign-In button, are designed for browsers |
 | Layered server modules (routes → controller → service) | A thin HTTP layer, and business logic that can be tested on its own |
-| Seghan is the visual foundation, recreated in our own components (§13) | One consistent look from a single set of tokens. The exported mockup stays a read-only reference and never ships |
+| The Seghan design is the visual foundation, recreated in our own components (§13) | One consistent look from a single set of tokens. The exported mockup stays a read-only reference and never ships |
 
 **A booking request, end to end:**
 1. `POST /api/reservations` passes `requireAuth`, then Zod `validate`.
@@ -1064,7 +1081,7 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` | server | no | Upload target, returned to the client together with a signature |
 | `CLOUDINARY_API_SECRET` | server | **yes** | Signs uploads and deletes assets |
 | `RESEND_API_KEY` | server | **yes** | Sends email |
-| `EMAIL_FROM` | server | no | For example `Yerevan Tables <bookings@your-domain>` |
+| `EMAIL_FROM` | server | no | For example `Seghan <bookings@your-domain>` |
 | `VITE_GOOGLE_CLIENT_ID` | client | no (public by design) | Renders the Google Sign-In button |
 
 ---
@@ -1222,10 +1239,10 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 
 **Seghan foundation (§13).** These come first, because every later screen builds on them. They don't depend on the auth API.
 
-- [ ] Confirm the public product name (§12, question 8)
+- [x] Confirm the public product name (§12, question 8)
 - [ ] Design tokens: colors, fonts, type sizes, spacing, radii and shadows as Tailwind `@theme` tokens in `client/src/index.css`, including the fixes in §13.6 (§13.2)
 - [ ] Core shared components in `client/src/components/`: Button, Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, and empty and error states (§13.3)
-- [ ] App shell: site header with a mobile menu, site footer, page container, and Seghan-styled not-found and error pages
+- [ ] App shell: site header with a mobile menu, site footer, page container, and Seghan-styled not-found and error pages. Replace the old name in `client/index.html` and `HomePage.tsx` (§1.2)
 - [ ] A dev-only `/design` page that shows every token and shared component, so the foundation can be reviewed before real screens use it
 - [ ] Agree the designs for the sign-in and sign-up screens (§13.4)
 
@@ -1456,13 +1473,13 @@ These are left out on purpose to protect the timeline, unlike the Advanced items
 5. Does the assignment require Google Sign-In, Google Places and email notifications? Core assumes yes because the stack names them. Any that aren't required can move to Advanced (§1.1).
 6. Should after-midnight slots be listed under the calendar date they start on (the current rule, §6.2) or under the evening they belong to? The owner's day view follows the same choice.
 7. Should we stay on Node.js 24 (Maintenance LTS, supported until April 2028) or move to Node.js 26 (Active LTS since 2026-10-28)?
-8. What is the public product name? The mockup's wordmark says Seghan, while the code and docs use Yerevan Reservations, Yerevan Tables and Yerevan Restaurant Reservation Platform.
+8. **Resolved:** the public product name is Seghan (§1.2).
 
 ---
 
 ## 13. Seghan Design Integration
 
-Seghan is the visual foundation of the app. `design-reference/seghan/` holds one exported screen, the homepage. This section explains how that one mockup becomes a full, consistent UI. The matching tasks are in Phases 3–8 of §10.
+The Seghan design is the visual foundation of the app. `design-reference/seghan/` holds one exported screen, the homepage. This section explains how that one mockup becomes a full, consistent UI. The matching tasks are in Phases 3–8 of §10.
 
 ### 13.1 Rules
 

@@ -4,11 +4,12 @@ Guidance for Claude Code in this repository. The full plan lives in **[PROJECT_P
 
 ## Project
 
-**Yerevan Restaurant Reservation Platform** is a two-sided web app built as an internship project.
+**Seghan** is a two-sided web app built as an internship project. Its project title is the Yerevan Restaurant Reservation Platform.
 
 - **Customers** browse and filter Yerevan restaurants and pick a date, time and party size. They see which tables are free, book or cancel, and review places they visited.
 - **Restaurant owners** get a private dashboard. There they manage restaurant info and photos, tables and capacity, opening hours, and blocked tables/dates. They also accept or cancel bookings and mark guests as arrived or no-show.
 - **Non-negotiable:** a table can never be double-booked. PostgreSQL enforces this with an exclusion constraint, and every write that changes availability follows one row-locking protocol (PROJECT_PLAN.md §7.6).
+- **Public name:** everything users can see says `Seghan`, and the logo says lowercase `seghan`. Internal identifiers such as `yerevan-reservations`, `yerevan_dev` and `yerevan_test` stay unchanged (PROJECT_PLAN.md §1.2).
 
 ## Your role
 
