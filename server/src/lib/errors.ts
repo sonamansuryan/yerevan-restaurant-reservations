@@ -2,6 +2,7 @@
 const MESSAGES: Record<string, string> = {
   SLOT_TAKEN:
     "Sorry, this table was just booked for that time. Please choose another time or table.",
+  DATABASE_UNAVAILABLE: "The database is unavailable right now. Please try again.",
 };
 
 /** An error we expected and can explain to the client. Anything else is treated as a bug. */
@@ -54,6 +55,17 @@ export class ConflictError extends AppError {
       409,
       code,
       message ?? MESSAGES[code] ?? "This conflicts with the current state.",
+      details,
+    );
+  }
+}
+
+export class ServiceUnavailableError extends AppError {
+  constructor(code = "SERVICE_UNAVAILABLE", message?: string, details?: unknown) {
+    super(
+      503,
+      code,
+      message ?? MESSAGES[code] ?? "This service is unavailable right now.",
       details,
     );
   }

@@ -176,7 +176,7 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 
 ### Backend
 - **Layering:** **routes** (path, middleware, Zod validation) → **controller** (HTTP in/out) → **service** (business logic + Prisma). Services never touch `req`/`res`, and controllers never call Prisma.
-- **Errors:** throw `AppError` subclasses: `ValidationError` 400, `UnauthorizedError` 401, `ForbiddenError` 403, `NotFoundError` 404, `ConflictError` 409. The error middleware renders `{ "error": { "code": "SLOT_TAKEN", "message": "…" } }`. Codes use `SCREAMING_SNAKE_CASE`.
+- **Errors:** throw `AppError` subclasses: `ValidationError` 400, `UnauthorizedError` 401, `ForbiddenError` 403, `NotFoundError` 404, `ConflictError` 409, `ServiceUnavailableError` 503. The error middleware renders `{ "error": { "code": "SLOT_TAKEN", "message": "…" } }`. Codes use `SCREAMING_SNAKE_CASE`.
 - **Pagination:** list endpoints take `?page=&pageSize=` and return `{ data, meta: { page, pageSize, total } }`.
 - **Raw SQL:** quote identifiers (`"Table"`, `"tableId"`). Prisma keeps model and field names as-is, and `Table` is a reserved word. Use tagged `$queryRaw` templates only. Never pass user input to `$queryRawUnsafe`.
 - **No network calls (email, Cloudinary, Google) inside a DB transaction.** Emails go out after commit. A failed email is logged and never fails the request.
