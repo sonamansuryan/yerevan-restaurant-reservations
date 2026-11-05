@@ -184,7 +184,7 @@ The six core models are User, Restaurant, Table, Reservation, OpeningHour and Re
 
 ### 4.2 Prisma schema
 
-This is the planned `server/prisma/schema.prisma` (Prisma 7, PostgreSQL 17). It hasn't been migrated yet; Phase 2 does that:
+This is `server/prisma/schema.prisma` (Prisma 7, PostgreSQL 17), applied by the `init` migration in Phase 2:
 
 ```prisma
 generator client {
@@ -372,7 +372,7 @@ model BlockedPeriod {
   createdAt    DateTime @default(now())
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  table      Table?     @relation(fields: [tableId], references: [id])
+  table      Table?     @relation(fields: [tableId], references: [id], onDelete: Restrict)
 
   @@index([restaurantId, startsAt])
 }
@@ -1183,7 +1183,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - install pinned majors: `prisma@7` (dev), plus `@prisma/client@7`, `@prisma/adapter-pg@7`, `pg` and `dotenv`
   - run `npx prisma init --datasource-provider postgresql --output ../src/generated/prisma --no-skills`
   - `--no-skills` stops `prisma init` from writing AI-agent skill folders (`.claude/`, `.agents/`, `.windsurf/`)
-- [ ] Paste the schema from §4.2, then run `npm run db:migrate -w server -- --name init`
+- [x] Paste the schema from §4.2, then run `npm run db:migrate -w server -- --name init`
 - [ ] Add the hand-written migration:
   - run `npm run db:migrate -w server -- --create-only --name reservation_integrity`
   - paste the SQL from §7.3
