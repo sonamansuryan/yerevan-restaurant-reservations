@@ -1179,7 +1179,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 
 ### Phase 2: Database and schema
 
-- [ ] In `server/`:
+- [x] In `server/`:
   - install pinned majors: `prisma@7` (dev), plus `@prisma/client@7`, `@prisma/adapter-pg@7`, `pg` and `dotenv`
   - run `npx prisma init --datasource-provider postgresql --output ../src/generated/prisma --no-skills`
   - `--no-skills` stops `prisma init` from writing AI-agent skill folders (`.claude/`, `.agents/`, `.windsurf/`)

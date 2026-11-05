@@ -107,7 +107,7 @@ Older tutorials and model training data often get these wrong. The notes on the 
     ├── src/
     │   ├── index.ts          # starts the HTTP server
     │   ├── app.ts            # builds the Express app (tests import this)
-    │   ├── config/env.ts     # Zod-validated env, the ONLY place that reads process.env
+    │   ├── config/env.ts     # Zod-validated env, the ONLY place in the app that reads process.env
     │   ├── lib/              # prisma.ts, errors.ts, db-errors.ts, logger.ts, time.ts
     │   ├── middleware/       # requireAuth, requireRole, requireRestaurantOwner, validate, errorHandler
     │   ├── modules/<name>/   # <name>.routes.ts · .controller.ts · .service.ts · .schemas.ts (· .rules.ts for pure logic)
