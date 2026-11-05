@@ -765,6 +765,7 @@ How the exclusion constraint works:
 - **`btree_gist`** lets a GiST index handle plain equality (`tableId WITH =`) alongside the range.
 - **It covers `UPDATE`s too.** Making a row active again over a newer booking fails, which also protects the Advanced `NO_SHOW` → `ARRIVED` transition.
 - **Prisma leaves it alone.** Prisma can't model the constraint, so it lives in the hand-written migration. Later diffs shouldn't touch it: `prisma migrate diff` should produce an empty migration, which Phase 2 checks. Still, always read the generated SQL of any migration that touches `Reservation`.
+- **An empty diff doesn't prove the constraints exist.** `prisma migrate diff` doesn't detect our hand-written `CHECK` and `EXCLUDE` constraints, so it stays empty even if one is dropped. Verify them directly in `pg_constraint`, or through the automated database tests.
 
 ### 7.4 Layer 2: the booking transaction
 
@@ -1196,7 +1197,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - run `npm run db:migrate -w server -- --create-only --name reservation_integrity`
   - paste the SQL from §7.3
   - run `npm run db:migrate -w server`
-- [ ] Confirm Prisma sees no drift. In `server/`, `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` should print an empty migration
+- [x] Confirm Prisma sees no drift. In `server/`, `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` should print an empty migration
 - [ ] `src/lib/prisma.ts` (client singleton with the `PrismaPg` adapter) and `src/lib/db-errors.ts` (`isExclusionViolation`, §7.5)
 - [ ] Add `npm run db:generate -w server` to CI before typecheck, since the generated client is gitignored
 - [ ] `prisma/seed.ts` with:
