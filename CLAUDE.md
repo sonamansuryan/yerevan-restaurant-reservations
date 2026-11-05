@@ -158,7 +158,7 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 ### Secrets and security
 - **Where secrets live:** app secrets live only in `server/.env`, read only through `server/src/config/env.ts`. That file validates them with Zod and refuses to start if one is missing. The root `.env` holds only `POSTGRES_PASSWORD`: Docker Compose reads it to set up the local database, the app never reads it, and `DATABASE_URL` in `server/.env` must use the same password.
 - **The client holds no secrets.** Every `VITE_*` variable is bundled into public JavaScript, so only public values go there (today that is just `VITE_GOOGLE_CLIENT_ID`).
-- **External calls:** Google Places, Cloudinary signing and deletion, and Resend are called only from `server/src/integrations/`. The browser talks only to our `/api`. The two exceptions are the signed direct upload to Cloudinary and the Google Sign-In button.
+- **External calls:** Google Places, Cloudinary signing and deletion, and Resend are called only from `server/src/integrations/`. The browser talks only to our `/api`. The exceptions are the signed direct upload to Cloudinary, the Google Sign-In button and the Google Fonts stylesheet.
 - **Env files:** never commit `.env` files. Every new variable gets a placeholder in the matching `.env.example`.
 - **Logging:** never log passwords, tokens, cookies or auth request bodies.
 - **Auth storage:** auth tokens live in httpOnly cookies, never in `localStorage`. Hash passwords with argon2id.
@@ -205,7 +205,7 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 - All HTTP goes through `client/src/lib/api.ts`. It sends `credentials: "include"`, returns typed responses, and on a `401` refreshes once and retries.
 - Forms use React Hook Form with the Zod resolver, and every field has a visible label and error message.
 - Style with Tailwind utilities, mobile-first. Extract a component instead of repeating long class lists. Use inline styles only for dynamic values.
-- **Visual design:** `design-reference/seghan/` is the read-only Seghan mockup, the visual foundation for all frontend work from Phase 3 on. PROJECT_PLAN.md §13 has the rules, tokens, shared components and the list of screens that still need designs. Read the mockup's `README.md` and `Main.dc.html`, then recreate the colors, type, spacing and components with our own React components and Tailwind `@theme` tokens. Never copy its exported code or edit the folder. If the mockup conflicts with these guidelines, such as visible focus, the guidelines win.
+- **Visual design:** `design-reference/seghan/` is the read-only Seghan mockup, the visual foundation for all frontend work from Phase 3 on, not a pixel target. PROJECT_PLAN.md §13 has the rules, tokens, shared components and the list of screens that still need designs. Read the mockup's `README.md` and `Main.dc.html`, then build on its colors, type, spacing and components with our own React components and Tailwind `@theme` tokens. Keep Seghan's identity and improve it where that helps, but get approval before any significant visual change (§13.1). Never copy its exported code, and don't edit the folder unless asked. If the mockup conflicts with these guidelines, such as visible focus, the guidelines win.
 - Cover the accessibility basics:
   - semantic HTML
   - a label on every input

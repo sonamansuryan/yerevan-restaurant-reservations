@@ -1,1 +1,191 @@
 @import "tailwindcss";
+
+/*
+ * Seghan design tokens. The values come from design-reference/seghan/Main.dc.html, plus the
+ * accessibility fixes in PROJECT_PLAN.md §13.6. Components use these names, never raw values.
+ *
+ * A token's prefix decides which classes Tailwind creates: --color-accent gives bg-accent and
+ * text-accent, and --radius-card gives rounded-card. `static` keeps every token available as a
+ * CSS variable, even before a class uses it.
+ *
+ * Sizes are in rem so they follow the browser's font-size setting. 1rem is 16px by default, and
+ * the comments give the mockup's px value.
+ */
+@theme static {
+  /* Surfaces */
+  --color-surface-page: #fbfaf7;
+  --color-surface-raised: #ffffff;
+  --color-surface-tinted: #f3f0ea;
+  --color-surface-dark: #17140f;
+
+  /* Text */
+  --color-ink: #17140f;
+  --color-ink-secondary: #4a453d;
+  --color-ink-muted: #6f6a60;
+
+  /* Text on a colored background */
+  --color-on-dark: #fbfaf7;
+  --color-on-dark-secondary: #c9c2b5;
+  --color-on-accent: #ffffff;
+
+  /* Accent */
+  --color-accent: #9e2b25;
+  --color-accent-hover: #85221d;
+
+  /* Lines. Real form inputs use line-control, because the others are too faint for them (§13.6). */
+  --color-line-soft: #ece8e0;
+  --color-line: #e4dfd6;
+  --color-line-strong: #ddd8ce;
+  --color-line-control: #8a8478;
+  --color-line-divider: #efebe4;
+  --color-line-underline: #d3cdc2;
+  --color-line-rule: #b9b2a5;
+  --color-line-on-dark: #4a453d;
+
+  /* Control fills */
+  --color-fill-slot: #f1eee8;
+  --color-fill-hover: #f6f4ef;
+  --color-fill-primary-hover: #2e2922;
+  --color-fill-overlay: rgb(251 250 247 / 0.92);
+
+  /* Color blocks for restaurants with no photo, and the soft light that goes on top of them */
+  --color-tone-1: #5a2e24;
+  --color-tone-2: #4b2b33;
+  --color-tone-3: #3a3027;
+  --color-tone-4: #26363b;
+  --color-tone-5: #6b5a45;
+  --color-tone-6: #2a2622;
+  --background-image-photo-glow: radial-gradient(
+    120% 90% at 28% 18%,
+    rgb(255 236 214 / 0.2),
+    rgb(255 236 214 / 0) 58%
+  );
+
+  /*
+   * Fonts. Geist and Instrument Serif have no Armenian letters or ֏ sign, so the browser takes
+   * those characters from the Noto font next in each list (§13.6). Tailwind also uses --font-sans
+   * as the app's default font.
+   */
+  --font-sans:
+    "Geist", "Noto Sans Armenian", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Instrument Serif", "Noto Serif Armenian", ui-serif, Georgia, serif;
+
+  /*
+   * UI text. Every size sets a fixed line height, because `line-height: normal` lets a fallback
+   * font stretch the line: in the mockup, a ֏ makes a 13px line 18px tall instead of 17px.
+   * These heights are what `normal` renders for Geist, so Latin text still matches the mockup.
+   */
+  --text-label: 0.6875rem; /* 11px */
+  --text-label--line-height: 0.875rem;
+  --text-label--letter-spacing: 0.06em;
+  --text-label--font-weight: 500;
+  --text-caption: 0.75rem; /* 12px */
+  --text-caption--line-height: 1rem;
+  --text-eyebrow: 0.75rem; /* 12px */
+  --text-eyebrow--line-height: 1rem;
+  --text-eyebrow--letter-spacing: 0.08em;
+  --text-eyebrow--font-weight: 500;
+  --text-meta: 0.8125rem; /* 13px */
+  --text-meta--line-height: 1.0625rem;
+  --text-ui: 0.875rem; /* 14px */
+  --text-ui--line-height: 1.125rem;
+  --text-input: 0.9375rem; /* 15px */
+  --text-input--line-height: 1.1875rem;
+  --text-body: 1rem; /* 16px */
+  --text-body--line-height: 1.6;
+  --text-lead: 1.125rem; /* 18px */
+  --text-lead--line-height: 1.55;
+
+  /* Display text, used with font-display */
+  --text-title-xs: 1.25rem; /* 20px */
+  --text-title-xs--line-height: 1.625rem;
+  --text-title-xs--letter-spacing: -0.01em;
+  --text-title-sm: 1.375rem; /* 22px */
+  --text-title-sm--line-height: 1.1;
+  --text-title-sm--letter-spacing: -0.01em;
+  --text-title: 1.5rem; /* 24px */
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.01em;
+  --text-logo-sm: 1.75rem; /* 28px */
+  --text-logo-sm--line-height: 1;
+  --text-logo-sm--letter-spacing: -0.01em;
+  --text-logo: 1.875rem; /* 30px */
+  --text-logo--line-height: 1;
+  --text-logo--letter-spacing: -0.01em;
+  --text-section: 2.5rem; /* 40px */
+  --text-section--line-height: 1.05;
+  --text-section--letter-spacing: -0.01em;
+  --text-feature: 3rem; /* 48px */
+  --text-feature--line-height: 1.02;
+  --text-feature--letter-spacing: -0.01em;
+  --text-hero: clamp(3.25rem, 7vw, 5.75rem); /* 52px to 92px */
+  --text-hero--line-height: 0.98;
+  --text-hero--letter-spacing: -0.025em;
+
+  /* For the two places that need these without a whole text size: footer headings and intro */
+  --tracking-label: 0.06em;
+  --leading-copy: 1.55;
+
+  /*
+   * Layout. The mockup never sets box-sizing, so its padding sits outside its widths: 1280px of
+   * content plus two 32px gutters renders 1344px wide. Tailwind counts padding inside the width,
+   * so the container is the full 1344px. Use max-w-page together with px-gutter.
+   */
+  --container-page: 84rem; /* 1344px */
+  --spacing-gutter: 2rem; /* 32px */
+  --spacing-header: 4.5rem; /* 72px */
+  --spacing-section-sm: 4.5rem; /* 72px */
+  --spacing-section-md: 5.5rem; /* 88px */
+  --spacing-section-lg: 6rem; /* 96px */
+  --spacing-touch: 2.75rem; /* 44px, the smallest tap target on phones (§13.6) */
+
+  /* Radii */
+  --radius-slot: 0.5rem; /* 8px */
+  --radius-control: 0.625rem; /* 10px, buttons and fields */
+  --radius-cta: 0.75rem; /* 12px, the search bar's button */
+  --radius-media: 0.875rem; /* 14px */
+  --radius-card: 1rem; /* 16px, cards and the search bar */
+  --radius-hero: 1.25rem; /* 20px */
+  --radius-band: 1.5rem; /* 24px */
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-search: 0 1px 2px rgb(23 20 15 / 0.04), 0 12px 32px -16px rgb(23 20 15 / 0.16);
+  --shadow-float: 0 24px 48px -20px rgb(23 20 15 / 0.35);
+
+  /* Motion. Color changes use Tailwind's default 150ms. The mockup uses the CSS default easing. */
+  --default-transition-timing-function: ease;
+  --transition-duration-button: 180ms;
+  --transition-duration-image: 400ms;
+  --transition-duration-tile: 500ms;
+  --ease-tile: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-surface-page);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* §13.6: one visible focus ring everywhere. The mockup's search inputs had none. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring, var(--color-accent));
+    outline-offset: 2px;
+  }
+
+  /* §13.6: the mockup's placeholder color is too faint, at 3.72:1 on white. */
+  ::placeholder {
+    color: var(--color-ink-muted);
+  }
+}
+
+/*
+ * §13.6: the accent focus ring is too faint on the dark band, at 2.47:1. CSS variables pass down
+ * to child elements, so one class here gives everything inside the dark surface a light ring.
+ */
+@utility surface-dark {
+  background-color: var(--color-surface-dark);
+  color: var(--color-on-dark);
+  --focus-ring: var(--color-on-dark);
+}

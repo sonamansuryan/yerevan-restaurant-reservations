@@ -1240,7 +1240,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 **Seghan foundation (§13).** These come first, because every later screen builds on them. They don't depend on the auth API.
 
 - [x] Confirm the public product name (§12, question 8)
-- [ ] Design tokens: colors, fonts, type sizes, spacing, radii and shadows as Tailwind `@theme` tokens in `client/src/index.css`, including the fixes in §13.6 (§13.2)
+- [x] Design tokens: colors, fonts, type sizes, spacing, radii and shadows as Tailwind `@theme` tokens in `client/src/index.css`, including the fixes in §13.6 (§13.2)
 - [ ] Core shared components in `client/src/components/`: Button, Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, and empty and error states (§13.3)
 - [ ] App shell: site header with a mobile menu, site footer, page container, and Seghan-styled not-found and error pages. Replace the old name in `client/index.html` and `HomePage.tsx` (§1.2)
 - [ ] A dev-only `/design` page that shows every token and shared component, so the foundation can be reviewed before real screens use it
@@ -1330,7 +1330,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 - [ ] Time helpers (`lib/time.ts` on server and client) with their own tests
 - [ ] Agree the designs for the browse page, restaurant page and booking widget (§13.4)
 - [ ] UI in the Seghan style (§13):
-  - the homepage, recreated from the mockup with real data (§13.5), replacing the Phase 1 status page
+  - the homepage, built on the mockup with real data (§13.5), replacing the Phase 1 status page
   - browse page with search
   - a filter bar synced to URL params
   - restaurant cards
@@ -1483,11 +1483,13 @@ The Seghan design is the visual foundation of the app. `design-reference/seghan/
 
 ### 13.1 Rules
 
-- **Read-only reference.** The app never edits, imports, bundles or serves `design-reference/seghan/`.
-- **Recreate, never copy.** `Main.dc.html`, `support.js` and `vendor/` aren't production code. We read the values from them and rebuild each screen with our own React components, TypeScript and Tailwind.
+- **A foundation, not a pixel target.** Keep Seghan's identity: warm neutral colors, elegant typography, burgundy accents, an editorial feel and minimalism. Within that, improve hierarchy, spacing, components, responsiveness, accessibility and UX where it helps. Avoid unnecessary redesigns, heavy decoration and generic dashboard styling.
+- **Improvements need a reason and approval.** For an existing design, name the specific weakness first. Before a significant visual change, show the original and the proposed version, explain why, and get approval first. Significant means something a user would notice, such as a token value, a layout or a component's look. Approved changes are recorded in §13.6.
+- **Read-only reference.** The app never imports, bundles or serves `design-reference/seghan/`, and the folder isn't edited unless that's explicitly requested.
+- **Build on it, never copy.** `Main.dc.html`, `support.js` and `vendor/` aren't production code. We start from their values and build each screen with our own React components, TypeScript and Tailwind.
 - **Tokens, not raw values.** Colors, fonts, radii and shadows are defined once as `@theme` tokens in `client/src/index.css`. Components use those tokens, never hex values or one-off sizes.
 - **Shared components first.** Pages compose `client/src/components/`. A new visual pattern is added there, not invented inside a page.
-- **Design before build.** A screen marked *New* in §13.4 gets an agreed design before its UI work starts. That can be a new export added to the reference folder by its owner, or a short written layout using the tokens and components below.
+- **Design before build.** A screen marked *New* in §13.4 gets an agreed design before its UI work starts, consistent with Seghan's identity and modern UI/UX practice. That can be a new export added to the reference folder by its owner, or a short written layout using the tokens and components below.
 - **CLAUDE.md beats the mockup** on accessibility and code rules (§13.6).
 - **This plan beats the mockup on scope.** A feature shown only in the mockup adds no backend or database work (§13.5).
 
@@ -1501,17 +1503,20 @@ Starting values, taken from `Main.dc.html`:
 | Text | primary, secondary, muted | `#17140F`, `#4A453D`, `#6F6A60` |
 | Text on dark | primary, secondary | `#FBFAF7`, `#C9C2B5` |
 | Accent | default, hover | `#9E2B25`, `#85221D` |
-| Lines | soft, default, strong, form control | `#ECE8E0`, `#E4DFD6`, `#DDD8CE`, `#8A8478` |
-| Control fills | slot button, field hover | `#F1EEE8`, `#F6F4EF` |
+| Lines | soft, default, strong, form control, search divider, link underline, hero rule, on dark | `#ECE8E0`, `#E4DFD6`, `#DDD8CE`, `#8A8478`, `#EFEBE4`, `#D3CDC2`, `#B9B2A5`, `#4A453D` |
+| Control fills | slot button, field hover, primary button hover, icon button over a photo | `#F1EEE8`, `#F6F4EF`, `#2E2922`, `rgb(251 250 247 / .92)` |
 | Photo tones | color blocks shown when a restaurant has no photo | `#5A2E24`, `#4B2B33`, `#3A3027`, `#26363B`, `#6B5A45`, `#2A2622` |
-| Fonts | UI, display | Geist 400, 500, 600; Instrument Serif 400 and italic |
+| Photo glow | soft light over those color blocks | `radial-gradient(120% 90% at 28% 18%, rgb(255 236 214 / .2), rgb(255 236 214 / 0) 58%)` |
+| Fonts | UI, display, Armenian fallbacks | Geist 400, 500, 600; Instrument Serif 400 and italic; Noto Sans Armenian 400, 500, 600 and Noto Serif Armenian 400 (§13.6) |
 | Type sizes | UI text, card titles, section titles, hero | 11–18 px, 20–30 px, 40–48 px, `clamp(52px, 7vw, 92px)` |
-| Spacing | scale, page width, side gutter, section padding | Tailwind's 4 px scale, 1280 px, 32 px, 72–96 px |
-| Radii | slot, button and field, media, card and search bar, hero media, dark band, pill | 8, 10, 14, 16, 20, 24, 999 px |
+| Spacing | scale, page content width, side gutter, section padding | Tailwind's 4 px scale, 1280 px, 32 px, 72–96 px |
+| Radii | slot, button and field, search button, media, card and search bar, hero media, dark band, pill | 8, 10, 12, 14, 16, 20, 24, 999 px |
 | Shadows | search bar, floating card | `0 1px 2px rgba(23,20,15,.04), 0 12px 32px -16px rgba(23,20,15,.16)`, `0 24px 48px -20px rgba(23,20,15,.35)` |
-| Motion | color changes, image hover | .15–.18 s, .4–.5 s |
+| Motion | color changes, image hover, tile easing | .15–.18 s, .4–.5 s, `cubic-bezier(.2, .7, .2, 1)` |
 
 Fonts load from Google Fonts with a `<link>` in `client/index.html`, so they need no new package.
+
+The mockup never sets `box-sizing`, so its padding and borders add to the sizes in its CSS, while Tailwind counts them inside. Our starting sizes follow what the mockup renders, not the numbers in its CSS: the page container is 1344 px (1280 px of content plus two 32 px gutters), buttons are 46 px tall, the search button is 58 px and slot buttons are 36 px.
 
 ### 13.3 Shared components
 
@@ -1524,7 +1529,7 @@ The Phase 3 foundation builds what the shell and sign-in need. Later phases add 
 
 ### 13.4 Screens and their design status
 
-*Mockup* means the design exists. *New* means it needs an agreed design first.
+*Mockup* means a design exists to start from. *New* means it needs an agreed design first.
 
 | Screen | Phase | Design |
 |---|---|---|
@@ -1579,4 +1584,4 @@ The mockup links to `Discover`, `Restaurant`, `Auth`, `Account` and `DashOvervie
 | Form input borders | `#E4DFD6` on white is 1.33:1, and needs 3:1 | Use `#8A8478` for real form inputs, which is 3.72:1 |
 | No navigation on phones | Below 760 px the nav and Sign in link are hidden | A mobile menu |
 | No Armenian letters or `֏` | Geist and Instrument Serif don't cover them | Add Noto Sans Armenian and Noto Serif Armenian as fallback fonts |
-| Small touch targets | Slot buttons are 34 px tall and icon buttons 36 px | At least 44 px on phones |
+| Small touch targets | Slot buttons and icon buttons render 36 px tall | At least 44 px on phones |
