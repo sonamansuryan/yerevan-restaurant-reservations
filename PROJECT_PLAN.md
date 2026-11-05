@@ -1203,7 +1203,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 - [x] Confirm Prisma sees no drift. In `server/`, `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` should print an empty migration
 - [x] `src/lib/prisma.ts` (client singleton with the `PrismaPg` adapter) and `src/lib/db-errors.ts` (`isExclusionViolation`, §7.5)
 - [x] Add `npm run db:generate -w server` to CI before typecheck, since the generated client is gitignored
-- [ ] `prisma/seed.ts` with:
+- [x] `prisma/seed.ts` with:
   - 1 admin, 2 owners and 3 customers
   - 6–8 *fictional* restaurants spread across districts (Kentron, Arabkir, Nor Nork, …)
   - tables and weekly hours for each, including one restaurant that closes after midnight and one with split shifts

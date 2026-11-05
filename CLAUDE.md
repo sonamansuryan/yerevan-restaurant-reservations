@@ -103,7 +103,7 @@ Older tutorials and model training data often get these wrong. The notes on the 
 │       └── types/api.ts      # API response types (mirror the server's DTOs)
 └── server/                   # Express REST API
     ├── prisma7.config.ts     # Prisma config: DB URL, migrations path
-    ├── prisma/               # schema.prisma · migrations/ · seed.ts
+    ├── prisma/               # schema.prisma · migrations/ · seed.ts · seed-data.ts
     ├── src/
     │   ├── index.ts          # starts the HTTP server
     │   ├── app.ts            # builds the Express app (tests import this)
