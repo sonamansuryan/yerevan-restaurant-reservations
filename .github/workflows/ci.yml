@@ -33,6 +33,9 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # The Prisma client is generated code and isn't in git, so build it before anything uses it.
+      # This only reads schema.prisma: it never connects to a database.
+      - run: npm run db:generate -w server
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
