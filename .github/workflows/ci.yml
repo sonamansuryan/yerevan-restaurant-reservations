@@ -39,4 +39,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+        env:
+          # The Postgres service above has no password, so this URL holds no secret.
+          TEST_DATABASE_URL: postgresql://postgres@localhost:5432/yerevan_test
       - run: npm run build

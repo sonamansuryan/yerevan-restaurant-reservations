@@ -881,7 +881,7 @@ sequenceDiagram
 
 ### 7.5 Recognising the constraint error
 
-This is `server/src/lib/db-errors.ts`. **Unverified:** with Prisma 7 + `@prisma/adapter-pg`, an exclusion violation is expected to arrive as `PrismaClientKnownRequestError` with code `P2039`, with the raw SQLSTATE `23P01` in `meta.driverAdapterError.cause`. Test #1 in §7.9 records the real shape in Phase 2; adjust this helper if it differs. The same test stops a Prisma upgrade from silently breaking it.
+This is `server/src/lib/db-errors.ts`. With Prisma 7 + `@prisma/adapter-pg`, an exclusion violation arrives as `PrismaClientKnownRequestError` with code `P2039`, with the raw SQLSTATE `23P01` in `meta.driverAdapterError.cause`. CHECK violations also use `P2039`, so only the SQLSTATE tells them apart. Test #1 in §7.9 confirms this against real Postgres, which stops a Prisma upgrade from silently breaking it.
 
 ```ts
 import { Prisma } from "../generated/prisma/client.ts";
@@ -891,7 +891,7 @@ const PG_EXCLUSION_VIOLATION = "23P01"; // PostgreSQL SQLSTATE
 /** True when Postgres rejected a write because of an EXCLUDE constraint (e.g. "Reservation_no_overlap"). */
 export function isExclusionViolation(err: unknown): boolean {
   if (!(err instanceof Prisma.PrismaClientKnownRequestError)) return false;
-  // Expected with Prisma 7 + @prisma/adapter-pg (confirm in Phase 2): code "P2039", raw SQLSTATE in meta.driverAdapterError.cause
+  // The Prisma code P2039 isn't enough, because CHECK violations use it too. Only the SQLSTATE tells them apart.
   const adapterError = err.meta?.driverAdapterError as { cause?: { originalCode?: string } } | undefined;
   return adapterError?.cause?.originalCode === PG_EXCLUSION_VIOLATION;
 }
@@ -974,7 +974,7 @@ export async function transitionStatus(
 
 ### 7.9 Verification plan
 
-Nothing below has been run yet. Each row becomes an automated test in the phase shown, and Phase 8 re-runs all of them as the final regression. Race tests (#8–#15) start the competing requests together (`Promise.allSettled`) and repeat each race several times. They assert the final database state, not which request finished first.
+Each row becomes an automated test in the phase shown, and Phase 8 re-runs all of them as the final regression. Rows #1–#4 have run since Phase 2. Race tests (#8–#15) start the competing requests together (`Promise.allSettled`) and repeat each race several times. They assert the final database state, not which request finished first.
 
 | # | Scenario | Expected result | Phase |
 |---|---|---|---|
@@ -1056,6 +1056,7 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
 | `NODE_ENV`, `PORT` | server | no | Runtime mode, port 4000 |
 | `APP_URL` | server | no | Public base URL, used for links in emails |
 | `DATABASE_URL` | server | **yes** | PostgreSQL connection (also read by `prisma7.config.ts`) |
+| `TEST_DATABASE_URL` | server | **yes** | The `yerevan_test` connection. Only the test tooling reads it, and the tests refuse any other database. In CI it holds no secret, because that database has no password |
 | `POSTGRES_PASSWORD` | root | **yes** | Local Docker database password. Docker Compose reads it from the root `.env`; `DATABASE_URL` must use the same value |
 | `JWT_ACCESS_SECRET` | server | **yes** | Signs access tokens (≥ 32 random bytes) |
 | `GOOGLE_CLIENT_ID` | server | no | Expected audience of Google ID tokens |
@@ -1208,13 +1209,13 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - 6–8 *fictional* restaurants spread across districts (Kentron, Arabkir, Nor Nork, …)
   - tables and weekly hours for each, including one restaurant that closes after midnight and one with split shifts
   - reservations in every status
-- [ ] DB tests against real Postgres:
-  - [ ] an overlapping active reservation is rejected
-  - [ ] record the real exclusion-error shape (expected but unverified: `P2039` with SQLSTATE `23P01`) and make `isExclusionViolation` match it (§7.9 #1)
-  - [ ] back-to-back ranges are accepted
-  - [ ] `CANCELLED` and `NO_SHOW` rows don't block a slot
-  - [ ] each CHECK rejects bad data
-  - [ ] `ACTIVE_STATUSES` matches the constraint definition (`pg_get_constraintdef`)
+- [x] DB tests against real Postgres:
+  - [x] an overlapping active reservation is rejected
+  - [x] record the real exclusion-error shape (expected but unverified: `P2039` with SQLSTATE `23P01`) and make `isExclusionViolation` match it (§7.9 #1)
+  - [x] back-to-back ranges are accepted
+  - [x] `CANCELLED` and `NO_SHOW` rows don't block a slot
+  - [x] each CHECK rejects bad data
+  - [x] `ACTIVE_STATUSES` matches the constraint definition (`pg_get_constraintdef`)
 - [ ] **Exit:** `db:reset` followed by `db:seed` rebuilds the database from scratch, and all DB tests pass
 
 ### Phase 3: Authentication and authorization
@@ -1341,7 +1342,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - auto-refresh every 30 s (`refetchInterval`)
 - [ ] `409` UX: show a clear message, refetch availability, and keep the chosen date and party size
 - [ ] Booking-rule tests, including the overnight booking (§7.9 #7)
-- [ ] Concurrency test suite (`tests/reservations.concurrency.test.ts`), scenarios #8–#15 in §7.9:
+- [ ] Concurrency test suite (`tests/integration/reservations.concurrency.test.ts`), scenarios #8–#15 in §7.9:
   - [ ] simultaneous bookings, through the service and around it (#8, #9)
   - [ ] bookings racing table-level and restaurant-wide blocks (#10)
   - [ ] cancellations racing new bookings and new blocks (#11, #13)
