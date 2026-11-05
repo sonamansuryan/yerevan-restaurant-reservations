@@ -434,6 +434,9 @@ Prisma's schema language can't express these, so they live in a custom migration
 | `OpeningHour_day`, `OpeningHour_range` | Day is 0–6, `opensAt` is in `[0, 1440)`, and closing is after opening and at most 24 h later |
 | `Review_rating` | 1–5 |
 | `Restaurant_price_level` | 1–4 |
+| `Restaurant_slot_interval` | 15 or 30 |
+| `Restaurant_reservation_duration` | Above 0 |
+| `User_email_lowercase` | `email` is stored in lowercase, so the case-sensitive unique index can't hold two spellings of one address |
 
 ### 4.4 Design notes
 
@@ -747,7 +750,12 @@ ALTER TABLE "Review"
   ADD CONSTRAINT "Review_rating" CHECK ("rating" BETWEEN 1 AND 5);
 
 ALTER TABLE "Restaurant"
-  ADD CONSTRAINT "Restaurant_price_level" CHECK ("priceLevel" BETWEEN 1 AND 4);
+  ADD CONSTRAINT "Restaurant_price_level" CHECK ("priceLevel" BETWEEN 1 AND 4),
+  ADD CONSTRAINT "Restaurant_slot_interval" CHECK ("slotIntervalMin" IN (15, 30)),
+  ADD CONSTRAINT "Restaurant_reservation_duration" CHECK ("reservationDurationMin" > 0);
+
+ALTER TABLE "User"
+  ADD CONSTRAINT "User_email_lowercase" CHECK ("email" = lower("email"));
 ```
 
 How the exclusion constraint works:
@@ -1184,7 +1192,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - run `npx prisma init --datasource-provider postgresql --output ../src/generated/prisma --no-skills`
   - `--no-skills` stops `prisma init` from writing AI-agent skill folders (`.claude/`, `.agents/`, `.windsurf/`)
 - [x] Paste the schema from §4.2, then run `npm run db:migrate -w server -- --name init`
-- [ ] Add the hand-written migration:
+- [x] Add the hand-written migration:
   - run `npm run db:migrate -w server -- --create-only --name reservation_integrity`
   - paste the SQL from §7.3
   - run `npm run db:migrate -w server`
