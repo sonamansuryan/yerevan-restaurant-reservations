@@ -1216,7 +1216,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - [x] `CANCELLED` and `NO_SHOW` rows don't block a slot
   - [x] each CHECK rejects bad data
   - [x] `ACTIVE_STATUSES` matches the constraint definition (`pg_get_constraintdef`)
-- [ ] **Exit:** `db:reset` followed by `db:seed` rebuilds the database from scratch, and all DB tests pass
+- [x] **Exit:** `db:reset` followed by `db:seed` rebuilds the database from scratch, and all DB tests pass
 
 ### Phase 3: Authentication and authorization
 
