@@ -23,6 +23,7 @@ Working conventions (commands, folder structure, coding rules) are in [CLAUDE.md
 10. [Execution Plan (8 Phases)](#10-execution-plan-8-phases)
 11. [Out of Scope for v1](#11-out-of-scope-for-v1)
 12. [Risks and Open Questions](#12-risks-and-open-questions)
+13. [Seghan Design Integration](#13-seghan-design-integration)
 
 ---
 
@@ -54,6 +55,7 @@ Working conventions (commands, folder structure, coding rules) are in [CLAUDE.md
 | Notifications | Emails after commit when a booking is created, confirmed or cancelled | Day-before reminders and auto-cancelling stale `PENDING` bookings (`node-cron`) |
 | Double-booking prevention | Exclusion constraint, the locking protocol (§7.6), compare-and-set, the concurrency suite | — |
 | Quality and delivery | Unit, integration and concurrency tests; CI; Playwright for the core flows; deployment; demo | Error tracking |
+| Visual design | The Seghan design system (tokens and shared components), recreated in our stack; every Core screen built in that style (§13) | — |
 
 None of the Advanced items affect integrity: the constraint and the locks stop overlaps on their own. For example, without idempotency keys a repeated booking request can't create a second reservation. It gets `409 SLOT_TAKEN`, and the UI disables **Book** while a request is pending.
 
@@ -148,6 +150,7 @@ flowchart LR
 | PostgreSQL is the single source of truth for availability | Nothing that could cause a double booking is cached. Availability is computed on each request |
 | External APIs are called only from the server | Keys never reach the browser. The two exceptions, Cloudinary signed uploads and the Google Sign-In button, are designed for browsers |
 | Layered server modules (routes → controller → service) | A thin HTTP layer, and business logic that can be tested on its own |
+| Seghan is the visual foundation, recreated in our own components (§13) | One consistent look from a single set of tokens. The exported mockup stays a read-only reference and never ships |
 
 **A booking request, end to end:**
 1. `POST /api/reservations` passes `requireAuth`, then Zod `validate`.
@@ -184,7 +187,7 @@ The six core models are User, Restaurant, Table, Reservation, OpeningHour and Re
 
 ### 4.2 Prisma schema
 
-This is the planned `server/prisma/schema.prisma` (Prisma 7, PostgreSQL 17). It hasn't been migrated yet; Phase 2 does that:
+This is `server/prisma/schema.prisma` (Prisma 7, PostgreSQL 17), applied by the `init` migration in Phase 2:
 
 ```prisma
 generator client {
@@ -372,7 +375,7 @@ model BlockedPeriod {
   createdAt    DateTime @default(now())
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  table      Table?     @relation(fields: [tableId], references: [id])
+  table      Table?     @relation(fields: [tableId], references: [id], onDelete: Restrict)
 
   @@index([restaurantId, startsAt])
 }
@@ -434,6 +437,9 @@ Prisma's schema language can't express these, so they live in a custom migration
 | `OpeningHour_day`, `OpeningHour_range` | Day is 0–6, `opensAt` is in `[0, 1440)`, and closing is after opening and at most 24 h later |
 | `Review_rating` | 1–5 |
 | `Restaurant_price_level` | 1–4 |
+| `Restaurant_slot_interval` | 15 or 30 |
+| `Restaurant_reservation_duration` | Above 0 |
+| `User_email_lowercase` | `email` is stored in lowercase, so the case-sensitive unique index can't hold two spellings of one address |
 
 ### 4.4 Design notes
 
@@ -747,7 +753,12 @@ ALTER TABLE "Review"
   ADD CONSTRAINT "Review_rating" CHECK ("rating" BETWEEN 1 AND 5);
 
 ALTER TABLE "Restaurant"
-  ADD CONSTRAINT "Restaurant_price_level" CHECK ("priceLevel" BETWEEN 1 AND 4);
+  ADD CONSTRAINT "Restaurant_price_level" CHECK ("priceLevel" BETWEEN 1 AND 4),
+  ADD CONSTRAINT "Restaurant_slot_interval" CHECK ("slotIntervalMin" IN (15, 30)),
+  ADD CONSTRAINT "Restaurant_reservation_duration" CHECK ("reservationDurationMin" > 0);
+
+ALTER TABLE "User"
+  ADD CONSTRAINT "User_email_lowercase" CHECK ("email" = lower("email"));
 ```
 
 How the exclusion constraint works:
@@ -757,6 +768,7 @@ How the exclusion constraint works:
 - **`btree_gist`** lets a GiST index handle plain equality (`tableId WITH =`) alongside the range.
 - **It covers `UPDATE`s too.** Making a row active again over a newer booking fails, which also protects the Advanced `NO_SHOW` → `ARRIVED` transition.
 - **Prisma leaves it alone.** Prisma can't model the constraint, so it lives in the hand-written migration. Later diffs shouldn't touch it: `prisma migrate diff` should produce an empty migration, which Phase 2 checks. Still, always read the generated SQL of any migration that touches `Reservation`.
+- **An empty diff doesn't prove the constraints exist.** `prisma migrate diff` doesn't detect our hand-written `CHECK` and `EXCLUDE` constraints, so it stays empty even if one is dropped. Verify them directly in `pg_constraint`, or through the automated database tests.
 
 ### 7.4 Layer 2: the booking transaction
 
@@ -869,7 +881,7 @@ sequenceDiagram
 
 ### 7.5 Recognising the constraint error
 
-This is `server/src/lib/db-errors.ts`. **Unverified:** with Prisma 7 + `@prisma/adapter-pg`, an exclusion violation is expected to arrive as `PrismaClientKnownRequestError` with code `P2039`, with the raw SQLSTATE `23P01` in `meta.driverAdapterError.cause`. Test #1 in §7.9 records the real shape in Phase 2; adjust this helper if it differs. The same test stops a Prisma upgrade from silently breaking it.
+This is `server/src/lib/db-errors.ts`. With Prisma 7 + `@prisma/adapter-pg`, an exclusion violation arrives as `PrismaClientKnownRequestError` with code `P2039`, with the raw SQLSTATE `23P01` in `meta.driverAdapterError.cause`. CHECK violations also use `P2039`, so only the SQLSTATE tells them apart. Test #1 in §7.9 confirms this against real Postgres, which stops a Prisma upgrade from silently breaking it.
 
 ```ts
 import { Prisma } from "../generated/prisma/client.ts";
@@ -879,7 +891,7 @@ const PG_EXCLUSION_VIOLATION = "23P01"; // PostgreSQL SQLSTATE
 /** True when Postgres rejected a write because of an EXCLUDE constraint (e.g. "Reservation_no_overlap"). */
 export function isExclusionViolation(err: unknown): boolean {
   if (!(err instanceof Prisma.PrismaClientKnownRequestError)) return false;
-  // Expected with Prisma 7 + @prisma/adapter-pg (confirm in Phase 2): code "P2039", raw SQLSTATE in meta.driverAdapterError.cause
+  // The Prisma code P2039 isn't enough, because CHECK violations use it too. Only the SQLSTATE tells them apart.
   const adapterError = err.meta?.driverAdapterError as { cause?: { originalCode?: string } } | undefined;
   return adapterError?.cause?.originalCode === PG_EXCLUSION_VIOLATION;
 }
@@ -962,7 +974,7 @@ export async function transitionStatus(
 
 ### 7.9 Verification plan
 
-Nothing below has been run yet. Each row becomes an automated test in the phase shown, and Phase 8 re-runs all of them as the final regression. Race tests (#8–#15) start the competing requests together (`Promise.allSettled`) and repeat each race several times. They assert the final database state, not which request finished first.
+Each row becomes an automated test in the phase shown, and Phase 8 re-runs all of them as the final regression. Rows #1–#4 have run since Phase 2. Race tests (#8–#15) start the competing requests together (`Promise.allSettled`) and repeat each race several times. They assert the final database state, not which request finished first.
 
 | # | Scenario | Expected result | Phase |
 |---|---|---|---|
@@ -1044,6 +1056,7 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
 | `NODE_ENV`, `PORT` | server | no | Runtime mode, port 4000 |
 | `APP_URL` | server | no | Public base URL, used for links in emails |
 | `DATABASE_URL` | server | **yes** | PostgreSQL connection (also read by `prisma7.config.ts`) |
+| `TEST_DATABASE_URL` | server | **yes** | The `yerevan_test` connection. Only the test tooling reads it, and the tests refuse any other database. In CI it holds no secret, because that database has no password |
 | `POSTGRES_PASSWORD` | root | **yes** | Local Docker database password. Docker Compose reads it from the root `.env`; `DATABASE_URL` must use the same value |
 | `JWT_ACCESS_SECRET` | server | **yes** | Signs access tokens (≥ 32 random bytes) |
 | `GOOGLE_CLIENT_ID` | server | no | Expected audience of Google ID tokens |
@@ -1106,9 +1119,9 @@ Each phase ends with something you can demo. Tick the **Exit** box only when tha
 |---|---|---|---|
 | 1 | Foundation and tooling | — | The client shows "API: ok" from `/api/health` |
 | 2 | Database and schema | 1 | Seeded database, constraint tests green |
-| 3 | Authentication and authorization | 2 | Email and Google sign-in, role-guarded routes |
-| 4 | Owner dashboard: restaurant setup | 3 | A restaurant created and published from the UI |
-| 5 | Customer browsing and availability | 2 (seed data), 4 | Find a restaurant and see its free tables |
+| 3 | Authentication and authorization, plus the Seghan design foundation | 2 | Email and Google sign-in on Seghan-styled screens, role-guarded routes |
+| 4 | Owner dashboard: restaurant setup | 3 | A restaurant created and published from the Seghan-styled dashboard |
+| 5 | Customer browsing and availability | 2 (seed data), 4 | Find a restaurant from the Seghan homepage and see its free tables |
 | 6 | **Reservations and double-booking prevention** ★ | 3, 5 | Book, then confirm and mark arrived in the dashboard; race tests green |
 | 7 | Reviews and notifications | 6 | Review after a visit; emails on every status change |
 | 8 | Hardening, polish and deployment | all | Live URL, E2E suite, final demo |
@@ -1179,33 +1192,44 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 
 ### Phase 2: Database and schema
 
-- [ ] In `server/`:
+- [x] In `server/`:
   - install pinned majors: `prisma@7` (dev), plus `@prisma/client@7`, `@prisma/adapter-pg@7`, `pg` and `dotenv`
   - run `npx prisma init --datasource-provider postgresql --output ../src/generated/prisma --no-skills`
   - `--no-skills` stops `prisma init` from writing AI-agent skill folders (`.claude/`, `.agents/`, `.windsurf/`)
-- [ ] Paste the schema from §4.2, then run `npm run db:migrate -w server -- --name init`
-- [ ] Add the hand-written migration:
+- [x] Paste the schema from §4.2, then run `npm run db:migrate -w server -- --name init`
+- [x] Add the hand-written migration:
   - run `npm run db:migrate -w server -- --create-only --name reservation_integrity`
   - paste the SQL from §7.3
   - run `npm run db:migrate -w server`
-- [ ] Confirm Prisma sees no drift. In `server/`, `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` should print an empty migration
-- [ ] `src/lib/prisma.ts` (client singleton with the `PrismaPg` adapter) and `src/lib/db-errors.ts` (`isExclusionViolation`, §7.5)
-- [ ] Add `npm run db:generate -w server` to CI before typecheck, since the generated client is gitignored
-- [ ] `prisma/seed.ts` with:
+- [x] Confirm Prisma sees no drift. In `server/`, `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` should print an empty migration
+- [x] `src/lib/prisma.ts` (client singleton with the `PrismaPg` adapter) and `src/lib/db-errors.ts` (`isExclusionViolation`, §7.5)
+- [x] Add `npm run db:generate -w server` to CI before typecheck, since the generated client is gitignored
+- [x] `prisma/seed.ts` with:
   - 1 admin, 2 owners and 3 customers
   - 6–8 *fictional* restaurants spread across districts (Kentron, Arabkir, Nor Nork, …)
   - tables and weekly hours for each, including one restaurant that closes after midnight and one with split shifts
   - reservations in every status
-- [ ] DB tests against real Postgres:
-  - [ ] an overlapping active reservation is rejected
-  - [ ] record the real exclusion-error shape (expected but unverified: `P2039` with SQLSTATE `23P01`) and make `isExclusionViolation` match it (§7.9 #1)
-  - [ ] back-to-back ranges are accepted
-  - [ ] `CANCELLED` and `NO_SHOW` rows don't block a slot
-  - [ ] each CHECK rejects bad data
-  - [ ] `ACTIVE_STATUSES` matches the constraint definition (`pg_get_constraintdef`)
-- [ ] **Exit:** `db:reset` followed by `db:seed` rebuilds the database from scratch, and all DB tests pass
+- [x] DB tests against real Postgres:
+  - [x] an overlapping active reservation is rejected
+  - [x] record the real exclusion-error shape (expected but unverified: `P2039` with SQLSTATE `23P01`) and make `isExclusionViolation` match it (§7.9 #1)
+  - [x] back-to-back ranges are accepted
+  - [x] `CANCELLED` and `NO_SHOW` rows don't block a slot
+  - [x] each CHECK rejects bad data
+  - [x] `ACTIVE_STATUSES` matches the constraint definition (`pg_get_constraintdef`)
+- [x] **Exit:** `db:reset` followed by `db:seed` rebuilds the database from scratch, and all DB tests pass
 
 ### Phase 3: Authentication and authorization
+
+**Seghan foundation (§13).** These come first, because every later screen builds on them. They don't depend on the auth API.
+
+- [ ] Confirm the public product name (§12, question 8)
+- [ ] Design tokens: colors, fonts, type sizes, spacing, radii and shadows as Tailwind `@theme` tokens in `client/src/index.css`, including the fixes in §13.6 (§13.2)
+- [ ] Core shared components in `client/src/components/`: Button, Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, and empty and error states (§13.3)
+- [ ] App shell: site header with a mobile menu, site footer, page container, and Seghan-styled not-found and error pages
+- [ ] A dev-only `/design` page that shows every token and shared component, so the foundation can be reviewed before real screens use it
+- [ ] Agree the designs for the sign-in and sign-up screens (§13.4)
+
+**Authentication**
 
 - [ ] `POST /api/auth/register` and `/login`, with Zod validation, argon2id hashing and generic error messages
 - [ ] Token service:
@@ -1219,7 +1243,8 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 - [ ] Client:
   - `lib/api.ts`: typed fetch wrapper with `credentials: "include"`, error parsing, and a single-flight refresh on `401`
   - `AuthProvider` and `useAuth`
-  - login and register pages, with a customer/owner toggle and the Google button
+  - login and register pages in the Seghan style, with a customer/owner toggle and the Google button
+  - the header's signed-in state: account menu, sign out, and a dashboard link for owners
   - a `<RequireAuth role>` route guard with a `?next=` redirect
 - [ ] Tests:
   - [ ] register and login
@@ -1229,7 +1254,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - [ ] Google flow with a mocked verifier, including the unverified-email case
   - [ ] role guards
   - [ ] **IDOR:** owner A gets `404` on owner B's restaurant
-- [ ] **Exit:** users sign up and sign in with email or Google, stay signed in across reloads, and can't reach routes their role doesn't allow
+- [ ] **Exit:** users sign up and sign in with email or Google on Seghan-styled screens, stay signed in across reloads, and can't reach routes their role doesn't allow
 
 ### Phase 4: Owner dashboard (restaurant setup)
 
@@ -1252,15 +1277,17 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - create: lock the affected tables (§7.6), and return `409 BLOCK_CONFLICTS` with any overlapping bookings
   - list
   - delete
-- [ ] Dashboard UI:
-  - restaurant switcher
+- [ ] Agree the dashboard layout and the designs for its screens (§13.4). The mockup has none, so this comes before any dashboard UI
+- [ ] Dashboard UI in the Seghan style (§13):
+  - dashboard shell with the restaurant switcher
+  - add restaurant, with the Places search and prefill form
   - Profile & Photos
   - Tables
   - Opening hours (weekly editor)
   - Blocks
   - an onboarding checklist (photos ✓, tables ✓, hours ✓ → Publish)
 - [ ] Tests for every endpoint: happy path, validation, ownership. Include `BLOCK_CONFLICTS`, `TABLE_HAS_BOOKINGS`, and an after-midnight interval that overlaps the next day's hours
-- [ ] **Exit:** a brand-new owner takes a restaurant from nothing to published, entirely in the UI
+- [ ] **Exit:** a brand-new owner takes a restaurant from nothing to published, entirely in the Seghan-styled dashboard
 
 **Advanced** (optional, not needed for Exit, §1.1):
 - [ ] Suggested opening hours from Places (`regularOpeningHours`, §9.1)
@@ -1284,14 +1311,16 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - [ ] back-to-back bookings
   - [ ] a timezone other than Yerevan's, to catch hidden UTC+4 assumptions
 - [ ] Time helpers (`lib/time.ts` on server and client) with their own tests
-- [ ] UI:
-  - home and search
+- [ ] Agree the designs for the browse page, restaurant page and booking widget (§13.4)
+- [ ] UI in the Seghan style (§13):
+  - the homepage, recreated from the mockup with real data (§13.5), replacing the Phase 1 status page
+  - browse page with search
   - a filter bar synced to URL params
   - restaurant cards
   - restaurant page
   - booking widget: date picker, party size, slot grid, table picker
 - [ ] Loading, empty and error states everywhere, with a mobile-first layout
-- [ ] **Exit:** a visitor finds a restaurant and sees the correct free tables for any date and party size, after-midnight slots included, checked against seeded bookings
+- [ ] **Exit:** a visitor finds a restaurant from the Seghan homepage and sees the correct free tables for any date and party size, after-midnight slots included, checked against seeded bookings
 
 ### Phase 6: Reservations and double-booking prevention ★
 
@@ -1300,25 +1329,26 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 - [ ] Status service implementing the §6.3 state machine with the table lock and compare-and-set from §7.6:
   - customer: cancel
   - owner: confirm, cancel (reason required), mark arrived, mark no-show
-- [ ] Customer UI:
+- [ ] Agree the designs for the confirm step, success page, My Reservations, cancel dialog and owner day view (§13.4)
+- [ ] Customer UI in the Seghan style (§13):
   - confirm step: phone and special requests. **Book** is disabled while the request is pending
   - success page
   - My Reservations, with upcoming and past tabs
   - cancel dialog
-- [ ] Owner UI:
+- [ ] Owner UI in the Seghan style (§13):
   - day view as a list, dated by local start date (§6.2)
   - a badge for pending requests
   - action buttons
   - auto-refresh every 30 s (`refetchInterval`)
 - [ ] `409` UX: show a clear message, refetch availability, and keep the chosen date and party size
 - [ ] Booking-rule tests, including the overnight booking (§7.9 #7)
-- [ ] Concurrency test suite (`tests/reservations.concurrency.test.ts`), scenarios #8–#15 in §7.9:
+- [ ] Concurrency test suite (`tests/integration/reservations.concurrency.test.ts`), scenarios #8–#15 in §7.9:
   - [ ] simultaneous bookings, through the service and around it (#8, #9)
   - [ ] bookings racing table-level and restaurant-wide blocks (#10)
   - [ ] cancellations racing new bookings and new blocks (#11, #13)
   - [ ] simultaneous status changes, and a stale transition (#12, #15)
   - [ ] table deactivation or resizing racing a booking (#14)
-- [ ] **Exit:** the full booking loop works for customers and owners, and the concurrency suite passes in CI
+- [ ] **Exit:** the full booking loop works for customers and owners in the Seghan-styled UI, and the concurrency suite passes in CI
 
 **Advanced** (optional, not needed for Exit, §1.1):
 - [ ] Idempotency key: a migration adding `idempotencyKey String?` with `@@unique([userId, idempotencyKey])`, a replay check right after the table lock, and a test that sends the same key twice in parallel
@@ -1332,7 +1362,8 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - edit and delete
   - public paginated list
 - [ ] Recompute `avgRating` and `reviewCount` in the same transaction as every review write, after locking the restaurant row (§7.6)
-- [ ] Review UI:
+- [ ] Agree the designs for the review form, review list, rating summary and owner's reviews page (§13.4)
+- [ ] Review UI in the Seghan style (§13):
   - "Rate your visit" on past reservations
   - star input
   - review list and rating summary on the restaurant page
@@ -1343,7 +1374,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - [ ] review eligibility: not arrived, someone else's reservation, duplicate review
   - [ ] rating math, including two reviews written at once (§7.9 #16)
   - [ ] the right email goes out for each transition, with Resend mocked
-- [ ] **Exit:** a completed visit can be reviewed, and every booking state change sends the right email
+- [ ] **Exit:** a completed visit can be reviewed in the Seghan-styled UI, and every booking state change sends the right email
 
 **Advanced** (optional, not needed for Exit, §1.1):
 - [ ] A scheduled job (`node-cron`) for day-before reminders and for auto-cancelling `PENDING` bookings whose start time has passed. It changes statuses through the status service (§7.6)
@@ -1365,6 +1396,12 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - [ ] run the full suite: unit, integration, concurrency and E2E
   - [ ] run the concurrency suite 20 times in a row without a failure
 - [ ] Accessibility pass (keyboard-only booking, labels, contrast) and a responsive pass on a 360 px-wide phone
+- [ ] Seghan design review, on every screen in §13.4:
+  - [ ] responsive: correct at 360, 768, 1280 and 1440 px wide, with no horizontal scrolling
+  - [ ] accessibility: text meets 4.5:1 contrast, controls and focus rings meet 3:1 on every background, and touch targets are at least 44 px on phones
+  - [ ] consistency: no raw hex values or one-off sizes outside the tokens, and shared components used throughout
+  - [ ] real content: long names, Armenian and Russian text, the `֏` sign, and restaurants with no photos
+  - [ ] production: fonts, Cloudinary images, Google Sign-In and photo uploads all work on the live URL. `helmet`'s default Content-Security-Policy blocks the last three until it's configured
 - [ ] Performance: run `EXPLAIN ANALYZE` on the list, availability and day-view queries against seeded data, and add any missing indexes
 - [ ] Production:
   - [ ] managed PostgreSQL that allows `CREATE EXTENSION btree_gist` (check your provider)
@@ -1374,7 +1411,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 - [ ] Ops basics: structured logs, an uptime check on `/api/health`, and optional error tracking
 - [ ] `README.md` with setup, scripts, an architecture diagram and demo accounts
 - [ ] A 5-minute demo script that includes a live race: two browsers trying to book the same table at once
-- [ ] **Exit:** the app is live on a public URL with seeded data, the final regression is green, and the demo script runs end to end without errors
+- [ ] **Exit:** the app is live on a public URL with seeded data, the final regression is green, the Seghan design review passes, and the demo script runs end to end without errors
 
 ---
 
@@ -1392,6 +1429,9 @@ These are left out on purpose to protect the timeline, unlike the Advanced items
 - Auto-confirming bookings as a per-restaurant setting
 - A map view and "near me" search
 - Analytics, such as covers per day or no-show rate
+- Saved places and curated collections, both shown in the Seghan mockup
+- Searching restaurants by date, time and party size. Availability stays per restaurant (§6.2)
+- Walk-in and phone bookings entered by staff
 
 ---
 
@@ -1405,6 +1445,7 @@ These are left out on purpose to protect the timeline, unlike the Advanced items
 | Email deliverability | Guests miss confirmations | Verify a domain early (Phase 7). The in-app status is the source of truth |
 | Scope creep | Core features left unfinished | Every phase ends demo-able. New ideas go to §11 |
 | A migration silently drops the constraint | Double bookings return without anyone noticing | Review migration SQL. The Phase 2 DB tests fail if the constraint is missing |
+| The mockup covers only the homepage | Screens drift apart visually, or get built with no design | One set of tokens and shared components, an agreed design before each phase's UI work (§13.4), and the Phase 8 design review |
 
 **Open questions for the mentor**
 
@@ -1415,3 +1456,110 @@ These are left out on purpose to protect the timeline, unlike the Advanced items
 5. Does the assignment require Google Sign-In, Google Places and email notifications? Core assumes yes because the stack names them. Any that aren't required can move to Advanced (§1.1).
 6. Should after-midnight slots be listed under the calendar date they start on (the current rule, §6.2) or under the evening they belong to? The owner's day view follows the same choice.
 7. Should we stay on Node.js 24 (Maintenance LTS, supported until April 2028) or move to Node.js 26 (Active LTS since 2026-10-28)?
+8. What is the public product name? The mockup's wordmark says Seghan, while the code and docs use Yerevan Reservations, Yerevan Tables and Yerevan Restaurant Reservation Platform.
+
+---
+
+## 13. Seghan Design Integration
+
+Seghan is the visual foundation of the app. `design-reference/seghan/` holds one exported screen, the homepage. This section explains how that one mockup becomes a full, consistent UI. The matching tasks are in Phases 3–8 of §10.
+
+### 13.1 Rules
+
+- **Read-only reference.** The app never edits, imports, bundles or serves `design-reference/seghan/`.
+- **Recreate, never copy.** `Main.dc.html`, `support.js` and `vendor/` aren't production code. We read the values from them and rebuild each screen with our own React components, TypeScript and Tailwind.
+- **Tokens, not raw values.** Colors, fonts, radii and shadows are defined once as `@theme` tokens in `client/src/index.css`. Components use those tokens, never hex values or one-off sizes.
+- **Shared components first.** Pages compose `client/src/components/`. A new visual pattern is added there, not invented inside a page.
+- **Design before build.** A screen marked *New* in §13.4 gets an agreed design before its UI work starts. That can be a new export added to the reference folder by its owner, or a short written layout using the tokens and components below.
+- **CLAUDE.md beats the mockup** on accessibility and code rules (§13.6).
+- **This plan beats the mockup on scope.** A feature shown only in the mockup adds no backend or database work (§13.5).
+
+### 13.2 Design tokens
+
+Starting values, taken from `Main.dc.html`:
+
+| Group | Roles | Values |
+|---|---|---|
+| Surfaces | page, raised surface, tinted band, dark band | `#FBFAF7`, `#FFFFFF`, `#F3F0EA`, `#17140F` |
+| Text | primary, secondary, muted | `#17140F`, `#4A453D`, `#6F6A60` |
+| Text on dark | primary, secondary | `#FBFAF7`, `#C9C2B5` |
+| Accent | default, hover | `#9E2B25`, `#85221D` |
+| Lines | soft, default, strong, form control | `#ECE8E0`, `#E4DFD6`, `#DDD8CE`, `#8A8478` |
+| Control fills | slot button, field hover | `#F1EEE8`, `#F6F4EF` |
+| Photo tones | color blocks shown when a restaurant has no photo | `#5A2E24`, `#4B2B33`, `#3A3027`, `#26363B`, `#6B5A45`, `#2A2622` |
+| Fonts | UI, display | Geist 400, 500, 600; Instrument Serif 400 and italic |
+| Type sizes | UI text, card titles, section titles, hero | 11–18 px, 20–30 px, 40–48 px, `clamp(52px, 7vw, 92px)` |
+| Spacing | scale, page width, side gutter, section padding | Tailwind's 4 px scale, 1280 px, 32 px, 72–96 px |
+| Radii | slot, button and field, media, card and search bar, hero media, dark band, pill | 8, 10, 14, 16, 20, 24, 999 px |
+| Shadows | search bar, floating card | `0 1px 2px rgba(23,20,15,.04), 0 12px 32px -16px rgba(23,20,15,.16)`, `0 24px 48px -20px rgba(23,20,15,.35)` |
+| Motion | color changes, image hover | .15–.18 s, .4–.5 s |
+
+Fonts load from Google Fonts with a `<link>` in `client/index.html`, so they need no new package.
+
+### 13.3 Shared components
+
+| Source | Components |
+|---|---|
+| In the mockup | Button (primary, accent, ghost, light), slot button, icon button, nav link, search field, photo placeholder, restaurant card, category tile, section heading, rating, site header, site footer |
+| New, needed by this plan | Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, empty state, error state, mobile menu, Tabs, Pagination, date picker, star input |
+
+The Phase 3 foundation builds what the shell and sign-in need. Later phases add the rest here, using the same tokens. None of this needs a new package: icons are small inline SVG components, and Modal uses the native `<dialog>`. Component tests would need `jsdom` and Testing Library, which aren't approved yet, so ask before adding them.
+
+### 13.4 Screens and their design status
+
+*Mockup* means the design exists. *New* means it needs an agreed design first.
+
+| Screen | Phase | Design |
+|---|---|---|
+| Site header and footer | 3 | Mockup, plus a *New* mobile menu and signed-in state |
+| Sign in | 3 | New |
+| Sign up, with the customer/owner toggle and Google button | 3 | New |
+| Not-found and error pages | 3 | New |
+| Dashboard shell, with the restaurant switcher | 4 | New |
+| Add restaurant, with Places search and prefill | 4 | New |
+| Onboarding checklist | 4 | New |
+| Profile, settings and photos | 4 | New |
+| Tables | 4 | New |
+| Opening hours weekly editor | 4 | New |
+| Blocks, with the conflict list | 4 | New |
+| Homepage | 5 | Mockup, desktop only. The phone layout needs agreeing |
+| Browse, with filters and pagination | 5 | New |
+| Restaurant page | 5 | New |
+| Booking widget: date, party size, slots, table picker | 5 | New, reusing the mockup's slot button |
+| Booking confirm step | 6 | New |
+| Booking success page | 6 | New |
+| My Reservations, with tabs and status badges | 6 | New |
+| Cancel dialog | 6 | New |
+| Owner day view, with the pending badge and actions | 6 | New |
+| Rate your visit | 7 | New |
+| Review list and rating summary | 7 | New |
+| Owner's reviews page | 7 | New |
+
+The mockup links to `Discover`, `Restaurant`, `Auth`, `Account` and `DashOverview`, but those files aren't in the folder.
+
+### 13.5 Where the mockup and this plan differ
+
+| In the mockup | In this plan | What we build |
+|---|---|---|
+| Search by date, time and guests | Restaurant search has no availability filter (§5.3) | Text search goes to Browse. Date, time and guests travel in the URL and preset the booking widget |
+| "Browse by craving" tiles such as Wine bars and Fine dining | The `Cuisine` enum has no such values | Tiles use existing `Cuisine` values and link to Browse |
+| Neighborhoods, Cascade, Saryan St | The `District` enum | Links to Browse filtered by district, using district names |
+| "Booking well this week" | No booking-rate data | Top-rated restaurants (`sort=rating`), with today's slots from the existing availability endpoint |
+| "214 restaurants tonight", "3 left" | No such figures | The published total from `meta.total`, and no scarcity count |
+| The collection, Saved places | Out of scope (§11) | Left out |
+| Language switcher | Out of scope (§11) | Left out |
+| "Walk-ins" in the For restaurants band | Out of scope (§11) | Copy reworded to features that exist |
+| Photo placeholders | Cloudinary photos, and seeded restaurants may have none | The real cover photo, or a color block from the photo tones |
+| Sample restaurants | Data comes from the API | Real data only |
+
+### 13.6 Mockup problems to fix, not copy
+
+| Problem | Measured | Fix |
+|---|---|---|
+| Search fields lose their focus ring | `.field input` sets `outline: none` | A visible focus style on the field |
+| Focus ring on the dark band | `#9E2B25` on `#17140F` is 2.47:1, and needs 3:1 | Use the light text color for focus on dark surfaces |
+| Placeholder text | `#8A8478` on white is 3.72:1, and needs 4.5:1 | Use `#6F6A60`, which is 5.4:1 |
+| Form input borders | `#E4DFD6` on white is 1.33:1, and needs 3:1 | Use `#8A8478` for real form inputs, which is 3.72:1 |
+| No navigation on phones | Below 760 px the nav and Sign in link are hidden | A mobile menu |
+| No Armenian letters or `֏` | Geist and Instrument Serif don't cover them | Add Noto Sans Armenian and Noto Serif Armenian as fallback fonts |
+| Small touch targets | Slot buttons are 34 px tall and icon buttons 36 px | At least 44 px on phones |

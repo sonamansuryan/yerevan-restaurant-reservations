@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────
+
+enum Role {
+  CUSTOMER
+  OWNER
+  ADMIN
+}
+
+enum ReservationStatus {
+  PENDING // requested by the customer; already holds the table
+  CONFIRMED // accepted by the restaurant
+  ARRIVED // guest checked in
+  NO_SHOW // guest never came; frees the table
+  CANCELLED // cancelled by either side; frees the table
+}
+
+enum CancelledBy {
+  CUSTOMER
+  RESTAURANT
+}
+
+enum District {
+  AJAPNYAK
+  ARABKIR
+  AVAN
+  DAVTASHEN
+  EREBUNI
+  KANAKER_ZEYTUN
+  KENTRON
+  MALATIA_SEBASTIA
+  NOR_NORK
+  NORK_MARASH
+  NUBARASHEN
+  SHENGAVIT
+}
+
+enum Cuisine {
+  ARMENIAN
+  GEORGIAN
+  MIDDLE_EASTERN
+  EUROPEAN
+  ITALIAN
+  ASIAN
+  FUSION
+  SEAFOOD
+  STEAKHOUSE
+  VEGETARIAN
+}
+
+enum TableZone {
+  INDOOR
+  TERRACE
+  VIP
+  BAR_COUNTER
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  phone        String?
+  passwordHash String? // null for Google-only accounts
+  googleId     String?  @unique // Google "sub" claim
+  role         Role     @default(CUSTOMER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurants   Restaurant[]
+  reservations  Reservation[]
+  reviews       Review[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique // SHA-256 of the token; the raw value only lives in the cookie
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Restaurant {
+  id                     String    @id @default(uuid())
+  ownerId                String
+  slug                   String    @unique // public URL: /restaurants/tsirani-garden
+  name                   String
+  description            String?
+  cuisines               Cuisine[]
+  district               District
+  address                String
+  phone                  String?
+  website                String?
+  priceLevel             Int       @default(2) // 1–4, shown as ֏ … ֏֏֏֏
+  googlePlaceId          String?   @unique // durable link to Google Places
+  timezone               String    @default("Asia/Yerevan")
+  slotIntervalMin        Int       @default(30) // granularity of bookable start times
+  reservationDurationMin Int       @default(120) // how long one booking holds a table
+  isPublished            Boolean   @default(false)
+  avgRating              Float     @default(0) // denormalized, recomputed on every review write
+  reviewCount            Int       @default(0)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  owner          User              @relation(fields: [ownerId], references: [id])
+  photos         RestaurantPhoto[]
+  tables         Table[]
+  openingHours   OpeningHour[]
+  blockedPeriods BlockedPeriod[]
+  reservations   Reservation[]
+  reviews        Review[]
+
+  @@index([ownerId])
+  @@index([isPublished, district])
+}
+
+model RestaurantPhoto {
+  id           String   @id @default(uuid())
+  restaurantId String
+  publicId     String   @unique // Cloudinary public_id (needed to transform/delete)
+  url          String // Cloudinary secure_url
+  isCover      Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId, sortOrder])
+}
+
+model Table {
+  id           String    @id @default(uuid())
+  restaurantId String
+  label        String // "T4", "Terrace 2"
+  capacity     Int // max guests
+  minCapacity  Int       @default(1) // don't seat 2 guests at an 8-top
+  zone         TableZone @default(INDOOR)
+  isActive     Boolean   @default(true) // soft delete keeps reservation history intact
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  restaurant     Restaurant      @relation(fields: [restaurantId], references: [id])
+  reservations   Reservation[]
+  blockedPeriods BlockedPeriod[]
+
+  @@unique([restaurantId, label])
+}
+
+model OpeningHour {
+  id           String @id @default(uuid())
+  restaurantId String
+  dayOfWeek    Int // 0 = Sunday … 6 = Saturday (the service day)
+  opensAt      Int // minutes after midnight: 720 = 12:00
+  closesAt     Int // may exceed 1440 for after-midnight closing: 1560 = 02:00
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, dayOfWeek, opensAt])
+}
+
+model BlockedPeriod {
+  id           String   @id @default(uuid())
+  restaurantId String
+  tableId      String? // null = the whole restaurant (holiday, private event)
+  startsAt     DateTime @db.Timestamptz(3)
+  endsAt       DateTime @db.Timestamptz(3)
+  reason       String?
+  createdAt    DateTime @default(now())
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  table      Table?     @relation(fields: [tableId], references: [id], onDelete: Restrict)
+
+  @@index([restaurantId, startsAt])
+}
+
+model Reservation {
+  id                 String            @id @default(uuid())
+  restaurantId       String // copied from the locked Table row, never from the request
+  tableId            String
+  userId             String
+  partySize          Int
+  startsAt           DateTime          @db.Timestamptz(3)
+  endsAt             DateTime          @db.Timestamptz(3) // startsAt + reservationDurationMin
+  status             ReservationStatus @default(PENDING)
+  specialRequests    String?
+  cancelledBy        CancelledBy?
+  cancellationReason String?
+  cancelledAt        DateTime?         @db.Timestamptz(3)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  table      Table      @relation(fields: [tableId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+  review     Review?
+
+  @@index([restaurantId, startsAt])
+  @@index([tableId, startsAt])
+  @@index([userId, startsAt])
+}
+
+model Review {
+  id            String   @id @default(uuid())
+  reservationId String   @unique // one review per visit = verified reviews only
+  restaurantId  String
+  userId        String
+  rating        Int // 1–5
+  comment       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+  restaurant  Restaurant  @relation(fields: [restaurantId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+
+  @@index([restaurantId, createdAt])
+}

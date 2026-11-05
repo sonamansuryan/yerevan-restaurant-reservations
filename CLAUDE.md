@@ -103,17 +103,17 @@ Older tutorials and model training data often get these wrong. The notes on the 
 │       └── types/api.ts      # API response types (mirror the server's DTOs)
 └── server/                   # Express REST API
     ├── prisma7.config.ts     # Prisma config: DB URL, migrations path
-    ├── prisma/               # schema.prisma · migrations/ · seed.ts
+    ├── prisma/               # schema.prisma · migrations/ · seed.ts · seed-data.ts
     ├── src/
     │   ├── index.ts          # starts the HTTP server
     │   ├── app.ts            # builds the Express app (tests import this)
-    │   ├── config/env.ts     # Zod-validated env, the ONLY place that reads process.env
+    │   ├── config/env.ts     # Zod-validated env, the ONLY place in the app that reads process.env
     │   ├── lib/              # prisma.ts, errors.ts, db-errors.ts, logger.ts, time.ts
     │   ├── middleware/       # requireAuth, requireRole, requireRestaurantOwner, validate, errorHandler
     │   ├── modules/<name>/   # <name>.routes.ts · .controller.ts · .service.ts · .schemas.ts (· .rules.ts for pure logic)
     │   ├── integrations/     # google-places.ts · cloudinary.ts · email/ (Resend + templates)
     │   └── generated/prisma/ # Prisma client output (gitignored)
-    └── tests/                # Vitest + Supertest integration tests (real Postgres)
+    └── tests/                # unit tests; integration/ holds the tests that use real Postgres
 ```
 
 Server modules: `auth`, `restaurants`, `availability`, `reservations`, `reviews`, `tables`, `opening-hours`, `blocks`, `photos`, `places`.
@@ -139,6 +139,7 @@ npm run typecheck
 npm run lint
 npm test                                      # all tests; server tests need the Docker DB running
 npm test -w server -- reservations            # only test files matching "reservations"
+npm test -w server -- --project unit          # only the tests that need no database
 
 # Database (Prisma, via the server workspace)
 npm run db:migrate -w server -- --name <change>                # schema change → new migration, applied
@@ -176,7 +177,7 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 
 ### Backend
 - **Layering:** **routes** (path, middleware, Zod validation) → **controller** (HTTP in/out) → **service** (business logic + Prisma). Services never touch `req`/`res`, and controllers never call Prisma.
-- **Errors:** throw `AppError` subclasses: `ValidationError` 400, `UnauthorizedError` 401, `ForbiddenError` 403, `NotFoundError` 404, `ConflictError` 409. The error middleware renders `{ "error": { "code": "SLOT_TAKEN", "message": "…" } }`. Codes use `SCREAMING_SNAKE_CASE`.
+- **Errors:** throw `AppError` subclasses: `ValidationError` 400, `UnauthorizedError` 401, `ForbiddenError` 403, `NotFoundError` 404, `ConflictError` 409, `ServiceUnavailableError` 503. The error middleware renders `{ "error": { "code": "SLOT_TAKEN", "message": "…" } }`. Codes use `SCREAMING_SNAKE_CASE`.
 - **Pagination:** list endpoints take `?page=&pageSize=` and return `{ data, meta: { page, pageSize, total } }`.
 - **Raw SQL:** quote identifiers (`"Table"`, `"tableId"`). Prisma keeps model and field names as-is, and `Table` is a reserved word. Use tagged `$queryRaw` templates only. Never pass user input to `$queryRawUnsafe`.
 - **No network calls (email, Cloudinary, Google) inside a DB transaction.** Emails go out after commit. A failed email is logged and never fails the request.
@@ -189,7 +190,7 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 - Status changes: take the same table lock, then compare-and-set. Call `updateMany` with the expected current status in `where`, then check `count`.
 - In Core, statuses only move forward, so only a new booking can occupy a table. `NO_SHOW` → `ARRIVED` is Advanced and must repeat the booking's block and overlap checks.
 - `ACTIVE_STATUSES` (`PENDING`, `CONFIRMED`, `ARRIVED`) must match the constraint's `WHERE` clause. A test enforces this.
-- Every change to booking, status, block or table logic must keep `server/tests/reservations.concurrency.test.ts` green.
+- Every change to booking, status, block or table logic must keep `server/tests/integration/reservations.concurrency.test.ts` green.
 
 ### Time and dates
 - Store instants in UTC (`timestamptz` for reservation and block times). The API sends ISO-8601 UTC strings.
@@ -203,7 +204,7 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 - All HTTP goes through `client/src/lib/api.ts`. It sends `credentials: "include"`, returns typed responses, and on a `401` refreshes once and retries.
 - Forms use React Hook Form with the Zod resolver, and every field has a visible label and error message.
 - Style with Tailwind utilities, mobile-first. Extract a component instead of repeating long class lists. Use inline styles only for dynamic values.
-- **Visual design:** `design-reference/seghan/` is the read-only Seghan mockup, the visual reference for frontend work in later phases (not Phase 1). Read its `README.md` and `Main.dc.html`, then recreate the colors, type, spacing and components with our own React components and Tailwind `@theme` tokens. Never copy its exported code or edit the folder. If the mockup conflicts with these guidelines, such as visible focus, the guidelines win.
+- **Visual design:** `design-reference/seghan/` is the read-only Seghan mockup, the visual foundation for all frontend work from Phase 3 on. PROJECT_PLAN.md §13 has the rules, tokens, shared components and the list of screens that still need designs. Read the mockup's `README.md` and `Main.dc.html`, then recreate the colors, type, spacing and components with our own React components and Tailwind `@theme` tokens. Never copy its exported code or edit the folder. If the mockup conflicts with these guidelines, such as visible focus, the guidelines win.
 - Cover the accessibility basics:
   - semantic HTML
   - a label on every input
@@ -220,7 +221,8 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 - Every new query pattern on `Reservation` gets a supporting index. Check with `EXPLAIN` when unsure.
 
 ### Testing
-- Vitest everywhere. Server integration tests run Supertest against `app.ts` with a real Postgres test database (`yerevan_test`). Don't mock Prisma for reservation, availability or auth logic.
+- Vitest everywhere. Server integration tests live in `server/tests/integration/` and run Supertest against `app.ts` with a real Postgres test database (`yerevan_test`). Don't mock Prisma for reservation, availability or auth logic.
+- Only that folder gets a real database, through `TEST_DATABASE_URL` in `server/.env`. Its guards refuse any database but `yerevan_test`, which is emptied on every run, so never keep anything there. Tests elsewhere stay on fake credentials.
 - Pure logic (slot generation, status transitions, time helpers) gets thorough unit tests, including closed days, split shifts and after-midnight closing. A test checks that every slot `generateSlots()` returns passes `assertBookable()`.
 - Race tests start the competing requests together, repeat each race, and assert the final database state: no overlap, no booking inside a block, one winner per status race. PROJECT_PLAN.md §7.9 lists the scenarios, and Phase 8 re-runs them all.
 - Every new endpoint gets at least three tests: the happy path, a validation failure, and an auth/ownership failure.
