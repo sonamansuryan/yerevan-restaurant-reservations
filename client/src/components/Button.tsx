@@ -1,4 +1,5 @@
 import type { ComponentProps, MouseEvent, ReactElement } from "react";
+import { Link } from "react-router";
 
 import { ArrowRightIcon } from "@/components/icons";
 import { cx } from "@/lib/cx";
@@ -13,6 +14,10 @@ interface ButtonProps extends ComponentProps<"button"> {
   loading?: boolean;
   /** Adds an arrow that nudges on hover. Meant for the link variant. */
   arrow?: boolean;
+}
+
+interface LinkButtonProps extends ComponentProps<typeof Link> {
+  variant?: ButtonVariant;
 }
 
 // Only the listed properties animate. `transition-colors` would also animate outline-color,
@@ -122,4 +127,13 @@ export function Button({
       )}
     </button>
   );
+}
+
+/** Button's look on a link, for actions that open another page. */
+export function LinkButton({
+  variant = "primary",
+  className,
+  ...rest
+}: LinkButtonProps): ReactElement {
+  return <Link {...rest} className={cx(buttonClass(variant, "default", false), className)} />;
 }

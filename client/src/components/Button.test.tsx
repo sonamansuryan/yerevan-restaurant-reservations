@@ -2,9 +2,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { FormEvent } from "react";
+import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { Button } from "@/components/Button";
+import { Button, LinkButton } from "@/components/Button";
 import type { ButtonVariant } from "@/components/Button";
 
 afterEach(cleanup);
@@ -185,5 +186,75 @@ describe("loading", () => {
     await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "{Enter}");
 
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+});
+
+describe("LinkButton", () => {
+  test("it's a real link, so it can be opened in a new tab", () => {
+    render(
+      <MemoryRouter>
+        <LinkButton to="/restaurants">Reserve a table</LinkButton>
+      </MemoryRouter>,
+    );
+
+    const link = screen.getByRole("link", { name: "Reserve a table" });
+
+    expect(link.getAttribute("href")).toBe("/restaurants");
+  });
+
+  test("it opens the page without a full reload", async () => {
+    render(
+      <MemoryRouter>
+        <Routes>
+          <Route path="/" element={<LinkButton to="/next">Go</LinkButton>} />
+          <Route path="/next" element={<p>The next page</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await userEvent.click(screen.getByRole("link", { name: "Go" }));
+
+    expect(screen.getByText("The next page")).toBeDefined();
+  });
+
+  test.each<ButtonVariant>(["primary", "accent", "ghost", "light", "link"])(
+    "the %s variant looks exactly like the same Button",
+    (variant) => {
+      render(
+        <MemoryRouter>
+          <Button variant={variant}>A button</Button>
+          <LinkButton to="/" variant={variant}>
+            A link
+          </LinkButton>
+        </MemoryRouter>,
+      );
+
+      const button = screen.getByRole("button", { name: "A button" });
+      const link = screen.getByRole("link", { name: "A link" });
+
+      expect(link.className).toBe(button.className);
+    },
+  );
+
+  test("it's primary unless told otherwise", () => {
+    render(
+      <MemoryRouter>
+        <LinkButton to="/">Go</LinkButton>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: "Go" }).className).toContain("bg-ink");
+  });
+
+  test("it can take extra classes, such as a full width", () => {
+    render(
+      <MemoryRouter>
+        <LinkButton to="/" className="w-full">
+          Go
+        </LinkButton>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: "Go" }).className).toContain("w-full");
   });
 });

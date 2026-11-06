@@ -126,6 +126,9 @@
   --text-logo: 1.875rem; /* 30px */
   --text-logo--line-height: 1;
   --text-logo--letter-spacing: -0.01em;
+  --text-masthead: 2.125rem; /* 34px, the logo in the desktop header */
+  --text-masthead--line-height: 1;
+  --text-masthead--letter-spacing: -0.01em;
   --text-section: 2.5rem; /* 40px */
   --text-section--line-height: 1.05;
   --text-section--letter-spacing: -0.01em;
@@ -147,7 +150,9 @@
    */
   --container-page: 84rem; /* 1344px */
   --spacing-gutter: 2rem; /* 32px */
-  --spacing-header: 4.5rem; /* 72px */
+  --spacing-gutter-sm: 1.25rem; /* 20px, on phones */
+  --spacing-header: 5.25rem; /* 84px */
+  --spacing-header-sm: 4rem; /* 64px, on phones */
   --spacing-section-sm: 4.5rem; /* 72px */
   --spacing-section-md: 5.5rem; /* 88px */
   --spacing-section-lg: 6rem; /* 96px */
@@ -347,10 +352,67 @@
     }
   }
 
+  /*
+   * The dots between a name and its value on a printed menu. A background gives round, evenly
+   * spaced dots, which a dotted border can't. It sits on the text's baseline inside a flex row.
+   */
+  .menu-leader {
+    flex: 1;
+    min-width: 1rem;
+    height: 0.125rem;
+    background-image: radial-gradient(
+      circle at center,
+      var(--color-line-control) 0.7px,
+      transparent 1px
+    );
+    background-size: 0.375rem 0.125rem;
+    background-repeat: repeat-x;
+  }
+
+  /* The mobile menu fades in over the page, then its list settles into place. */
+  .menu-sheet {
+    opacity: 0;
+    transition:
+      opacity var(--transition-duration-modal) var(--ease-tile),
+      overlay var(--transition-duration-modal) allow-discrete,
+      display var(--transition-duration-modal) allow-discrete;
+  }
+
+  .menu-sheet[open] {
+    opacity: 1;
+  }
+
+  @starting-style {
+    .menu-sheet[open] {
+      opacity: 0;
+    }
+  }
+
+  .menu-sheet::backdrop {
+    background-color: transparent;
+  }
+
+  .menu-sheet-list {
+    translate: 0 0.5rem;
+    transition: translate var(--transition-duration-modal) var(--ease-tile);
+  }
+
+  .menu-sheet[open] .menu-sheet-list {
+    translate: 0 0;
+  }
+
+  @starting-style {
+    .menu-sheet[open] .menu-sheet-list {
+      translate: 0 0.5rem;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .check-mark path,
     .modal-sheet,
-    .modal-sheet::backdrop {
+    .modal-sheet::backdrop,
+    .menu-sheet,
+    .menu-sheet-list {
       transition: none;
     }
   }

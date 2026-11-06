@@ -73,7 +73,7 @@ The public name is **Seghan**. It goes on everything a customer or restaurant ow
 - **Project title:** "Yerevan Restaurant Reservation Platform" describes the internship project. Users don't see it.
 - **Retired names:** "Yerevan Reservations" and "Yerevan Tables" are no longer used.
 - **The city:** Yerevan in copy and seed data, and the `Asia/Yerevan` time zone, aren't product names, so they stay.
-- **Language:** the v1 UI has one language (§11), so the name is written in Latin letters only.
+- **Language:** the v1 UI has one language (§11), so the name is written in Latin letters only. The one exception is the footer, which sets the Armenian word սեղան once as a brand detail (§13.9).
 - **Set outside this repository:** the app name on Google's sign-in consent screen (Phase 3), and the email sender name and domain (Phase 7).
 
 ---
@@ -1242,7 +1242,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 - [x] Confirm the public product name (§12, question 8)
 - [x] Design tokens: colors, fonts, type sizes, spacing, radii and shadows as Tailwind `@theme` tokens in `client/src/index.css`, including the fixes in §13.6 (§13.2)
 - [x] Core shared components in `client/src/components/`: Button, Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, and empty and error states (§13.3)
-- [ ] App shell: site header with a mobile menu, site footer, page container, and Seghan-styled not-found and error pages. Replace the old name in `client/index.html` and `HomePage.tsx` (§1.2)
+- [x] App shell: site header with a mobile menu, site footer, page container, and Seghan-styled not-found and error pages. Replace the old name in `client/index.html` and `HomePage.tsx` (§1.2)
 - [ ] A dev-only `/design` page that shows every token and shared component, so the foundation can be reviewed before real screens use it
 - [ ] Agree the designs for the sign-in and sign-up screens (§13.4)
 
@@ -1514,8 +1514,8 @@ Current values. They started from `Main.dc.html`, and can change with approval:
 | Backdrop (new) | behind an open modal | `rgb(23 20 15 / .45)` |
 | Photo tones | color blocks shown when a restaurant has no photo | `#5A2E24`, `#4B2B33`, `#3A3027`, `#26363B`, `#6B5A45`, `#2A2622` |
 | Fonts | UI, display, fallbacks | Instrument Sans 400, 500, 600; Instrument Serif 400 and italic; Geist 400, 500, 600 for Cyrillic and the protected designs (§13.7); Noto Sans Armenian 400, 500, 600 and Noto Serif Armenian 400 (§13.6) |
-| Type sizes | UI text, card titles, section titles, hero | 11–18 px, 20–30 px, 40–48 px, `clamp(52px, 7vw, 92px)` |
-| Spacing | scale, page content width, side gutter, section padding | Tailwind's 4 px scale, 1280 px, 32 px, 72–96 px |
+| Type sizes | UI text, card titles, header logo, section titles, hero | 11–18 px, 20–30 px, 34 px, 40–48 px, `clamp(52px, 7vw, 92px)` |
+| Spacing | scale, page content width, side gutter, header height, section padding | Tailwind's 4 px scale, 1280 px, 32 px (20 px on phones), 84 px (64 px on phones), 72–96 px |
 | Radii | checkbox (new), slot, button, search button, media, card and search bar, hero media, dark band, pill | 3, 6, 6, 6, 8, 10, 12, 16, 999 px |
 | Shadows | search bar, floating card | `0 1px 2px rgba(23,20,15,.04), 0 12px 32px -16px rgba(23,20,15,.16)`, `0 24px 48px -20px rgba(23,20,15,.35)` |
 | Motion | color changes, image hover, tile easing | .15–.18 s, .4–.5 s, `cubic-bezier(.2, .7, .2, 1)` |
@@ -1601,6 +1601,14 @@ The mockup links to `Discover`, `Restaurant`, `Auth`, `Account` and `DashOvervie
 | Boxed forms feel heavy | A strong outline around every field | Ruled lines, like a reservation book, with text aligned to the labels |
 | Primary hover is almost invisible | `#2E2922` on `#17140F` | Primary warms to wine on hover |
 | The photo glow is decoration | A radial gradient over every color block | Flat color blocks |
+| A logo on the left reads like a SaaS app | Logo, links and button follow the default app layout | A centered nameplate, with links to its left and actions to its right |
+| Header links look like an app bar | 14 px sans | 20 px serif links, with the logo's dot marking the current page |
+| The header line is faint, and stops short of the scrollbar | One 1 px full-width line | A double rule inside the page margins, which opens and closes every page |
+| Two header links open the same page | Discover and Neighborhoods both go to Browse | Neighborhoods leaves the header, and districts move to the footer and mobile menu |
+| The header sits tight against the top of the window | 72 px tall | 84 px tall, and 64 px on phones |
+| Side margins are wide on phones | 32 px on a 360 px screen | 20 px on phones |
+| The footer has no voice | A logo and a tagline | A host's sign-off: "See you at the table." |
+| The tab shows Vite's icon | `client/public/favicon.svg` came from the template | The logo's wine dot, on paper so it shows on dark tab bars |
 
 ### 13.7 Protected designs
 
@@ -1646,8 +1654,8 @@ Ideas that could make Seghan distinctive and memorable. They're proposals, not d
 
 | Idea | Screen | Phase | What it is |
 |---|---|---|---|
-| The word for table | Site footer or not-found page | 3 | սեղան, the Armenian word for table, set once in serif as a quiet mark of where Seghan comes from. §1.2 says Latin letters only, so that rule would have to change first |
-| Menu lines | Restaurant page, table picker | 5 | A dotted line joins a name to its value, as on a printed menu: `Monday ····· 12:00–23:00`. Free tables group by zone, like menu sections: `T4 ····· 2–4 seats` under Terrace |
+| The word for table | Site footer | 3 | Approved and built. սեղան, the Armenian word for table, is set once in serif in the footer's closing row, as a quiet mark of where Seghan comes from (§1.2) |
+| Menu lines | Mobile menu, not-found page, restaurant page, table picker | 3, 5 | A dotted line joins a name to its value, as on a printed menu: `Monday ····· 12:00–23:00`. Free tables group by zone, like menu sections: `T4 ····· 2–4 seats` under Terrace. Approved and built for the mobile menu and not-found page. The restaurant page and table picker are still to be shown |
 | Times by course | Booking widget | 5 | Times are grouped like a menu's courses, such as Lunch and Dinner, instead of one long grid. An "After midnight" group also explains the 00:00 and 00:30 slots that Friday's late service adds to Saturday's list (§6.2) |
 | The menu cover | Restaurant card, restaurant page | 5 | A restaurant with no photo shows its name in large serif on a photo tone, like the cover of a menu, instead of an empty color block |
 | The read-back | Booking confirm step | 6 | One serif sentence repeats the booking before it's sent, as a host does on the phone: "A table for four on Friday at 20:00, on the terrace." It also helps people catch a mistake |
