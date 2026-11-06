@@ -6,11 +6,11 @@ import { prisma } from "../../lib/prisma.ts";
 import type { LoginInput, RegisterInput } from "./auth.schemas.ts";
 
 // Everything about a user that may leave the server. The password hash is never one of these.
-const publicFields = { id: true, email: true, name: true, phone: true, role: true } as const;
+export const publicFields = { id: true, email: true, name: true, phone: true, role: true } as const;
 
 export type PublicUser = Prisma.UserGetPayload<{ select: typeof publicFields }>;
 
-function toPublicUser({ id, email, name, phone, role }: PublicUser): PublicUser {
+export function toPublicUser({ id, email, name, phone, role }: PublicUser): PublicUser {
   return { id, email, name, phone, role };
 }
 
@@ -45,6 +45,16 @@ export async function verifyCredentials({ email, password }: LoginInput): Promis
 
   const matches = await verifyPassword(user?.passwordHash, password);
   if (!user || !matches) throw new UnauthorizedError("INVALID_CREDENTIALS");
+
+  return toPublicUser(user);
+}
+
+/** The signed-in person's current details, which may be newer than their access token. */
+export async function getCurrentUser(id: string): Promise<PublicUser> {
+  const user = await prisma.user.findUnique({ where: { id }, select: publicFields });
+
+  // An access token can outlive its account by up to 15 minutes.
+  if (!user) throw new UnauthorizedError();
 
   return toPublicUser(user);
 }

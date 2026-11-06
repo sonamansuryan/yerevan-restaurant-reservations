@@ -1,14 +1,20 @@
-// Proves that passwords and hashes reach neither a reply nor a log line. This runs the real app
-// with the real log serializers, writing to memory instead of the screen. Prisma is faked only to
-// make it fail on demand, because a real failure can't be ordered. The auth logic itself is tested
-// against real Postgres in integration/auth.test.ts.
+// Proves that passwords, hashes and tokens reach neither a reply nor a log line. This runs the real
+// app with the real log serializers, writing to memory instead of the screen. Prisma is faked only
+// to make it fail on demand, because a real failure can't be ordered. The auth logic itself is
+// tested against real Postgres in integration/auth.test.ts and integration/sessions.test.ts.
 import argon2 from "argon2";
 import request from "supertest";
 import type { Response } from "supertest";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { app } from "../src/app.ts";
+import { hashPassword } from "../src/lib/password.ts";
 import { prisma } from "../src/lib/prisma.ts";
+import {
+  hashRefreshToken,
+  newRefreshToken,
+  signAccessToken,
+} from "../src/modules/auth/token.service.ts";
 
 const { lines } = vi.hoisted(() => ({ lines: [] as string[] }));
 
@@ -19,7 +25,16 @@ vi.mock("../src/lib/logger.ts", async (importOriginal) => {
 });
 
 vi.mock("../src/lib/prisma.ts", () => ({
-  prisma: { user: { create: vi.fn(), findUnique: vi.fn() } },
+  prisma: {
+    user: { create: vi.fn(), findUnique: vi.fn() },
+    refreshToken: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      updateMany: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    $transaction: vi.fn(),
+  },
   isDatabaseReachable: vi.fn(),
 }));
 
@@ -66,6 +81,11 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.mocked(prisma.user.create).mockReset();
   vi.mocked(prisma.user.findUnique).mockReset();
+  vi.mocked(prisma.refreshToken.create).mockReset();
+  vi.mocked(prisma.refreshToken.findUnique).mockReset();
+  vi.mocked(prisma.refreshToken.updateMany).mockReset();
+  vi.mocked(prisma.refreshToken.deleteMany).mockReset();
+  vi.mocked(prisma.$transaction).mockReset();
 });
 
 describe("a request the server can't read", () => {
@@ -234,6 +254,210 @@ describe("an unexpected server error", () => {
     const logged = loggedError();
     expect(logged).toMatchObject({ type: "TypeError", code: "P2025" });
     expect(String(logged?.stack)).toContain("sensitive-data.test.ts");
+  });
+});
+
+describe("session tokens", () => {
+  const user = {
+    id: "user-1",
+    email: "ani@example.com",
+    name: "Ani",
+    phone: null,
+    role: "CUSTOMER" as const,
+  };
+  const safeReply = {
+    error: { code: "INTERNAL_ERROR", message: "Something went wrong. Please try again." },
+  };
+
+  function cookieValue(reply: Response, name: string): string {
+    const lines = reply.headers["set-cookie"] as unknown as string[] | undefined;
+    const line = lines?.find((value) => value.startsWith(`${name}=`));
+    return line?.split(";")[0]?.slice(name.length + 1) ?? "";
+  }
+
+  /** Like a real Prisma error, this repeats what it was given, in its text and its fields. */
+  function errorQuoting(...secrets: string[]): Error {
+    return Object.assign(new Error(`Invalid call: ${secrets.join(" ")}`), {
+      meta: { secrets },
+      cause: new Error(secrets.join(" ")),
+    });
+  }
+
+  /** Waits for the request's log line, then searches the JSON reply and everything logged. */
+  async function expectHidden(reply: Response, secrets: string[]): Promise<void> {
+    await vi.waitFor(() => expect(lines.length).toBeGreaterThan(0));
+
+    for (const secret of secrets) {
+      expect(secret.length).toBeGreaterThan(0);
+      for (const text of [reply.text, ...lines]) expect(text).not.toContain(secret);
+    }
+  }
+
+  function storedToken(extra: object = {}): never {
+    return {
+      id: "token-1",
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 60_000),
+      revokedAt: null,
+      user,
+      ...extra,
+    } as never;
+  }
+
+  test("signing in logs neither token, and the JSON holds neither", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      ...user,
+      passwordHash: await hashPassword(PASSWORD),
+    } as never);
+
+    const reply = await request(app).post("/api/auth/login").send(credentials);
+
+    expect(reply.status).toBe(200);
+    const refresh = cookieValue(reply, "refresh_token");
+    await expectHidden(reply, [
+      cookieValue(reply, "access_token"),
+      refresh,
+      hashRefreshToken(refresh),
+      PASSWORD,
+    ]);
+  });
+
+  test("a signed-in request logs nothing from its cookie", async () => {
+    const access = await signAccessToken(user);
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(user as never);
+
+    const reply = await request(app).get("/api/me").set("Cookie", `access_token=${access}`);
+
+    expect(reply.status).toBe(200);
+    await expectHidden(reply, [access]);
+  });
+
+  test("a refresh logs neither the old tokens nor the new ones", async () => {
+    const refresh = newRefreshToken();
+    vi.mocked(prisma.refreshToken.findUnique).mockResolvedValueOnce(storedToken());
+    vi.mocked(prisma.$transaction).mockImplementationOnce(((work: (tx: unknown) => unknown) =>
+      work(prisma)) as never);
+    vi.mocked(prisma.refreshToken.updateMany).mockResolvedValueOnce({ count: 1 } as never);
+
+    const reply = await request(app)
+      .post("/api/auth/refresh")
+      .set("Cookie", `refresh_token=${refresh}`);
+
+    expect(reply.status).toBe(200);
+    await expectHidden(reply, [
+      refresh,
+      hashRefreshToken(refresh),
+      cookieValue(reply, "refresh_token"),
+      cookieValue(reply, "access_token"),
+    ]);
+  });
+
+  test("a logout logs nothing from its cookie", async () => {
+    const refresh = newRefreshToken();
+    vi.mocked(prisma.refreshToken.findUnique).mockResolvedValueOnce(storedToken());
+
+    const reply = await request(app)
+      .post("/api/auth/logout")
+      .set("Cookie", `refresh_token=${refresh}`);
+
+    expect(reply.status).toBe(204);
+    await expectHidden(reply, [refresh, hashRefreshToken(refresh)]);
+  });
+
+  test("a rejected access token is neither repeated nor logged as a bug", async () => {
+    const forged = `${await signAccessToken(user)}tampered`;
+
+    const reply = await request(app).get("/api/me").set("Cookie", `access_token=${forged}`);
+
+    expect(reply.status).toBe(401);
+    await expectHidden(reply, [forged]);
+    expect(loggedError()).toBeUndefined();
+  });
+
+  test("an expired refresh token is neither repeated nor logged as a bug", async () => {
+    const refresh = newRefreshToken();
+    vi.mocked(prisma.refreshToken.findUnique).mockResolvedValueOnce(
+      storedToken({ expiresAt: new Date(Date.now() - 1000) }),
+    );
+
+    const reply = await request(app)
+      .post("/api/auth/refresh")
+      .set("Cookie", `refresh_token=${refresh}`);
+
+    expect(reply.status).toBe(401);
+    await expectHidden(reply, [refresh, hashRefreshToken(refresh)]);
+    expect(loggedError()).toBeUndefined();
+  });
+
+  test("a failure while refreshing gives a generic reply and logs no token", async () => {
+    const refresh = newRefreshToken();
+    const hash = hashRefreshToken(refresh);
+    vi.mocked(prisma.refreshToken.findUnique).mockRejectedValueOnce(errorQuoting(refresh, hash));
+
+    const reply = await request(app)
+      .post("/api/auth/refresh")
+      .set("Cookie", `refresh_token=${refresh}`);
+
+    expect(reply.status).toBe(500);
+    expect(reply.body).toEqual(safeReply);
+    await expectHidden(reply, [refresh, hash]);
+    expect(loggedError()).toMatchObject({ type: "Error" });
+  });
+
+  test("a failure during rotation gives a generic reply and sets no cookies", async () => {
+    const refresh = newRefreshToken();
+    const hash = hashRefreshToken(refresh);
+    vi.mocked(prisma.refreshToken.findUnique).mockResolvedValueOnce(storedToken());
+    vi.mocked(prisma.$transaction).mockRejectedValueOnce(errorQuoting(refresh, hash));
+
+    const reply = await request(app)
+      .post("/api/auth/refresh")
+      .set("Cookie", `refresh_token=${refresh}`);
+
+    expect(reply.status).toBe(500);
+    expect(reply.body).toEqual(safeReply);
+    expect(reply.headers["set-cookie"]).toBeUndefined();
+    await expectHidden(reply, [refresh, hash]);
+  });
+
+  test("a failure while logging out gives a generic reply and logs no token", async () => {
+    const refresh = newRefreshToken();
+    const hash = hashRefreshToken(refresh);
+    vi.mocked(prisma.refreshToken.findUnique).mockRejectedValueOnce(errorQuoting(refresh, hash));
+
+    const reply = await request(app)
+      .post("/api/auth/logout")
+      .set("Cookie", `refresh_token=${refresh}`);
+
+    expect(reply.status).toBe(500);
+    expect(reply.body).toEqual(safeReply);
+    await expectHidden(reply, [refresh, hash]);
+  });
+
+  test("a failure in /api/me gives a generic reply and logs no token", async () => {
+    const access = await signAccessToken(user);
+    vi.mocked(prisma.user.findUnique).mockRejectedValueOnce(errorQuoting(access));
+
+    const reply = await request(app).get("/api/me").set("Cookie", `access_token=${access}`);
+
+    expect(reply.status).toBe(500);
+    expect(reply.body).toEqual(safeReply);
+    await expectHidden(reply, [access]);
+  });
+
+  test("a failure while starting a session sets no cookies", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      ...user,
+      passwordHash: await hashPassword(PASSWORD),
+    } as never);
+    vi.mocked(prisma.refreshToken.create).mockRejectedValueOnce(errorQuoting(PASSWORD));
+
+    const reply = await request(app).post("/api/auth/login").send(credentials);
+
+    expect(reply.status).toBe(500);
+    expect(reply.body).toEqual(safeReply);
+    expect(reply.headers["set-cookie"]).toBeUndefined();
+    await expectHidden(reply, [PASSWORD]);
   });
 });
 

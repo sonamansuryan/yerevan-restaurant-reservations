@@ -534,14 +534,14 @@ model PasswordResetToken {
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/api/auth/register` | — | Sign up with email and password. `role` is `CUSTOMER` or `OWNER`, default `CUSTOMER`. Returns `201` and `{ user }`, or `409 EMAIL_TAKEN` |
-| POST | `/api/auth/login` | — | Sign in. Returns `{ user }`, or `401 INVALID_CREDENTIALS`. Sets the `access_token` and `refresh_token` cookies, from the token service task on |
+| POST | `/api/auth/register` | — | Sign up with email and password. `role` is `CUSTOMER` or `OWNER`, default `CUSTOMER`. Returns `201` and `{ user }`, or `409 EMAIL_TAKEN`. Sets the same cookies as login |
+| POST | `/api/auth/login` | — | Sign in. Returns `{ user }`, or `401 INVALID_CREDENTIALS`. Sets the `access_token` and `refresh_token` cookies |
 | POST | `/api/auth/google` | — | `{ credential, role? }`: verifies a Google ID token, then signs in or signs up |
-| POST | `/api/auth/refresh` | refresh cookie | Rotates the refresh token and issues a new access token |
-| POST | `/api/auth/logout` | refresh cookie | Revokes the refresh token and clears the cookies |
+| POST | `/api/auth/refresh` | refresh cookie | Rotates the refresh token and issues a new access token. Returns `{ user }`, or `401 SESSION_EXPIRED`. A token retired in the last 10 seconds gets a new access token only (§8.2) |
+| POST | `/api/auth/logout` | refresh cookie | Deletes the refresh token and clears the cookies. Returns `204`, even if already signed out |
 | POST | `/api/auth/forgot-password` | — | Phase 7. `{ email }`: emails a reset link if the account exists. The reply is always the same (§8.2) |
 | POST | `/api/auth/reset-password` | — | Phase 7. `{ token, password }`: sets the new password and revokes every refresh token. `400 INVALID_RESET_TOKEN` if the token is unknown, expired or used |
-| GET | `/api/me` | User | Current user |
+| GET | `/api/me` | User | Current user, as `{ user }`. `401 UNAUTHORIZED` if the access token is missing, invalid or expired |
 | PATCH | `/api/me` | User | Update name or phone |
 
 ### 5.3 Public catalog
@@ -1075,14 +1075,24 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
   - **The rule:** an email match alone never links accounts or signs anyone in. Linking needs proof of control of the existing account, such as signing in with its password.
   - **Until Phase 7:** the address's real owner can't sign up while it's taken (`409 EMAIL_TAKEN`). Password recovery lets them take the account back, because only they receive the link.
 - **Refresh:** `POST /api/auth/refresh` hashes the cookie value and looks it up:
-  - valid → revoke it and issue a new pair
-  - unknown or expired → `401`
-  - **already revoked**, meaning a stolen token is being replayed → revoke *all* of that user's refresh tokens, then `401`
+  - valid → retire it with `revokedAt` and issue a new pair. A compare-and-set in a transaction makes sure exactly one request wins
+  - retired less than 10 seconds ago → a new access token only (see Grace period)
+  - **retired longer ago**, meaning a stolen token may be being replayed → revoke *all* of that user's refresh tokens, then `401`. Until the reuse detection task, this is a plain `401`
+  - unknown, expired or malformed → `401`
+
+  A failed refresh never clears cookies, because a late reply could otherwise wipe the newer token another tab just received.
+- **Grace period (10 seconds):** browser tabs share cookies, so two tabs can refresh at once, and the second presents a token the first retired a moment earlier. That's normal, not theft. Treating it as theft would sign someone out of every device for having two tabs open.
+  - **What it allows:** a token retired in the last 10 seconds gets a new access token. The browser keeps the refresh token the first request received.
+  - **What it never allows:** a new refresh token, a longer window, or any use after logout. A late request doesn't move `revokedAt`, so it can't extend the window, and logout closes it.
+  - **The trade-off:** someone with a stolen copy who uses it within 10 seconds of the real user's refresh gets about 15 minutes of access, and it isn't flagged. They get no lasting session. 10 seconds covers parallel tabs and slow networks, and keeps that exposure small.
+  - **Requests later than that:** a request in flight for 10 seconds or more looks exactly like a replay, so it gets a `401`. Nothing else changes today, and the newer token keeps working. Browsers attach cookies when a request is sent, so a tab that was asleep or offline sends the newest token and isn't affected.
+  - **Lost replies:** if a refresh reply never arrives, the browser keeps the old token, and the person signs in again once the window has passed. That fails safe.
+  - **With reuse detection:** that task only acts on a token retired 10 seconds ago or more. Inside the window nothing counts as theft, and unknown, expired or logged-out tokens give it nothing to act on. A false alarm then means signing in again on every device, which is the safe way to be wrong.
 - **Client side:**
   - `lib/api.ts` catches a `401`, calls `/api/auth/refresh` once, and retries the request.
-  - The refresh is single-flight: parallel requests share one refresh call.
-  - If the refresh fails, it clears auth state and redirects to `/login?next=…`.
-- **Logout:** revoke the refresh token and clear both cookies.
+  - The refresh is single-flight: parallel requests share one refresh call. This only covers one tab, which is why the server needs the grace period.
+  - If the refresh fails, it tries once more before giving up, because a late request may only mean another tab already refreshed. Then it clears auth state and redirects to `/login?next=…`.
+- **Logout:** delete the token's row and clear both cookies, using the same cookie paths. Revoking a token means deleting its row, and `revokedAt` only ever marks a rotated token. That's how the grace period tells "just rotated" from "logged out". Tokens that person retired in the last 10 seconds are deleted too, so the window can't outlive a logout. A request with no session cookie clears nothing, so a forged form on another site can't sign someone out. A copied access token still works until it expires, at most 15 minutes later.
 - **Password recovery** (Phase 7, required before production launch):
   - **Asking for a link:** `POST /api/auth/forgot-password` gives the same reply whether or not the account exists, and the email goes out after the reply, so timing doesn't reveal it either. Google-only accounts can use this too, which gives them a password.
   - **The token:** 32 random bytes, base64url, like a refresh token. Only its SHA-256 hash is stored, in `PasswordResetToken`, and it expires after one hour. A new link cancels older ones for that account.
@@ -1098,7 +1108,7 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
 
 ### 8.3 Security baseline
 
-- **CSRF:** the app is same-origin, uses `SameSite=Strict` cookies, and accepts JSON only, so cross-site requests can't carry our cookies. Mutating routes reject non-JSON content types.
+- **CSRF:** the app is same-origin, uses `SameSite=Strict` cookies, and accepts JSON only, so cross-site requests can't carry our cookies. Mutating routes reject non-JSON content types. `/refresh` and `/logout` have no body to check, and a browser still obeys a reply that clears cookies, so logout only clears cookies that arrived with the request.
 - **Headers and proxy:** `helmet` sets security headers. Behind the host's proxy, `app.set("trust proxy", 1)` gives correct client IPs and makes `Secure` cookies work.
 - **Rate limiting** (`express-rate-limit`):
 
@@ -1112,7 +1122,8 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
 - **Validation and authorization:** Zod validates every input. Authorization happens in middleware (role) and in queries (ownership scoping). Other owners' resources return `404`.
 - **Privacy:** owners see a guest's name and phone only on reservations at their own restaurant. Public reviews show first name and last initial.
 - **Reset tokens:** never in a query string, a log, an error report or analytics, and no third-party script runs on `/reset-password` (§8.2).
-- **Logs and error replies:** requests are logged by id, method, URL and status, never their bodies. Unexpected errors are logged by type, code and location only. Their text is left out, because it can repeat a password or hash: a Prisma validation error prints the whole call, and `JSON.parse` quotes its input. Replies only ever carry a fixed message, and an unreadable request body gets `INVALID_BODY` without being logged.
+- **Caching:** replies from `/api/auth/*` and `/api/me` send `Cache-Control: no-store`, so neither a browser nor a proxy keeps a copy of personal data.
+- **Logs and error replies:** requests are logged by id, method, URL and status, never their bodies, cookies or other headers. Tokens only ever travel in cookies, never in JSON or a URL. Unexpected errors are logged by type, code and location only. Their text is left out, because it can repeat a password or hash: a Prisma validation error prints the whole call, and `JSON.parse` quotes its input. Replies only ever carry a fixed message, and an unreadable request body gets `INVALID_BODY` without being logged.
 - **Secrets:** app secrets live only in `server/.env` and are validated at boot. The root `.env` holds only `POSTGRES_PASSWORD`, which Docker Compose uses for the local database. Phase 8 checks that the client build contains no secrets.
 
 ### 8.4 Configuration
@@ -1301,11 +1312,11 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 **Authentication**
 
 - [x] `POST /api/auth/register` and `/login`, with Zod validation, argon2id hashing and generic error messages
-- [ ] Token service:
+- [x] Token service:
   - a 15-minute access JWT and a 30-day rotating refresh token, hashed in `RefreshToken`
   - httpOnly cookies as in §8.1
   - `/refresh`, `/logout` and `GET /api/me`
-- [ ] Refresh-token reuse detection: if a revoked token is presented, revoke all of that user's tokens
+- [ ] Refresh-token reuse detection: if a token retired 10 seconds ago or more is presented, revoke all of that user's tokens (§8.2)
 - [ ] Google Sign-In: GIS button → `POST /api/auth/google` → `verifyIdToken` → sign in or create. An email match alone never links accounts, so agree that flow first (§8.2). Google's script loads only on Sign in and Sign up, never across the whole app (§8.3)
 - [ ] Middleware: `requireAuth`, `requireRole("OWNER")`, and `requireRestaurantOwner`, which loads `:restaurantId` and returns `404` if it isn't yours
 - [ ] Rate limiting on `/api/auth/*`

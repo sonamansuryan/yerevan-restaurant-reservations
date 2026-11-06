@@ -12,7 +12,7 @@ export interface AuthUser {
   role: "CUSTOMER" | "OWNER" | "ADMIN";
 }
 
-/** POST /api/auth/register and /login */
+/** POST /api/auth/register, /login and /refresh, and GET /api/me */
 export interface AuthResponse {
   user: AuthUser;
 }

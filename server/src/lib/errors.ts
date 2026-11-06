@@ -5,6 +5,7 @@ const MESSAGES: Record<string, string> = {
   DATABASE_UNAVAILABLE: "The database is unavailable right now. Please try again.",
   EMAIL_TAKEN: "There’s already an account with this email.",
   INVALID_CREDENTIALS: "Incorrect email or password. Please try again.",
+  SESSION_EXPIRED: "Your session has ended. Please sign in again.",
 };
 
 /** An error we expected and can explain to the client. Anything else is treated as a bug. */
