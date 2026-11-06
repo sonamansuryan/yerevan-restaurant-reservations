@@ -1479,19 +1479,22 @@ These are left out on purpose to protect the timeline, unlike the Advanced items
 
 ## 13. Seghan Design Integration
 
-The direction is a premium, elegant, minimal, editorial restaurant reservation platform. `design-reference/seghan/` holds one exported screen, the homepage. It's our starting point and inspiration, not a specification. This section explains how we get from it to a full, consistent UI. The matching tasks are in Phases 3–8 of §10.
+Seghan is a premium restaurant and hospitality platform, not a generic SaaS application. Its purpose is discovering restaurants and making reservations, and every screen should feel connected to that. §13.8 describes the direction, and §13.9 collects ideas that make Seghan distinctive. `design-reference/seghan/` holds one exported screen, the homepage. It's our starting point and inspiration, not a specification. This section explains how we get from it to a full, consistent UI. The matching tasks are in Phases 3–8 of §10.
 
 ### 13.1 Rules
 
 - **A starting point, not a specification.** Nothing is kept just because the mockup has it. Typography, color, spacing, proportions, components, layouts, interactions and motion can all change when that makes the product better, including significant changes. Avoid generic templates, heavy decoration, needless gradients and dated effects.
+- **Hospitality, not software.** Judge every screen as a restaurant would: does it welcome people and help them find a table, or does it read like an admin tool? This includes the owner's dashboard (§13.8).
 - **Every frontend task is a design task.** Review what exists and name what could be better. Consider the whole app, not only the current component. Recommend the best design, not the closest match to the mockup, and explain the reasoning. Show it in the browser whenever possible.
-- **Approval before finalizing.** Significant visual changes need approval. Significant means something a user would notice, such as a token value, a layout or a component's look. Approved changes are recorded in §13.6.
+- **Suggest something distinctive.** Every design proposal includes at least one idea that makes the screen memorable and unmistakably Seghan, instead of stopping at the standard pattern (§13.9). If the standard pattern really is the best answer, say why and keep it.
+- **Usability comes first.** Function, readability, accessibility and usability outrank every visual idea. Keep familiar patterns where people rely on them. A detail stays only if it helps someone or adds real character, and anything that slows a booking goes.
+- **Approval before implementing.** Before implementing a significant UI change, explain the design reasoning and show the proposed result, then wait for approval. A proposal is a temporary preview, not code in the app. Significant means something a user would notice, such as a token value, a layout or a component's look. Approved changes are recorded in §13.6.
 - **EmptyState and ErrorState are protected.** They keep their approved look, and don't follow the rest of the design or later token changes (§13.7).
 - **Read-only reference.** The app never imports, bundles or serves `design-reference/seghan/`, and the folder isn't edited unless that's explicitly requested.
 - **Learn from it, never copy.** `Main.dc.html`, `support.js` and `vendor/` aren't production code. We use them as reference and build each screen with our own React components, TypeScript and Tailwind.
 - **Tokens, not raw values.** Colors, fonts, radii and shadows are defined once as `@theme` tokens in `client/src/index.css`. Components use those tokens, never hex values or one-off sizes.
 - **Shared components first.** Pages compose `client/src/components/`. A new visual pattern is added there, not invented inside a page.
-- **Design before build.** A screen marked *New* in §13.4 gets an agreed design before its UI work starts, consistent with the whole app and modern UI/UX practice. That can be a new export added to the reference folder by its owner, or a short written layout using the tokens and components below.
+- **Design before build.** A screen marked *New* in §13.4 gets an agreed design before its UI work starts, consistent with the whole app and modern UI/UX practice. That can be a new export added to the reference folder by its owner, or a browser preview using the tokens and components below.
 - **CLAUDE.md beats the mockup** on accessibility and code rules (§13.6).
 - **This plan beats the mockup on scope.** A feature shown only in the mockup adds no backend or database work (§13.5). A design idea that needs such work is a scope decision first.
 
@@ -1611,3 +1614,42 @@ The mockup links to `Discover`, `Restaurant`, `Auth`, `Account` and `DashOvervie
 | Button | 46 px tall, 10 px radius, in Geist, centered below the text, with its hover, focus ring and 2 px loading ring |
 
 Their values are frozen in the `state-card` block in `client/src/index.css`, the only place raw values appear outside `@theme`. `Button`'s `classic` look is for these two only. Don't restyle them or change those values unless that's explicitly requested. A test fails if a frozen value changes.
+
+### 13.8 Design direction
+
+Seghan should feel like a fine restaurant: elegant, sophisticated, warm and welcoming. *Seghan* is the Armenian word for table, and every screen exists to help someone find one. The approved idea behind the look is **the reservation book**: the ruled book a maître d' keeps, with serif names, hairlines instead of boxes and one deep wine. The owner's dashboard is the back of the same house: denser and more practical, but never a generic admin panel. `EmptyState` and `ErrorState` are the exception, and stay exactly as documented in §13.7.
+
+| Source | What we take from it | Where it shows most |
+|---|---|---|
+| Reservation books | Ruled lines, serif names and a calm, ordered page | Forms, My Reservations, the owner's day view |
+| Restaurant menus | Clear sections, type instead of boxes, and names joined to their values | Restaurant page, opening hours, booking widget |
+| Fine dining | A host's manners: a warm welcome, quiet guidance, nothing rushed | The booking flow, confirmations, our words |
+| Editorial hospitality design | Large serif headlines, generous space, photography given room | Homepage, Browse, restaurant page |
+
+| Quality | On screen |
+|---|---|
+| Typography | Type does the work that boxes and icons do in most apps. Serif for names and big moments, sans for controls and data |
+| Spacing | Generous and even, like a well-set table. Group with space and hairlines before reaching for a card |
+| Color | Warm paper, ink and one deep wine. Wine marks what matters most on a screen, so it stays rare. Color is never the only signal |
+| Hierarchy | One clear next step on each screen. The restaurant, the time and the table lead, and everything else steps back |
+| Photography | Real photos of each restaurant's food, rooms and atmosphere, given room and a consistent crop. Owners supply them, so layouts have to flatter any photo, and the photo screen should help owners choose well. A restaurant with no photo still looks deliberate, and none of the seeded restaurants has one yet |
+| Interactions | Subtle and unhurried: a line that warms, a tick that draws itself. Motion confirms what just happened, and stops for people who ask for less motion |
+| Details | Times and prices line up, the `֏` sign and Armenian names look right, and long names still fit |
+| Words | A host's voice: warm, brief and honest. "Book this table", not "Submit". No invented urgency (§13.5), and a pending booking is never called confirmed |
+| Discovering and booking | Intuitive and enjoyable, not just efficient. Browsing should feel like leafing through a good guide, and booking like talking to a good host. It still takes under a minute (§1) |
+
+**Limits.** Usability comes first (§13.1). We take the logic of menus and books, not their costume: no paper textures, script fonts, ornaments or fake book pages. Seghan lists places at every price, from ֏ to ֏֏֏֏, so premium means care, not exclusivity.
+
+### 13.9 Signature ideas
+
+Ideas that could make Seghan distinctive and memorable. They're proposals, not decisions: each one is shown at its task, and its row is updated when it's approved or dropped. None of them adds backend or database work. New ideas are added here as they come up.
+
+| Idea | Screen | Phase | What it is |
+|---|---|---|---|
+| The word for table | Site footer or not-found page | 3 | սեղան, the Armenian word for table, set once in serif as a quiet mark of where Seghan comes from. §1.2 says Latin letters only, so that rule would have to change first |
+| Menu lines | Restaurant page, table picker | 5 | A dotted line joins a name to its value, as on a printed menu: `Monday ····· 12:00–23:00`. Free tables group by zone, like menu sections: `T4 ····· 2–4 seats` under Terrace |
+| Times by course | Booking widget | 5 | Times are grouped like a menu's courses, such as Lunch and Dinner, instead of one long grid. An "After midnight" group also explains the 00:00 and 00:30 slots that Friday's late service adds to Saturday's list (§6.2) |
+| The menu cover | Restaurant card, restaurant page | 5 | A restaurant with no photo shows its name in large serif on a photo tone, like the cover of a menu, instead of an empty color block |
+| The read-back | Booking confirm step | 6 | One serif sentence repeats the booking before it's sent, as a host does on the phone: "A table for four on Friday at 20:00, on the terrace." It also helps people catch a mistake |
+| The reserved card | Booking success page, My Reservations | 6 | The small card a restaurant sets on your table, with your name, the time and the table. Its wording follows the real status, so a pending booking doesn't say Reserved |
+| The day's page | Owner day view | 6 | The day as a page of the maître d's book: times down the margin, guest names in serif, ruled lines between them. Marking a guest as arrived draws the same tick as Checkbox |
