@@ -8,8 +8,16 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { routes } from "@/router";
 
+// jsdom has neither of the observers the design page uses.
+class FakeObserver {
+  observe(): void {}
+  disconnect(): void {}
+}
+
 beforeEach(() => {
   window.scrollTo = vi.fn();
+  vi.stubGlobal("IntersectionObserver", FakeObserver);
+  vi.stubGlobal("ResizeObserver", FakeObserver);
   // The home page asks the API for its status. A promise that never settles keeps it waiting.
   vi.stubGlobal(
     "fetch",
@@ -92,14 +100,49 @@ describe("when something crashes", () => {
   });
 });
 
-test("the crash route doesn't exist in a production build", async () => {
-  vi.stubEnv("DEV", false);
-  vi.resetModules();
-  const production = await import("@/router");
+test("/design shows the house style in development, inside the shell", async () => {
+  renderRoutes("/design");
 
-  renderRoutes("/dev/error", production.routes);
+  const heading = await screen.findByRole(
+    "heading",
+    { level: 1, name: "The house style" },
+    { timeout: 5000 },
+  );
 
-  const main = await screen.findByRole("main");
+  expect(screen.getByRole("main").contains(heading)).toBe(true);
+  expect(screen.getByRole("banner")).toBeDefined();
+  expect(screen.getByRole("contentinfo")).toBeDefined();
+});
 
-  expect(within(main).getByRole("heading", { level: 1 }).textContent).toContain("in the book");
+test("/design shows the breathing dot while its code loads, instead of a blank page", async () => {
+  renderRoutes("/design");
+
+  const loading = screen.getByRole("status", { name: "Loading the house style" });
+
+  expect(screen.getByRole("main").contains(loading)).toBe(true);
+  await screen.findByRole("heading", { level: 1, name: "The house style" }, { timeout: 5000 });
+});
+
+describe("in a production build", () => {
+  test.each(["/dev/error", "/design"])("%s shows the not-found page", async (path) => {
+    vi.stubEnv("DEV", false);
+    vi.resetModules();
+    const production = await import("@/router");
+
+    renderRoutes(path, production.routes);
+
+    const main = await screen.findByRole("main");
+
+    expect(within(main).getByRole("heading", { level: 1 }).textContent).toContain("in the book");
+  });
+
+  test("no development routes exist at all", async () => {
+    vi.stubEnv("DEV", false);
+    vi.resetModules();
+    const production = await import("@/router");
+
+    const paths = production.routes[0]?.children?.[0]?.children?.map((route) => route.path);
+
+    expect(paths).toEqual([undefined, "*"]);
+  });
 });

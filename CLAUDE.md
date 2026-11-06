@@ -101,7 +101,7 @@ Older tutorials and model training data often get these wrong. The notes on the 
 │       ├── main.tsx · router.tsx · index.css
 │       ├── lib/              # api.ts (fetch wrapper), queryClient.ts, time.ts, format.ts, cx.ts
 │       ├── components/       # shared UI primitives: Button, Input, Modal, Spinner…
-│       ├── features/         # auth · restaurants · booking · reservations · reviews · dashboard
+│       ├── features/         # auth · restaurants · booking · reservations · reviews · dashboard · design (dev only)
 │       │   └── <feature>/    #   components/, hooks/, api.ts, schemas.ts
 │       ├── pages/            # route-level components; thin, they compose features
 │       └── types/api.ts      # API response types (mirror the server's DTOs)
@@ -212,6 +212,7 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 - **Design process:** for each frontend task, follow PROJECT_PLAN.md §13.1: review what exists, consider the whole app, recommend the best design rather than the closest match, and actively suggest ideas that make Seghan distinctive and memorable (§13.9). Before implementing a significant UI change, explain the design reasoning, show the proposed result in the browser, and wait for approval.
 - **Usability first:** functionality, readability, accessibility, usability and these guidelines always win over a visual preference. Avoid excessive decoration.
 - **Protected components:** `EmptyState` and `ErrorState` keep their approved look, and don't follow the design direction or token changes (PROJECT_PLAN.md §13.7). Don't restyle them unless explicitly asked.
+- **`/design`:** a development-only page that shows every token and shared component. Add new ones to `client/src/features/design/tokens.ts`, as a test fails if one is missing.
 - Cover the accessibility basics:
   - semantic HTML
   - a label on every input

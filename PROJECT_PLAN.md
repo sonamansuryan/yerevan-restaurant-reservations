@@ -1243,7 +1243,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 - [x] Design tokens: colors, fonts, type sizes, spacing, radii and shadows as Tailwind `@theme` tokens in `client/src/index.css`, including the fixes in §13.6 (§13.2)
 - [x] Core shared components in `client/src/components/`: Button, Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, and empty and error states (§13.3)
 - [x] App shell: site header with a mobile menu, site footer, page container, and Seghan-styled not-found and error pages. Replace the old name in `client/index.html` and `HomePage.tsx` (§1.2)
-- [ ] A dev-only `/design` page that shows every token and shared component, so the foundation can be reviewed before real screens use it
+- [x] A dev-only `/design` page that shows every token and shared component, so the foundation can be reviewed before real screens use it
 - [ ] Agree the designs for the sign-in and sign-up screens (§13.4)
 
 **Authentication**
@@ -1531,7 +1531,7 @@ The mockup never sets `box-sizing`, so its padding and borders add to the sizes 
 | In the mockup | Button (primary, accent, ghost, light), slot button, icon button, nav link, search field, photo placeholder, restaurant card, category tile, section heading, rating, site header, site footer |
 | New, needed by this plan | Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, empty state, error state, mobile menu, Tabs, Pagination, date picker, star input |
 
-The Phase 3 foundation builds what the shell and sign-in need. Later phases add the rest here, using the same tokens. None of this needs a new runtime package: icons are small inline SVG components, and Modal uses the native `<dialog>`. Component tests use `jsdom` and Testing Library, which are dev packages only. `jsdom` can't run `<dialog>`, so Modal's focus, Esc and backdrop behavior are checked in a real browser.
+The Phase 3 foundation builds what the shell and sign-in need. Later phases add the rest here, using the same tokens. None of this needs a new runtime package: icons are small inline SVG components, and Modal uses the native `<dialog>`. Component tests use `jsdom` and Testing Library, which are dev packages only. `jsdom` can't run `<dialog>`, so Modal's focus, Esc and backdrop behavior are checked in a real browser. The development-only `/design` page shows every token and shared component, and a test fails if a new one isn't added to it.
 
 ### 13.4 Screens and their design status
 
