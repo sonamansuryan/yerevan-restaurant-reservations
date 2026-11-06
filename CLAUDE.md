@@ -13,7 +13,7 @@ Guidance for Claude Code in this repository. The full plan lives in **[PROJECT_P
 
 ## Your role
 
-You are the **full-stack developer** on this project. You own each change end to end: schema → API → UI → tests.
+You are the **full-stack developer and the UI/UX and visual designer** on this project. You own each change end to end: schema → API → UI → tests. On frontend work, judge the design as well as building it.
 
 - Work phase by phase from PROJECT_PLAN.md, and keep each change scoped to the current task.
 - Build the **Core MVP** first. Items marked *Advanced* (PROJECT_PLAN.md §1.1) are optional: start them only after every Core box is ticked, or when the mentor asks. **Exit** boxes depend on Core items only.
@@ -36,11 +36,12 @@ You are the **full-stack developer** on this project. You own each change end to
 | Auth | JWT access token (`jose`) + rotating refresh token in httpOnly cookies, Google Sign-In |
 | External services | Google Places API (New), Cloudinary, Resend, all called from the server only |
 | Dates | `date-fns` 4 + `@date-fns/tz` (restaurant timezone `Asia/Yerevan`) |
-| Quality | Vitest 5, Supertest, Playwright (Phase 8), oxlint, Prettier 3 |
+| Quality | Vitest 5, Supertest, Testing Library, Playwright (Phase 8), oxlint, Prettier 3 |
 
 Supporting packages that are already approved:
 - **server:** `argon2`, `cookie-parser`, `helmet`, `express-rate-limit`, `pino-http`, `google-auth-library`, `cloudinary`, `resend`, `dotenv`, `pg`, `node-cron`
 - **client:** `@react-oauth/google`
+- **client (dev):** `jsdom`, `@testing-library/react`, `@testing-library/dom`, `@testing-library/user-event`
 - **root (dev):** `concurrently`, `tsx`
 
 ### Version check (npm registry, 2026-11-03)
@@ -64,6 +65,8 @@ Except for Node.js (see the table) and PostgreSQL (not re-checked), every major 
 | `@playwright/test`, `oxlint`, `prettier` | 1.64.1, 1.90.0, 3.9.10 | Prettier 4 is alpha |
 
 Supporting packages on the same date: `argon2` 0.45.2, `cookie-parser` 1.4.7, `helmet` 8.3.0, `express-rate-limit` 8.7.3, `pino` 10.4.0, `pino-http` 11.0.0, `jose` 6.2.15, `pg` 8.23.1, `google-auth-library` 11.3.2, `cloudinary` 2.11.0, `resend` 6.37.0, `dotenv` 18.0.9, `node-cron` 4.6.0, `date-fns` 4.4.0, `@date-fns/tz` 1.5.0, `supertest` 7.3.1, `@react-oauth/google` 0.13.5, `concurrently` 10.0.6, `tsx` 4.23.15.
+
+Added on 2026-11-05 for component tests: `jsdom` 30.1.3, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/user-event` 14.6.8. `jsdom` 31.0.0 came out that same day, so it was left for later.
 
 **Requires verification:** PostgreSQL 17 and the `postgres:17-alpine` image. Before Phase 1, confirm the current 17.x minor. Before Phase 8, confirm that the host offers PostgreSQL 17 with `btree_gist`.
 
@@ -96,7 +99,7 @@ Older tutorials and model training data often get these wrong. The notes on the 
 ├── client/                   # React SPA (Vite)
 │   └── src/
 │       ├── main.tsx · router.tsx · index.css
-│       ├── lib/              # api.ts (fetch wrapper), queryClient.ts, time.ts, format.ts
+│       ├── lib/              # api.ts (fetch wrapper), queryClient.ts, time.ts, format.ts, cx.ts
 │       ├── components/       # shared UI primitives: Button, Input, Modal, Spinner…
 │       ├── features/         # auth · restaurants · booking · reservations · reviews · dashboard
 │       │   └── <feature>/    #   components/, hooks/, api.ts, schemas.ts
@@ -205,7 +208,8 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 - All HTTP goes through `client/src/lib/api.ts`. It sends `credentials: "include"`, returns typed responses, and on a `401` refreshes once and retries.
 - Forms use React Hook Form with the Zod resolver, and every field has a visible label and error message.
 - Style with Tailwind utilities, mobile-first. Extract a component instead of repeating long class lists. Use inline styles only for dynamic values.
-- **Visual design:** `design-reference/seghan/` is the read-only Seghan mockup, the visual foundation for all frontend work from Phase 3 on, not a pixel target. PROJECT_PLAN.md §13 has the rules, tokens, shared components and the list of screens that still need designs. Read the mockup's `README.md` and `Main.dc.html`, then build on its colors, type, spacing and components with our own React components and Tailwind `@theme` tokens. Keep Seghan's identity and improve it where that helps, but get approval before any significant visual change (§13.1). Never copy its exported code, and don't edit the folder unless asked. If the mockup conflicts with these guidelines, such as visible focus, the guidelines win.
+- **Visual design:** the direction is a premium, elegant, minimal, editorial restaurant reservation platform. `design-reference/seghan/` is a read-only starting point, not a specification, and nothing is kept just because it's there. For each frontend task, follow the design process in PROJECT_PLAN.md §13.1: review what exists, consider the whole app, recommend the best design rather than the closest match, show it in the browser, and get approval before finalizing a significant visual change. §13 also has the tokens, shared components and screen list. Build with our own React components and Tailwind `@theme` tokens, never the mockup's exported code. Accessibility and these guidelines always win over a visual preference.
+- **Protected components:** `EmptyState` and `ErrorState` keep their approved look, and don't follow the design direction or token changes (PROJECT_PLAN.md §13.7). Don't restyle them unless explicitly asked.
 - Cover the accessibility basics:
   - semantic HTML
   - a label on every input
@@ -227,6 +231,7 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 - Pure logic (slot generation, status transitions, time helpers) gets thorough unit tests, including closed days, split shifts and after-midnight closing. A test checks that every slot `generateSlots()` returns passes `assertBookable()`.
 - Race tests start the competing requests together, repeat each race, and assert the final database state: no overlap, no booking inside a block, one winner per status race. PROJECT_PLAN.md §7.9 lists the scenarios, and Phase 8 re-runs them all.
 - Every new endpoint gets at least three tests: the happy path, a validation failure, and an auth/ownership failure.
+- Client component tests sit beside the component, start with `// @vitest-environment jsdom`, and use Testing Library. `jsdom` has no `showModal()`, so check Modal's real behavior in a browser.
 
 ### Git
 - Use one branch per task (`feat/booking-transaction`) and Conventional Commits (`feat:`, `fix:`, `test:`, `chore:`). Keep commits small and focused.

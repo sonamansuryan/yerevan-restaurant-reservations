@@ -56,7 +56,7 @@ Working conventions (commands, folder structure, coding rules) are in [CLAUDE.md
 | Notifications | Emails after commit when a booking is created, confirmed or cancelled | Day-before reminders and auto-cancelling stale `PENDING` bookings (`node-cron`) |
 | Double-booking prevention | Exclusion constraint, the locking protocol (§7.6), compare-and-set, the concurrency suite | — |
 | Quality and delivery | Unit, integration and concurrency tests; CI; Playwright for the core flows; deployment; demo | Error tracking |
-| Visual design | The Seghan design system (tokens and shared components), recreated in our stack; every Core screen built in that style (§13) | — |
+| Visual design | The Seghan design system (tokens and shared components), built in our stack; every Core screen built in that style (§13) | — |
 
 None of the Advanced items affect integrity: the constraint and the locks stop overlaps on their own. For example, without idempotency keys a repeated booking request can't create a second reservation. It gets `409 SLOT_TAKEN`, and the UI disables **Book** while a request is pending.
 
@@ -167,7 +167,7 @@ flowchart LR
 | PostgreSQL is the single source of truth for availability | Nothing that could cause a double booking is cached. Availability is computed on each request |
 | External APIs are called only from the server | Keys never reach the browser. The two exceptions, Cloudinary signed uploads and the Google Sign-In button, are designed for browsers |
 | Layered server modules (routes → controller → service) | A thin HTTP layer, and business logic that can be tested on its own |
-| The Seghan design is the visual foundation, recreated in our own components (§13) | One consistent look from a single set of tokens. The exported mockup stays a read-only reference and never ships |
+| Seghan's design system is built in our own components (§13) | One consistent look from a single set of tokens. The exported mockup stays a read-only reference and never ships |
 
 **A booking request, end to end:**
 1. `POST /api/reservations` passes `requireAuth`, then Zod `validate`.
@@ -1241,7 +1241,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 
 - [x] Confirm the public product name (§12, question 8)
 - [x] Design tokens: colors, fonts, type sizes, spacing, radii and shadows as Tailwind `@theme` tokens in `client/src/index.css`, including the fixes in §13.6 (§13.2)
-- [ ] Core shared components in `client/src/components/`: Button, Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, and empty and error states (§13.3)
+- [x] Core shared components in `client/src/components/`: Button, Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, and empty and error states (§13.3)
 - [ ] App shell: site header with a mobile menu, site footer, page container, and Seghan-styled not-found and error pages. Replace the old name in `client/index.html` and `HomePage.tsx` (§1.2)
 - [ ] A dev-only `/design` page that shows every token and shared component, so the foundation can be reviewed before real screens use it
 - [ ] Agree the designs for the sign-in and sign-up screens (§13.4)
@@ -1479,44 +1479,47 @@ These are left out on purpose to protect the timeline, unlike the Advanced items
 
 ## 13. Seghan Design Integration
 
-The Seghan design is the visual foundation of the app. `design-reference/seghan/` holds one exported screen, the homepage. This section explains how that one mockup becomes a full, consistent UI. The matching tasks are in Phases 3–8 of §10.
+The direction is a premium, elegant, minimal, editorial restaurant reservation platform. `design-reference/seghan/` holds one exported screen, the homepage. It's our starting point and inspiration, not a specification. This section explains how we get from it to a full, consistent UI. The matching tasks are in Phases 3–8 of §10.
 
 ### 13.1 Rules
 
-- **A foundation, not a pixel target.** Keep Seghan's identity: warm neutral colors, elegant typography, burgundy accents, an editorial feel and minimalism. Within that, improve hierarchy, spacing, components, responsiveness, accessibility and UX where it helps. Avoid unnecessary redesigns, heavy decoration and generic dashboard styling.
-- **Improvements need a reason and approval.** For an existing design, name the specific weakness first. Before a significant visual change, show the original and the proposed version, explain why, and get approval first. Significant means something a user would notice, such as a token value, a layout or a component's look. Approved changes are recorded in §13.6.
+- **A starting point, not a specification.** Nothing is kept just because the mockup has it. Typography, color, spacing, proportions, components, layouts, interactions and motion can all change when that makes the product better, including significant changes. Avoid generic templates, heavy decoration, needless gradients and dated effects.
+- **Every frontend task is a design task.** Review what exists and name what could be better. Consider the whole app, not only the current component. Recommend the best design, not the closest match to the mockup, and explain the reasoning. Show it in the browser whenever possible.
+- **Approval before finalizing.** Significant visual changes need approval. Significant means something a user would notice, such as a token value, a layout or a component's look. Approved changes are recorded in §13.6.
+- **EmptyState and ErrorState are protected.** They keep their approved look, and don't follow the rest of the design or later token changes (§13.7).
 - **Read-only reference.** The app never imports, bundles or serves `design-reference/seghan/`, and the folder isn't edited unless that's explicitly requested.
-- **Build on it, never copy.** `Main.dc.html`, `support.js` and `vendor/` aren't production code. We start from their values and build each screen with our own React components, TypeScript and Tailwind.
+- **Learn from it, never copy.** `Main.dc.html`, `support.js` and `vendor/` aren't production code. We use them as reference and build each screen with our own React components, TypeScript and Tailwind.
 - **Tokens, not raw values.** Colors, fonts, radii and shadows are defined once as `@theme` tokens in `client/src/index.css`. Components use those tokens, never hex values or one-off sizes.
 - **Shared components first.** Pages compose `client/src/components/`. A new visual pattern is added there, not invented inside a page.
-- **Design before build.** A screen marked *New* in §13.4 gets an agreed design before its UI work starts, consistent with Seghan's identity and modern UI/UX practice. That can be a new export added to the reference folder by its owner, or a short written layout using the tokens and components below.
+- **Design before build.** A screen marked *New* in §13.4 gets an agreed design before its UI work starts, consistent with the whole app and modern UI/UX practice. That can be a new export added to the reference folder by its owner, or a short written layout using the tokens and components below.
 - **CLAUDE.md beats the mockup** on accessibility and code rules (§13.6).
-- **This plan beats the mockup on scope.** A feature shown only in the mockup adds no backend or database work (§13.5).
+- **This plan beats the mockup on scope.** A feature shown only in the mockup adds no backend or database work (§13.5). A design idea that needs such work is a scope decision first.
 
 ### 13.2 Design tokens
 
-Starting values, taken from `Main.dc.html`:
+Current values. They started from `Main.dc.html`, and can change with approval:
 
 | Group | Roles | Values |
 |---|---|---|
 | Surfaces | page, raised surface, tinted band, dark band | `#FBFAF7`, `#FFFFFF`, `#F3F0EA`, `#17140F` |
 | Text | primary, secondary, muted | `#17140F`, `#4A453D`, `#6F6A60` |
 | Text on dark | primary, secondary | `#FBFAF7`, `#C9C2B5` |
-| Accent | default, hover | `#9E2B25`, `#85221D` |
+| Accent | default, hover | `#7A1E2C`, `#631823` |
 | Lines | soft, default, strong, form control, search divider, link underline, hero rule, on dark | `#ECE8E0`, `#E4DFD6`, `#DDD8CE`, `#8A8478`, `#EFEBE4`, `#D3CDC2`, `#B9B2A5`, `#4A453D` |
-| Control fills | slot button, field hover, primary button hover, icon button over a photo | `#F1EEE8`, `#F6F4EF`, `#2E2922`, `rgb(251 250 247 / .92)` |
+| Control fills | slot button, field hover, protected button hover (§13.7), icon button over a photo | `#F1EEE8`, `#F6F4EF`, `#2E2922`, `rgb(251 250 247 / .92)` |
+| Status (new, not in the mockup) | text and soft fill for success, warning, error and info, then a neutral fill | `#346841` `#E7EFE4`, `#80571A` `#F6ECDA`, `#9E2B25` `#F8E9E4`, `#2D6276` `#E5EDEE`, `#E9E4DB` |
+| Backdrop (new) | behind an open modal | `rgb(23 20 15 / .45)` |
 | Photo tones | color blocks shown when a restaurant has no photo | `#5A2E24`, `#4B2B33`, `#3A3027`, `#26363B`, `#6B5A45`, `#2A2622` |
-| Photo glow | soft light over those color blocks | `radial-gradient(120% 90% at 28% 18%, rgb(255 236 214 / .2), rgb(255 236 214 / 0) 58%)` |
-| Fonts | UI, display, Armenian fallbacks | Geist 400, 500, 600; Instrument Serif 400 and italic; Noto Sans Armenian 400, 500, 600 and Noto Serif Armenian 400 (§13.6) |
+| Fonts | UI, display, fallbacks | Instrument Sans 400, 500, 600; Instrument Serif 400 and italic; Geist 400, 500, 600 for Cyrillic and the protected designs (§13.7); Noto Sans Armenian 400, 500, 600 and Noto Serif Armenian 400 (§13.6) |
 | Type sizes | UI text, card titles, section titles, hero | 11–18 px, 20–30 px, 40–48 px, `clamp(52px, 7vw, 92px)` |
 | Spacing | scale, page content width, side gutter, section padding | Tailwind's 4 px scale, 1280 px, 32 px, 72–96 px |
-| Radii | slot, button and field, search button, media, card and search bar, hero media, dark band, pill | 8, 10, 12, 14, 16, 20, 24, 999 px |
+| Radii | checkbox (new), slot, button, search button, media, card and search bar, hero media, dark band, pill | 3, 6, 6, 6, 8, 10, 12, 16, 999 px |
 | Shadows | search bar, floating card | `0 1px 2px rgba(23,20,15,.04), 0 12px 32px -16px rgba(23,20,15,.16)`, `0 24px 48px -20px rgba(23,20,15,.35)` |
 | Motion | color changes, image hover, tile easing | .15–.18 s, .4–.5 s, `cubic-bezier(.2, .7, .2, 1)` |
 
 Fonts load from Google Fonts with a `<link>` in `client/index.html`, so they need no new package.
 
-The mockup never sets `box-sizing`, so its padding and borders add to the sizes in its CSS, while Tailwind counts them inside. Our starting sizes follow what the mockup renders, not the numbers in its CSS: the page container is 1344 px (1280 px of content plus two 32 px gutters), buttons are 46 px tall, the search button is 58 px and slot buttons are 36 px.
+The mockup never sets `box-sizing`, so its padding and borders add to the sizes in its CSS, while Tailwind counts them inside. Our starting sizes follow what the mockup renders, not the numbers in its CSS: the page container is 1344 px (1280 px of content plus two 32 px gutters), the search button is 58 px and slot buttons are 36 px. Buttons are 48 px, a deliberate change from the mockup's 46 px.
 
 ### 13.3 Shared components
 
@@ -1525,7 +1528,7 @@ The mockup never sets `box-sizing`, so its padding and borders add to the sizes 
 | In the mockup | Button (primary, accent, ghost, light), slot button, icon button, nav link, search field, photo placeholder, restaurant card, category tile, section heading, rating, site header, site footer |
 | New, needed by this plan | Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, empty state, error state, mobile menu, Tabs, Pagination, date picker, star input |
 
-The Phase 3 foundation builds what the shell and sign-in need. Later phases add the rest here, using the same tokens. None of this needs a new package: icons are small inline SVG components, and Modal uses the native `<dialog>`. Component tests would need `jsdom` and Testing Library, which aren't approved yet, so ask before adding them.
+The Phase 3 foundation builds what the shell and sign-in need. Later phases add the rest here, using the same tokens. None of this needs a new runtime package: icons are small inline SVG components, and Modal uses the native `<dialog>`. Component tests use `jsdom` and Testing Library, which are dev packages only. `jsdom` can't run `<dialog>`, so Modal's focus, Esc and backdrop behavior are checked in a real browser.
 
 ### 13.4 Screens and their design status
 
@@ -1574,7 +1577,7 @@ The mockup links to `Discover`, `Restaurant`, `Auth`, `Account` and `DashOvervie
 | Photo placeholders | Cloudinary photos, and seeded restaurants may have none | The real cover photo, or a color block from the photo tones |
 | Sample restaurants | Data comes from the API | Real data only |
 
-### 13.6 Mockup problems to fix, not copy
+### 13.6 Improvements over the mockup
 
 | Problem | Measured | Fix |
 |---|---|---|
@@ -1585,3 +1588,26 @@ The mockup links to `Discover`, `Restaurant`, `Auth`, `Account` and `DashOvervie
 | No navigation on phones | Below 760 px the nav and Sign in link are hidden | A mobile menu |
 | No Armenian letters or `֏` | Geist and Instrument Serif don't cover them | Add Noto Sans Armenian and Noto Serif Armenian as fallback fonts |
 | Small touch targets | Slot buttons and icon buttons render 36 px tall | At least 44 px on phones |
+| Selects look like plain text | `.field select` removes the arrow and adds nothing | A quiet arrow on a native select |
+| Form labels are hard to read | 11 px uppercase suits the search bar, not forms | 13 px sentence case in forms. The search bar keeps its labels |
+| Phones zoom into fields | Field text is 15 px, and iPhones zoom below 16 px | 16 px field text at every width |
+| No disabled, loading or pressed states | None in the mockup | A flat fill on disabled buttons (4.64:1), a dashed line on disabled fields, a loading state that keeps its size, and a 1 px press |
+| The accent reads as an alert | `#9E2B25` is brick red, at hue 28 | Wine `#7A1E2C`. `#9E2B25` stays for errors, so they no longer share the brand color |
+| The sans font feels technical | Geist was drawn for developer tools | Instrument Sans, drawn to accompany Instrument Serif |
+| Soft corners feel like a SaaS kit | Radii of 10 to 24 px | Radii of 6 to 16 px |
+| Boxed forms feel heavy | A strong outline around every field | Ruled lines, like a reservation book, with text aligned to the labels |
+| Primary hover is almost invisible | `#2E2922` on `#17140F` | Primary warms to wine on hover |
+| The photo glow is decoration | A radial gradient over every color block | Flat color blocks |
+
+### 13.7 Protected designs
+
+`EmptyState` and `ErrorState` keep their approved look on purpose. They don't follow the reservation book direction, and later token changes don't reach them.
+
+| Part | Stays as |
+|---|---|
+| Layout | Centered, with a 1 px border, a 16 px radius, and padding of 48 px top and bottom, 24 px at the sides |
+| Type | Title in 24 px Instrument Serif, text in 14 px Geist |
+| Icon | The 28 px alert icon on ErrorState |
+| Button | 46 px tall, 10 px radius, in Geist, centered below the text, with its hover, focus ring and 2 px loading ring |
+
+Their values are frozen in the `state-card` block in `client/src/index.css`, the only place raw values appear outside `@theme`. `Button`'s `classic` look is for these two only. Don't restyle them or change those values unless that's explicitly requested. A test fails if a frozen value changes.

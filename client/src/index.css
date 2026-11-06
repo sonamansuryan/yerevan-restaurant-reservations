@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 /*
- * Seghan design tokens. The values come from design-reference/seghan/Main.dc.html, plus the
- * accessibility fixes in PROJECT_PLAN.md §13.6. Components use these names, never raw values.
+ * Seghan design tokens. They started from design-reference/seghan/Main.dc.html, and PROJECT_PLAN.md
+ * §13.6 records what has changed since. Components use these names, never raw values.
  *
  * A token's prefix decides which classes Tailwind creates: --color-accent gives bg-accent and
  * text-accent, and --radius-card gives rounded-card. `static` keeps every token available as a
  * CSS variable, even before a class uses it.
  *
  * Sizes are in rem so they follow the browser's font-size setting. 1rem is 16px by default, and
- * the comments give the mockup's px value.
+ * the comments give the px value.
  */
 @theme static {
   /* Surfaces */
@@ -29,8 +29,8 @@
   --color-on-accent: #ffffff;
 
   /* Accent */
-  --color-accent: #9e2b25;
-  --color-accent-hover: #85221d;
+  --color-accent: #7a1e2c;
+  --color-accent-hover: #631823;
 
   /* Lines. Real form inputs use line-control, because the others are too faint for them (§13.6). */
   --color-line-soft: #ece8e0;
@@ -48,26 +48,40 @@
   --color-fill-primary-hover: #2e2922;
   --color-fill-overlay: rgb(251 250 247 / 0.92);
 
-  /* Color blocks for restaurants with no photo, and the soft light that goes on top of them */
+  /*
+   * Status colors. The mockup has none, so these sit at the same depth as the accent. Error is a
+   * brighter red than the wine accent, so an error never looks like the brand. Each text color
+   * passes 4.5:1 on its soft fill and on every surface.
+   */
+  --color-success: #346841;
+  --color-success-soft: #e7efe4;
+  --color-warning: #80571a;
+  --color-warning-soft: #f6ecda;
+  --color-error: #9e2b25;
+  --color-error-soft: #f8e9e4;
+  --color-info: #2d6276;
+  --color-info-soft: #e5edee;
+  --color-neutral-soft: #e9e4db;
+
+  /* The dimmed page behind an open Modal */
+  --color-backdrop: rgb(23 20 15 / 0.45);
+
+  /* Color blocks for restaurants with no photo */
   --color-tone-1: #5a2e24;
   --color-tone-2: #4b2b33;
   --color-tone-3: #3a3027;
   --color-tone-4: #26363b;
   --color-tone-5: #6b5a45;
   --color-tone-6: #2a2622;
-  --background-image-photo-glow: radial-gradient(
-    120% 90% at 28% 18%,
-    rgb(255 236 214 / 0.2),
-    rgb(255 236 214 / 0) 58%
-  );
 
   /*
-   * Fonts. Geist and Instrument Serif have no Armenian letters or ֏ sign, so the browser takes
-   * those characters from the Noto font next in each list (§13.6). Tailwind also uses --font-sans
-   * as the app's default font.
+   * Fonts. Instrument Sans has no Cyrillic, so Russian text comes from Geist, next in the list.
+   * Neither sans font nor Instrument Serif has Armenian letters or the ֏ sign, so those come from
+   * the Noto fonts (§13.6). Tailwind also uses --font-sans as the app's default font.
    */
   --font-sans:
-    "Geist", "Noto Sans Armenian", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    "Instrument Sans", "Geist", "Noto Sans Armenian", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
   --font-display: "Instrument Serif", "Noto Serif Armenian", ui-serif, Georgia, serif;
 
   /*
@@ -139,26 +153,46 @@
   --spacing-section-lg: 6rem; /* 96px */
   --spacing-touch: 2.75rem; /* 44px, the smallest tap target on phones (§13.6) */
 
-  /* Radii */
-  --radius-slot: 0.5rem; /* 8px */
-  --radius-control: 0.625rem; /* 10px, buttons and fields */
-  --radius-cta: 0.75rem; /* 12px, the search bar's button */
-  --radius-media: 0.875rem; /* 14px */
-  --radius-card: 1rem; /* 16px, cards and the search bar */
-  --radius-hero: 1.25rem; /* 20px */
-  --radius-band: 1.5rem; /* 24px */
+  /* Radii. Tight corners feel tailored, which suits the fine lines of the reservation book. */
+  --radius-check: 0.1875rem; /* 3px, checkboxes */
+  --radius-slot: 0.375rem; /* 6px */
+  --radius-control: 0.375rem; /* 6px, buttons */
+  --radius-cta: 0.375rem; /* 6px, the search bar's button */
+  --radius-media: 0.5rem; /* 8px */
+  --radius-card: 0.625rem; /* 10px, cards, modals and the search bar */
+  --radius-hero: 0.75rem; /* 12px */
+  --radius-band: 1rem; /* 16px */
   --radius-pill: 999px;
 
-  /* Shadows */
+  /* Shadows. The rule shadows thicken a field's line without moving the layout. */
   --shadow-search: 0 1px 2px rgb(23 20 15 / 0.04), 0 12px 32px -16px rgb(23 20 15 / 0.16);
   --shadow-float: 0 24px 48px -20px rgb(23 20 15 / 0.35);
+  --shadow-rule-focus: 0 1px 0 0 var(--color-accent);
+  --shadow-rule-error: 0 1px 0 0 var(--color-error);
 
-  /* Motion. Color changes use Tailwind's default 150ms. The mockup uses the CSS default easing. */
+  /* Motion. Color changes use Tailwind's default 150ms. The default easing is the plain CSS one. */
   --default-transition-timing-function: ease;
   --transition-duration-button: 180ms;
+  --transition-duration-check: 200ms;
+  --transition-duration-modal: 240ms;
   --transition-duration-image: 400ms;
   --transition-duration-tile: 500ms;
   --ease-tile: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* The logo's dot, breathing, is how a page shows it's loading. */
+  --animate-breathe: breathe 1.4s ease-in-out infinite;
+
+  @keyframes breathe {
+    0%,
+    100% {
+      opacity: 0.25;
+      scale: 0.8;
+    }
+    50% {
+      opacity: 1;
+      scale: 1;
+    }
+  }
 }
 
 @layer base {
@@ -178,6 +212,19 @@
   ::placeholder {
     color: var(--color-ink-muted);
   }
+
+  /*
+   * A modal dialog doesn't stop the page behind it from scrolling, so that happens here. The
+   * scrollbar's space stays reserved at all times, so the page doesn't jump sideways when the
+   * scrollbar goes away. Reserving it only while a modal is open would make short pages jump.
+   */
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  html:has(dialog:modal) {
+    overflow: hidden;
+  }
 }
 
 /*
@@ -188,4 +235,123 @@
   background-color: var(--color-surface-dark);
   color: var(--color-on-dark);
   --focus-ring: var(--color-on-dark);
+}
+
+/*
+ * EmptyState and ErrorState are protected designs (PROJECT_PLAN.md §13.7): they keep their approved
+ * look while the rest of the app moves on. CSS variables pass down to child elements, so repeating
+ * every token they use here, as a fixed value, means changes to the tokens above can't reach them.
+ * This is the only place raw values appear outside @theme, and a test fails if one changes.
+ */
+@utility state-card {
+  --font-sans:
+    "Geist", "Noto Sans Armenian", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Instrument Serif", "Noto Serif Armenian", ui-serif, Georgia, serif;
+  --font-weight-medium: 500;
+  --text-title: 1.5rem;
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.01em;
+  --text-ui: 0.875rem;
+  --text-ui--line-height: 1.125rem;
+  --color-ink: #17140f;
+  --color-ink-secondary: #4a453d;
+  --color-ink-muted: #6f6a60;
+  --color-on-dark: #fbfaf7;
+  --color-surface-raised: #ffffff;
+  --color-line: #e4dfd6;
+  --color-line-strong: #ddd8ce;
+  --color-fill-slot: #f1eee8;
+  --color-fill-primary-hover: #2e2922;
+  --color-error: #9e2b25;
+  --focus-ring: #9e2b25;
+  --radius-card: 1rem;
+  --radius-control: 0.625rem;
+  --radius-pill: 999px;
+  --spacing: 0.25rem;
+  --default-transition-timing-function: ease;
+  --transition-duration-button: 180ms;
+  --animate-spin: spin 1s linear infinite;
+
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+@layer components {
+  /* The check mark draws itself. The dash starts longer than the line, so it begins invisible. */
+  .check-mark path {
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
+    transition: stroke-dashoffset var(--transition-duration-check) var(--ease-tile);
+  }
+
+  input:checked + .check-mark path {
+    stroke-dashoffset: 0;
+  }
+
+  /*
+   * The modal settles into place, and rises from the bottom on phones. @starting-style sets where
+   * it comes from. A closed dialog is display: none, and allow-discrete keeps it on screen until
+   * the closing animation has finished.
+   */
+  .modal-sheet {
+    opacity: 0;
+    translate: 0 0.625rem;
+    transition:
+      opacity var(--transition-duration-modal) var(--ease-tile),
+      translate var(--transition-duration-modal) var(--ease-tile),
+      overlay var(--transition-duration-modal) allow-discrete,
+      display var(--transition-duration-modal) allow-discrete;
+  }
+
+  .modal-sheet[open] {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  @starting-style {
+    .modal-sheet[open] {
+      opacity: 0;
+      translate: 0 0.625rem;
+    }
+  }
+
+  .modal-sheet::backdrop {
+    background-color: transparent;
+    transition:
+      background-color var(--transition-duration-modal) var(--ease-tile),
+      overlay var(--transition-duration-modal) allow-discrete,
+      display var(--transition-duration-modal) allow-discrete;
+  }
+
+  .modal-sheet[open]::backdrop {
+    background-color: var(--color-backdrop);
+  }
+
+  @starting-style {
+    .modal-sheet[open]::backdrop {
+      background-color: transparent;
+    }
+  }
+
+  @media (width < 48rem) {
+    .modal-sheet {
+      translate: 0 100%;
+    }
+
+    @starting-style {
+      .modal-sheet[open] {
+        translate: 0 100%;
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .check-mark path,
+    .modal-sheet,
+    .modal-sheet::backdrop {
+      transition: none;
+    }
+  }
 }
