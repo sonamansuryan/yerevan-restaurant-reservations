@@ -1290,7 +1290,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 - [x] App shell: site header with a mobile menu, site footer, page container, and Seghan-styled not-found and error pages. Replace the old name in `client/index.html` and `HomePage.tsx` (§1.2)
 - [x] A dev-only `/design` page that shows every token and shared component, so the foundation can be reviewed before real screens use it
 - [x] Agree the designs for the sign-in and sign-up screens (§13.4)
-- [ ] Not-found page wording: replace "This page isn’t in the book." and the "Table 404" line with a clear, functional heading, such as "Page not found" (§13.8). A separate improvement, recorded during the sign-in design
+- [x] Not-found page wording: replace "This page isn’t in the book." and the "Table 404" line with a clear, functional heading, such as "Page not found" (§13.8). A separate improvement, recorded during the sign-in design
 
 **Authentication**
 
@@ -1723,7 +1723,7 @@ Ideas that could make Seghan distinctive and memorable. They're proposals, not d
 | Idea | Screen | Phase | What it is |
 |---|---|---|---|
 | The word for table | Site footer | 3 | Approved and built. սեղան, the Armenian word for table, is set once in serif in the footer's closing row, as a quiet mark of where Seghan comes from (§1.2) |
-| Menu lines | Mobile menu, not-found page, restaurant page, table picker | 3, 5 | A dotted line joins a name to its value, as on a printed menu: `Monday ····· 12:00–23:00`. Free tables group by zone, like menu sections: `T4 ····· 2–4 seats` under Terrace. Approved and built for the mobile menu and not-found page. The restaurant page and table picker are still to be shown |
+| Menu lines | Mobile menu, restaurant page, table picker | 3, 5 | A dotted line joins a name to its value, as on a printed menu: `Monday ····· 12:00–23:00`. Free tables group by zone, like menu sections: `T4 ····· 2–4 seats` under Terrace. Approved and built for the mobile menu. The restaurant page and table picker are still to be shown |
 | The open book | Sign in, Sign up, password screens | 3, 7 | Approved, not built yet. A two-page spread: what the page is for on the left, the form on the right, and the fold running down from the logo. On guest sign-up, the name you type appears on a line of the book (§13.10) |
 | Times by course | Booking widget | 5 | Times are grouped like a menu's courses, such as Lunch and Dinner, instead of one long grid. An "After midnight" group also explains the 00:00 and 00:30 slots that Friday's late service adds to Saturday's list (§6.2) |
 | The menu cover | Restaurant card, restaurant page | 5 | A restaurant with no photo shows its name in large serif on a photo tone, like the cover of a menu, instead of an empty color block |

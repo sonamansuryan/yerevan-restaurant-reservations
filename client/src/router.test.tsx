@@ -73,7 +73,7 @@ test.each(["/nowhere", "/restaurants", "/login", "/a/deep/path"])(
 
     const main = await screen.findByRole("main");
 
-    expect(within(main).getByRole("heading", { level: 1 }).textContent).toContain("in the book");
+    expect(within(main).getByRole("heading", { level: 1 }).textContent).toBe("Page not found");
     expect(screen.getByRole("banner")).toBeDefined();
   },
 );
@@ -133,7 +133,7 @@ describe("in a production build", () => {
 
     const main = await screen.findByRole("main");
 
-    expect(within(main).getByRole("heading", { level: 1 }).textContent).toContain("in the book");
+    expect(within(main).getByRole("heading", { level: 1 }).textContent).toBe("Page not found");
   });
 
   test("no development routes exist at all", async () => {

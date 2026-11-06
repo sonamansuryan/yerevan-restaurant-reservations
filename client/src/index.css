@@ -369,6 +369,20 @@
     background-repeat: repeat-x;
   }
 
+  /*
+   * Lets a short page center itself on a tall window. `main` grows to fill the space between the
+   * header and footer, but a child can't fill `main` unless `main` is a flex column. Only spare
+   * height is shared out, so nothing moves when the page already fills the window.
+   */
+  main:has(> .page-fill) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .page-fill {
+    flex: 1;
+  }
+
   /* The mobile menu fades in over the page, then its list settles into place. */
   .menu-sheet {
     opacity: 0;

@@ -22,14 +22,14 @@ describe("NotFoundPage", () => {
     );
   }
 
-  test("it says plainly what happened, as well as the book's line", () => {
+  test("it says plainly what happened", () => {
     renderPage();
 
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-      "This page isn’t in the book.",
-    );
-    expect(screen.getByText("Page not found")).toBeDefined();
-    expect(screen.getByText(/may have a typo/)).toBeDefined();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Page not found");
+    expect(screen.getByText("404")).toBeDefined();
+    expect(
+      screen.getByText("The link may be out of date, or the address may have a typo."),
+    ).toBeDefined();
   });
 
   test("the tab title names the page", () => {
@@ -38,20 +38,17 @@ describe("NotFoundPage", () => {
     expect(document.title).toBe("Page not found · Seghan");
   });
 
-  test.each([
-    ["Find a table", "/restaurants"],
-    ["Back to the home page", "/"],
-  ])("%s goes to %s", (name, href) => {
+  test("it offers one clear way out", () => {
     renderPage();
 
-    expect(screen.getByRole("link", { name }).getAttribute("href")).toBe(href);
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "Back to home" }).getAttribute("href")).toBe("/");
   });
 
-  test("screen readers skip the lines from the book, which are decoration", () => {
+  test("none of the reservation book's wording is left", () => {
     renderPage();
 
-    expect(screen.getByText("Table 404").closest("[aria-hidden='true']")).not.toBeNull();
-    expect(screen.getByText("Table 4").closest("[aria-hidden='true']")).not.toBeNull();
+    expect(document.body.textContent).not.toMatch(/in the book|Table \d|guests/);
   });
 });
 
