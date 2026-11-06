@@ -85,6 +85,7 @@ model User {
 model RefreshToken {
   id        String    @id @default(uuid())
   userId    String
+  familyId  String // shared by every token from one sign-in, so one session can be ended alone
   tokenHash String    @unique // SHA-256 of the token; the raw value only lives in the cookie
   expiresAt DateTime
   revokedAt DateTime?
@@ -93,6 +94,7 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([familyId])
 }
 
 model Restaurant {

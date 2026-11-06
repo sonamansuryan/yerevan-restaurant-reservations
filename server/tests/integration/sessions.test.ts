@@ -3,15 +3,18 @@ import { randomUUID } from "node:crypto";
 import { decodeJwt, SignJWT } from "jose";
 import request from "supertest";
 import type { Response, Test } from "supertest";
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { app } from "../../src/app.ts";
 import { env } from "../../src/config/env.ts";
+import type { Prisma } from "../../src/generated/prisma/client.ts";
+import { logger } from "../../src/lib/logger.ts";
 import { prisma } from "../../src/lib/prisma.ts";
 import { hashRefreshToken, newRefreshToken } from "../../src/modules/auth/token.service.ts";
 
 const PASSWORD = "a long password";
 const DAY_MS = 24 * 60 * 60 * 1000;
+const ROUNDS = [1, 2, 3, 4, 5];
 
 interface Session {
   userId: string;
@@ -84,6 +87,27 @@ function liveTokens(userId: string): Promise<number> {
   return prisma.refreshToken.count({ where: { userId, revokedAt: null } });
 }
 
+/** The session a token belongs to. */
+async function familyOf(token: string): Promise<string> {
+  const row = await prisma.refreshToken.findUnique({
+    where: { tokenHash: hashRefreshToken(token) },
+  });
+  return row?.familyId ?? "";
+}
+
+/** Signs the same person in somewhere else, and returns that session's refresh token. */
+async function signInElsewhere(email: string): Promise<string> {
+  return cookieValue(await login({ email, password: PASSWORD }), "refresh_token") ?? "";
+}
+
+/** A session whose first token came back after the grace period: the alarm is ready to go off. */
+async function replayable(): Promise<Session & { current: string }> {
+  const session = await signUp();
+  const current = await rotated(session.refresh);
+  await retiredAgo(session.refresh, 11_000);
+  return { ...session, current };
+}
+
 function signedAccessToken(expiresAt: string | number, secret = env.JWT_ACCESS_SECRET) {
   return new SignJWT({ role: "ADMIN" })
     .setProtectedHeader({ alg: "HS256" })
@@ -152,12 +176,15 @@ describe("signing in", () => {
     expect(await rows(userId)).toHaveLength(1);
   });
 
-  test("each sign-in is its own session", async () => {
-    const { userId, email } = await signUp();
+  test("each sign-in is its own session, with its own family", async () => {
+    const { userId, email, refresh } = await signUp();
 
-    await login({ email, password: PASSWORD });
+    const other = await signInElsewhere(email);
 
     expect(await liveTokens(userId)).toBe(2);
+    expect(await familyOf(refresh)).toMatch(/^[0-9a-f-]{36}$/);
+    expect(await familyOf(other)).toMatch(/^[0-9a-f-]{36}$/);
+    expect(await familyOf(other)).not.toBe(await familyOf(refresh));
   });
 
   test("nothing keeps a copy of these replies", async () => {
@@ -277,6 +304,16 @@ describe("POST /api/auth/refresh", () => {
     ).toBe(1);
   });
 
+  test("a rotated token stays in its session's family", async () => {
+    const { refresh } = await signUp();
+
+    const second = await rotated(refresh);
+    const third = await rotated(second);
+
+    expect(await familyOf(second)).toBe(await familyOf(refresh));
+    expect(await familyOf(third)).toBe(await familyOf(refresh));
+  });
+
   test("each rotation starts a new 30 days", async () => {
     const { refresh } = await signUp();
     await prisma.refreshToken.update({
@@ -369,13 +406,14 @@ describe("two requests at the same moment", () => {
     expect((await me(access)).status).toBe(200);
   });
 
-  test.each([1, 2, 3, 4, 5])("a refresh racing a logout never fails, round %i", async () => {
-    const { refresh } = await signUp();
+  test.each(ROUNDS)("a refresh racing a logout leaves nothing behind, round %i", async () => {
+    const { refresh, userId } = await signUp();
 
     const [refreshed, loggedOut] = await Promise.all([refreshWith(refresh), logoutWith(refresh)]);
 
     expect([200, 401]).toContain(refreshed.status);
     expect(loggedOut.status).toBe(204);
+    expect(await rows(userId)).toEqual([]);
   });
 });
 
@@ -486,34 +524,8 @@ describe("a request that arrives late", () => {
       expect(setCookies(reply)).toEqual([]);
     });
 
-    test("the real session carries on, so the person isn't signed out", async () => {
-      const { refresh, userId } = await signUp();
-      const next = await rotated(refresh);
-      await retiredAgo(refresh, 11_000);
-
-      await refreshWith(refresh);
-
-      expect(await liveTokens(userId)).toBe(1);
-      const carriedOn = await refreshWith(next);
-      expect(carriedOn.status).toBe(200);
-      expect(cookieLine(carriedOn, "refresh_token")).toBeTruthy();
-      const access = cookieValue(carriedOn, "access_token") ?? "";
-      expect((await me(access)).status).toBe(200);
-    });
-
-    test("it changes nothing in the database", async () => {
-      const { refresh, userId } = await signUp();
-      await rotated(refresh);
-      await retiredAgo(refresh, 11_000);
-      const before = await rows(userId);
-
-      await refreshWith(refresh);
-
-      expect(await rows(userId)).toEqual(before);
-    });
-
     test("the same token stops working the moment the window closes", async () => {
-      const { refresh, userId } = await signUp();
+      const { refresh } = await signUp();
       await rotated(refresh);
 
       await retiredAgo(refresh, 9_000);
@@ -523,58 +535,479 @@ describe("a request that arrives late", () => {
 
       expect(inside.status).toBe(200);
       expect(outside.status).toBe(401);
-      expect(await liveTokens(userId)).toBe(1);
     });
 
     test("late requests arriving together are all refused, and nothing is created", async () => {
-      const { refresh, userId } = await signUp();
-      const next = await rotated(refresh);
-      await retiredAgo(refresh, 11_000);
-      const before = await rows(userId);
+      const { refresh, current, userId } = await replayable();
 
       const replies = await Promise.all(Array.from({ length: 5 }, () => refreshWith(refresh)));
 
       expect(replies.map((reply) => reply.status)).toEqual([401, 401, 401, 401, 401]);
-      expect(await rows(userId)).toEqual(before);
-      expect((await refreshWith(next)).status).toBe(200);
+      expect(await rows(userId)).toEqual([]);
+      expect((await refreshWith(current)).status).toBe(401);
     });
   });
+});
 
-  describe("a stolen token replayed later", () => {
-    test("it can't start a session, and can't bring itself back to life", async () => {
-      const { refresh, userId } = await signUp();
-      await rotated(refresh);
-      await retiredAgo(refresh, 60 * 60 * 1000);
+describe("reuse detection", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
-      const stolen = await refreshWith(refresh);
-      const again = await refreshWith(refresh);
+  describe("what it ends", () => {
+    test("every token in that session, so the newer one stops working too", async () => {
+      const { refresh, current, userId } = await replayable();
 
-      expect(stolen.status).toBe(401);
-      expect(again.status).toBe(401);
-      expect(setCookies(stolen)).toEqual([]);
-      const old = await prisma.refreshToken.findUnique({
-        where: { tokenHash: hashRefreshToken(refresh) },
-      });
-      expect(old?.revokedAt).toBeInstanceOf(Date);
-      expect(await liveTokens(userId)).toBe(1);
+      await refreshWith(refresh);
+
+      expect(await rows(userId)).toEqual([]);
+      const reply = await refreshWith(current);
+      expect(reply.status).toBe(401);
+      expect(reply.body.error.code).toBe("SESSION_EXPIRED");
     });
 
-    // The next task adds "revoke everything" for this case. Until then the replay is only refused,
-    // and this test will change when that task lands.
-    test("for now, it's only refused: the person's other sessions are left alone", async () => {
-      const { refresh, userId, email } = await signUp();
-      const otherDevice = cookieValue(
-        await login({ email, password: PASSWORD }),
-        "refresh_token",
-      ) as string;
+    test("a lost reply ends that session only, so other devices stay signed in", async () => {
+      const { refresh, email, userId } = await signUp();
+      const phone = await signInElsewhere(email);
+      // The server rotates, but the reply never reaches the laptop, so it still holds the old token.
       await rotated(refresh);
+      await retiredAgo(refresh, 15 * 60 * 1000);
+
+      const laptop = await refreshWith(refresh);
+
+      expect(laptop.status).toBe(401);
+      expect(await liveTokens(userId)).toBe(1);
+      const carriedOn = await refreshWith(phone);
+      expect(carriedOn.status).toBe(200);
+      expect(cookieLine(carriedOn, "refresh_token")).toBeTruthy();
+      expect((await me(cookieValue(carriedOn, "access_token") ?? "")).status).toBe(200);
+    });
+
+    test("a thief who refreshed first loses that token when the real browser returns", async () => {
+      const { refresh } = await signUp();
+      const thief = await rotated(refresh);
+      await retiredAgo(refresh, 60 * 60 * 1000);
+
+      const realBrowser = await refreshWith(refresh);
+
+      expect(realBrowser.status).toBe(401);
+      expect((await refreshWith(thief)).status).toBe(401);
+    });
+
+    test("it reaches a thief however many times they've rotated since", async () => {
+      const { refresh, userId } = await signUp();
+      let thief = await rotated(refresh);
+      for (let turn = 0; turn < 4; turn += 1) thief = await rotated(thief);
       await retiredAgo(refresh, 60 * 60 * 1000);
 
       await refreshWith(refresh);
 
-      expect(await liveTokens(userId)).toBe(2);
-      expect((await refreshWith(otherDevice)).status).toBe(200);
+      expect((await refreshWith(thief)).status).toBe(401);
+      expect(await rows(userId)).toEqual([]);
     });
+
+    test("a token from the middle of a session ends it too", async () => {
+      const { refresh, userId } = await signUp();
+      const middle = await rotated(refresh);
+      const current = await rotated(middle);
+      await retiredAgo(middle, 11_000);
+
+      await refreshWith(middle);
+
+      expect((await refreshWith(current)).status).toBe(401);
+      expect(await rows(userId)).toEqual([]);
+    });
+
+    test("nobody else's sessions are touched", async () => {
+      const { refresh } = await replayable();
+      const someoneElse = await signUp();
+      const before = await rows(someoneElse.userId);
+
+      await refreshWith(refresh);
+
+      expect(await rows(someoneElse.userId)).toEqual(before);
+      expect((await refreshWith(someoneElse.refresh)).status).toBe(200);
+    });
+
+    test("it only ever deletes that person's tokens, even if a family id matched", async () => {
+      const { refresh } = await replayable();
+      const someoneElse = await signUp();
+      await prisma.refreshToken.updateMany({
+        where: { userId: someoneElse.userId },
+        data: { familyId: await familyOf(refresh) },
+      });
+
+      await refreshWith(refresh);
+
+      expect(await liveTokens(someoneElse.userId)).toBe(1);
+    });
+
+    test("the person can sign straight back in, and the old token can't touch that", async () => {
+      const { refresh, email } = await replayable();
+      await refreshWith(refresh);
+
+      const fresh = await signInElsewhere(email);
+      const replayedAgain = await refreshWith(refresh);
+
+      expect(replayedAgain.status).toBe(401);
+      expect((await refreshWith(fresh)).status).toBe(200);
+    });
+  });
+
+  describe("what it looks like from outside", () => {
+    test("the reply is the same as any other refusal, so a thief can't tell", async () => {
+      const { refresh } = await replayable();
+
+      const caught = await refreshWith(refresh);
+      const unknown = await refreshWith(newRefreshToken());
+
+      expect(caught.status).toBe(unknown.status);
+      expect(caught.body).toEqual(unknown.body);
+    });
+
+    test("it sets no cookies, so a late reply can't wipe out a newer sign-in", async () => {
+      const { refresh } = await replayable();
+
+      const reply = await refreshWith(refresh);
+
+      expect(setCookies(reply)).toEqual([]);
+    });
+
+    test("an access token from before still works until it expires", async () => {
+      const { refresh, access } = await replayable();
+
+      await refreshWith(refresh);
+
+      // The known cost of a stateless token: it can't be cancelled, so this lasts up to 15 minutes.
+      expect((await me(access)).status).toBe(200);
+    });
+
+    test("it logs one warning, holding only the two ids", async () => {
+      const warn = vi.spyOn(logger, "warn");
+      const { refresh, userId } = await replayable();
+      const familyId = await familyOf(refresh);
+
+      await refreshWith(refresh);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith({ userId, familyId }, "Refresh token reuse detected");
+    });
+  });
+
+  describe("when it stays quiet", () => {
+    test("9 seconds after retiring isn't an alarm", async () => {
+      const warn = vi.spyOn(logger, "warn");
+      const { refresh, userId } = await signUp();
+      const next = await rotated(refresh);
+      await retiredAgo(refresh, 9_000);
+
+      await refreshWith(refresh);
+
+      expect(warn).not.toHaveBeenCalled();
+      expect(await liveTokens(userId)).toBe(1);
+      expect((await refreshWith(next)).status).toBe(200);
+    });
+
+    test("tabs refreshing together are never an alarm", async () => {
+      const warn = vi.spyOn(logger, "warn");
+      const { refresh, userId } = await signUp();
+
+      await Promise.all(Array.from({ length: 5 }, () => refreshWith(refresh)));
+
+      expect(warn).not.toHaveBeenCalled();
+      expect(await liveTokens(userId)).toBe(1);
+    });
+
+    test("an unknown token ends nothing", async () => {
+      const warn = vi.spyOn(logger, "warn");
+      const { refresh } = await signUp();
+
+      await refreshWith(newRefreshToken());
+
+      expect(warn).not.toHaveBeenCalled();
+      expect((await refreshWith(refresh)).status).toBe(200);
+    });
+
+    test("a logged-out token ends nothing", async () => {
+      const warn = vi.spyOn(logger, "warn");
+      const { refresh, email } = await signUp();
+      const other = await signInElsewhere(email);
+      await logoutWith(refresh);
+
+      await refreshWith(refresh);
+
+      expect(warn).not.toHaveBeenCalled();
+      expect((await refreshWith(other)).status).toBe(200);
+    });
+
+    test("an expired token ends nothing, even a retired one", async () => {
+      const warn = vi.spyOn(logger, "warn");
+      const { refresh, current } = await replayable();
+      await prisma.refreshToken.update({
+        where: { tokenHash: hashRefreshToken(refresh) },
+        data: { expiresAt: new Date(Date.now() - 1000) },
+      });
+
+      const reply = await refreshWith(refresh);
+
+      expect(reply.status).toBe(401);
+      expect(warn).not.toHaveBeenCalled();
+      expect((await refreshWith(current)).status).toBe(200);
+    });
+
+    test("once a session has ended, replaying it again reports nothing more", async () => {
+      const { refresh } = await replayable();
+      await refreshWith(refresh);
+      const warn = vi.spyOn(logger, "warn");
+
+      const again = await refreshWith(refresh);
+
+      expect(again.status).toBe(401);
+      expect(warn).not.toHaveBeenCalled();
+    });
+  });
+
+  // The migration gave each token that already existed its own id as its family.
+  describe("tokens from before the migration", () => {
+    function asBeforeTheMigration(token: string): Promise<unknown> {
+      return prisma.$executeRaw`
+        UPDATE "RefreshToken" SET "familyId" = "id" WHERE "tokenHash" = ${hashRefreshToken(token)}`;
+    }
+
+    test("a live one keeps working, and its replacement joins its family", async () => {
+      const { refresh } = await signUp();
+      await asBeforeTheMigration(refresh);
+      const family = await familyOf(refresh);
+
+      const next = await rotated(refresh);
+
+      expect(await familyOf(next)).toBe(family);
+    });
+
+    test("a retired one can only end itself, as its family has no other tokens", async () => {
+      const { refresh, current } = await replayable();
+      await asBeforeTheMigration(refresh);
+      await asBeforeTheMigration(current);
+
+      const reply = await refreshWith(refresh);
+
+      expect(reply.status).toBe(401);
+      expect(await familyOf(refresh)).toBe("");
+      expect((await refreshWith(current)).status).toBe(200);
+    });
+  });
+
+  describe("requests at the same moment", () => {
+    test.each(ROUNDS)("twenty replays at once raise one alarm, round %i", async () => {
+      const warn = vi.spyOn(logger, "warn");
+      const { refresh, email, userId } = await replayable();
+      const other = await signInElsewhere(email);
+
+      const replies = await Promise.all(Array.from({ length: 20 }, () => refreshWith(refresh)));
+
+      expect(replies.map((reply) => reply.status)).toEqual(Array.from({ length: 20 }, () => 401));
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(await liveTokens(userId)).toBe(1);
+      expect((await refreshWith(other)).status).toBe(200);
+    });
+
+    test.each(ROUNDS)("a replay racing a real refresh leaves nothing, round %i", async () => {
+      const { refresh, current, userId } = await replayable();
+
+      const [replay, realRefresh] = await Promise.all([refreshWith(refresh), refreshWith(current)]);
+
+      expect(replay.status).toBe(401);
+      expect([200, 401]).toContain(realRefresh.status);
+      expect(await rows(userId)).toEqual([]);
+    });
+
+    test.each(ROUNDS)("a replay racing a logout never fails, round %i", async () => {
+      const { refresh, current, userId } = await replayable();
+
+      const [replay, loggedOut] = await Promise.all([refreshWith(refresh), logoutWith(current)]);
+
+      expect(replay.status).toBe(401);
+      expect(loggedOut.status).toBe(204);
+      expect(await rows(userId)).toEqual([]);
+    });
+
+    test.each(ROUNDS)("a replay racing a sign-in leaves that sign-in alone, round %i", async () => {
+      const { refresh, email } = await replayable();
+
+      const [replay, signedIn] = await Promise.all([
+        refreshWith(refresh),
+        login({ email, password: PASSWORD }),
+      ]);
+
+      expect(replay.status).toBe(401);
+      expect(signedIn.status).toBe(200);
+      expect((await refreshWith(cookieValue(signedIn, "refresh_token") ?? "")).status).toBe(200);
+    });
+
+    test.each(ROUNDS)("an alarm doesn't disturb another device's refresh, round %i", async () => {
+      const { refresh, email } = await replayable();
+      const phone = await signInElsewhere(email);
+
+      const [replay, refreshed] = await Promise.all([refreshWith(refresh), refreshWith(phone)]);
+
+      expect(replay.status).toBe(401);
+      expect(refreshed.status).toBe(200);
+      expect((await refreshWith(cookieValue(refreshed, "refresh_token") ?? "")).status).toBe(200);
+    });
+
+    test.each(ROUNDS)(
+      "many refreshes, replays and logouts together never fail, round %i",
+      async () => {
+        const { refresh, current, userId, email } = await replayable();
+        const other = await signInElsewhere(email);
+
+        const replies = await Promise.all([
+          ...Array.from({ length: 4 }, () => refreshWith(refresh)),
+          ...Array.from({ length: 4 }, () => refreshWith(current)),
+          ...Array.from({ length: 4 }, () => refreshWith(other)),
+          logoutWith(current),
+        ]);
+
+        expect(replies.filter((reply) => reply.status >= 500)).toEqual([]);
+        expect(
+          await prisma.refreshToken.count({ where: { userId, familyId: await familyOf(other) } }),
+        ).toBe(2);
+        expect(await liveTokens(userId)).toBe(1);
+      },
+    );
+  });
+
+  describe("taking turns on the person's lock", () => {
+    /** Stands in for a request partway through: it holds the lock until `release` is called. */
+    function holdLock(
+      userId: string,
+      work: (tx: Prisma.TransactionClient) => Promise<unknown>,
+    ): { taken: Promise<void>; release: () => void; finished: Promise<void> } {
+      let release = (): void => undefined;
+      let held = (): void => undefined;
+      const released = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const taken = new Promise<void>((resolve) => {
+        held = resolve;
+      });
+      const finished = prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT 1 FROM "User" WHERE "id" = ${userId} FOR UPDATE`;
+        await work(tx);
+        held();
+        await released;
+      });
+      return { taken, release: () => release(), finished };
+    }
+
+    /** Resolves once a request is really stuck behind the lock, which timing alone can't show. */
+    function aRequestIsWaiting(): Promise<void> {
+      return vi.waitFor(
+        async () => {
+          const [row] = await prisma.$queryRaw<{ waiting: bigint }[]>`
+            SELECT count(*) AS waiting FROM pg_stat_activity
+            WHERE datname = current_database()
+              AND wait_event_type = 'Lock'
+              AND query LIKE '%"User"%FOR UPDATE%'`;
+          expect(Number(row?.waiting)).toBeGreaterThan(0);
+        },
+        { timeout: 3_000, interval: 20 },
+      );
+    }
+
+    /** A token that a rotation has created but not committed, so a plain delete can't see it. */
+    const uncommittedToken = (userId: string, familyId: string) => (tx: Prisma.TransactionClient) =>
+      tx.refreshToken.create({
+        data: {
+          userId,
+          familyId,
+          tokenHash: hashRefreshToken(newRefreshToken()),
+          expiresAt: new Date(Date.now() + DAY_MS),
+        },
+      });
+
+    test("a replay waits for a rotation partway through, then deletes its new token", async () => {
+      const { refresh, current, userId } = await replayable();
+      const rotation = holdLock(userId, uncommittedToken(userId, await familyOf(current)));
+      await rotation.taken;
+
+      const replay = refreshWith(refresh).then((reply) => reply);
+      await aRequestIsWaiting();
+      rotation.release();
+      await rotation.finished;
+
+      expect((await replay).status).toBe(401);
+      expect(await rows(userId)).toEqual([]);
+    });
+
+    test("a logout waits the same way, so that token can't outlive it", async () => {
+      const { refresh, userId } = await signUp();
+      const rotation = holdLock(userId, uncommittedToken(userId, await familyOf(refresh)));
+      await rotation.taken;
+
+      const logout = logoutWith(refresh).then((reply) => reply);
+      await aRequestIsWaiting();
+      rotation.release();
+      await rotation.finished;
+
+      expect((await logout).status).toBe(204);
+      expect(await rows(userId)).toEqual([]);
+    });
+
+    test("a rotation waits for an alarm partway through, then finds its token gone", async () => {
+      const { refresh, userId } = await signUp();
+      const familyId = await familyOf(refresh);
+      const alarm = holdLock(userId, (tx) => tx.refreshToken.deleteMany({ where: { familyId } }));
+      await alarm.taken;
+
+      const rotation = refreshWith(refresh).then((reply) => reply);
+      await aRequestIsWaiting();
+      alarm.release();
+      await alarm.finished;
+
+      const reply = await rotation;
+      expect(reply.status).toBe(401);
+      expect(setCookies(reply)).toEqual([]);
+      expect(await rows(userId)).toEqual([]);
+    });
+
+    test("one person's lock doesn't hold up anyone else", async () => {
+      const { userId } = await signUp();
+      const someoneElse = await signUp();
+      const held = holdLock(userId, () => Promise.resolve());
+      await held.taken;
+
+      const reply = await refreshWith(someoneElse.refresh);
+      held.release();
+      await held.finished;
+
+      expect(reply.status).toBe(200);
+    });
+
+    test(
+      "if the alarm can't finish, nothing is deleted, and the next replay ends the session",
+      { timeout: 20_000 },
+      async () => {
+        const { refresh, current, userId } = await replayable();
+        const before = await rows(userId);
+        // Prisma gives up on a transaction after 5 seconds, which is a real database failure.
+        const stuck = holdLock(userId, () => Promise.resolve());
+        await stuck.taken;
+
+        const failed = await refreshWith(refresh);
+        stuck.release();
+        await stuck.finished.catch(() => undefined);
+
+        expect(failed.status).toBe(500);
+        expect(failed.body.error.code).toBe("INTERNAL_ERROR");
+        expect(setCookies(failed)).toEqual([]);
+        expect(await rows(userId)).toEqual(before);
+
+        expect((await refreshWith(refresh)).status).toBe(401);
+        expect((await refreshWith(current)).status).toBe(401);
+        expect(await rows(userId)).toEqual([]);
+      },
+    );
   });
 });
 
@@ -620,14 +1053,39 @@ describe("POST /api/auth/logout", () => {
     expect(setCookies(reply)).toEqual([]);
   });
 
-  test("older retired tokens stay, because the next task needs to recognise them", async () => {
+  test("it deletes every token in that session, so an old one can't raise an alarm", async () => {
+    const warn = vi.spyOn(logger, "warn");
+    const { refresh, current, userId } = await replayable();
+
+    await logoutWith(current);
+    const late = await refreshWith(refresh);
+
+    expect(await rows(userId)).toEqual([]);
+    expect(late.status).toBe(401);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  test("logging out with an old token still ends the session, thief included", async () => {
     const { refresh, userId } = await signUp();
-    const next = await rotated(refresh);
-    await retiredAgo(refresh, 11_000);
+    const thief = await rotated(refresh);
 
-    await logoutWith(next);
+    await logoutWith(refresh);
 
-    expect(await rows(userId)).toHaveLength(1);
+    expect((await refreshWith(thief)).status).toBe(401);
+    expect(await rows(userId)).toEqual([]);
+  });
+
+  test("it leaves the person's other sessions alone, even mid-refresh", async () => {
+    const { refresh, email } = await signUp();
+    const phone = await signInElsewhere(email);
+    const phoneNext = await rotated(phone);
+
+    await logoutWith(refresh);
+
+    // The phone's second tab presents the token retired a moment ago, and keeps its grace period.
+    expect((await refreshWith(phone)).status).toBe(200);
+    expect((await refreshWith(phoneNext)).status).toBe(200);
   });
 
   test.each([

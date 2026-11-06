@@ -1,11 +1,13 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 
 import { jwtVerify, SignJWT } from "jose";
 import { z } from "zod";
 
 import { env } from "../../config/env.ts";
+import type { Prisma } from "../../generated/prisma/client.ts";
 import { Role } from "../../generated/prisma/enums.ts";
 import { UnauthorizedError } from "../../lib/errors.ts";
+import { logger } from "../../lib/logger.ts";
 import { prisma } from "../../lib/prisma.ts";
 import { publicFields, toPublicUser } from "./auth.service.ts";
 import type { PublicUser } from "./auth.service.ts";
@@ -95,6 +97,7 @@ export async function startSession(user: SessionUser): Promise<SessionTokens> {
   await prisma.refreshToken.create({
     data: {
       userId: user.id,
+      familyId: randomUUID(),
       tokenHash: hashRefreshToken(refreshToken),
       expiresAt: refreshExpiry(new Date()),
     },
@@ -103,13 +106,28 @@ export async function startSession(user: SessionUser): Promise<SessionTokens> {
   return { accessToken: await signAccessToken(user), refreshToken };
 }
 
+/**
+ * Makes one person's token changes take turns, like the table locks in PROJECT_PLAN.md §7.6. The
+ * lock lasts until the transaction ends. Without it, deleting a session would miss a token that a
+ * rotation hasn't committed yet, and that token could be a thief's. Taking this row first also
+ * avoids a deadlock, because creating a token needs the same row for its foreign key.
+ */
+async function lockUser(tx: Prisma.TransactionClient, userId: string): Promise<void> {
+  await tx.$queryRaw`SELECT 1 FROM "User" WHERE "id" = ${userId} FOR UPDATE`;
+}
+
 /** Retires a token and creates its replacement. Returns null if another request got there first. */
-function rotate(id: string, userId: string, now: Date): Promise<string | null> {
+function rotate(
+  { id, userId, familyId }: { id: string; userId: string; familyId: string },
+  now: Date,
+): Promise<string | null> {
   const refreshToken = newRefreshToken();
 
   return prisma.$transaction(async (tx) => {
-    // A compare-and-set: this only updates a row that's still unused. Postgres makes a second
-    // request wait for this one to finish, then finds nothing to update, so exactly one wins.
+    await lockUser(tx, userId);
+
+    // A compare-and-set: this only updates a row that's still unused, so exactly one request wins.
+    // The rest find nothing to update, as the token was retired or deleted while they waited.
     const { count } = await tx.refreshToken.updateMany({
       where: { id, revokedAt: null },
       data: { revokedAt: now },
@@ -117,10 +135,37 @@ function rotate(id: string, userId: string, now: Date): Promise<string | null> {
     if (count === 0) return null;
 
     await tx.refreshToken.create({
-      data: { userId, tokenHash: hashRefreshToken(refreshToken), expiresAt: refreshExpiry(now) },
+      data: {
+        userId,
+        familyId,
+        tokenHash: hashRefreshToken(refreshToken),
+        expiresAt: refreshExpiry(now),
+      },
     });
     return refreshToken;
   });
+}
+
+/** Deletes every token from one sign-in and says how many went. Other sessions aren't touched. */
+function deleteFamily(userId: string, familyId: string): Promise<number> {
+  return prisma.$transaction(async (tx) => {
+    await lockUser(tx, userId);
+    const { count } = await tx.refreshToken.deleteMany({ where: { userId, familyId } });
+    return count;
+  });
+}
+
+/**
+ * A spent token came back after the grace period, so two parties hold a copy, and there's no telling
+ * which is the real person. Ending the session removes any newer token a thief got from it. Other
+ * sessions are safe, because a stolen token only ever leads to tokens in its own family.
+ * PROJECT_PLAN.md §8.2 has the trade-offs.
+ */
+async function endReusedSession(userId: string, familyId: string): Promise<void> {
+  const ended = await deleteFamily(userId, familyId);
+
+  // Only the request that really ended it reports it, after the commit. Neither id is a secret.
+  if (ended > 0) logger.warn({ userId, familyId }, "Refresh token reuse detected");
 }
 
 export async function refreshSession(cookie: unknown): Promise<RefreshedSession> {
@@ -132,6 +177,7 @@ export async function refreshSession(cookie: unknown): Promise<RefreshedSession>
     select: {
       id: true,
       userId: true,
+      familyId: true,
       expiresAt: true,
       revokedAt: true,
       user: { select: publicFields },
@@ -145,7 +191,7 @@ export async function refreshSession(cookie: unknown): Promise<RefreshedSession>
   let retiredAt = stored.revokedAt;
 
   if (!retiredAt) {
-    const refreshToken = await rotate(stored.id, stored.userId, now);
+    const refreshToken = await rotate(stored, now);
     if (refreshToken) return { user, accessToken: await signAccessToken(user), refreshToken };
 
     // Another request got there first. Read it again, as logout may have deleted it instead.
@@ -156,35 +202,29 @@ export async function refreshSession(cookie: unknown): Promise<RefreshedSession>
     retiredAt = current?.revokedAt ?? null;
   }
 
-  // Reuse detection belongs here, for a token retired longer ago than the grace period.
-  if (!retiredAt || now.getTime() - retiredAt.getTime() >= REFRESH_GRACE_MS) throw sessionExpired();
+  if (!retiredAt) throw sessionExpired();
+
+  if (now.getTime() - retiredAt.getTime() >= REFRESH_GRACE_MS) {
+    await endReusedSession(stored.userId, stored.familyId);
+    throw sessionExpired();
+  }
 
   // Within the grace period: an access token only, so a stolen copy never gets a lasting session.
   return { user, accessToken: await signAccessToken(user) };
 }
 
 /**
- * Ends a session by deleting its row. `revokedAt` only ever marks a rotated token, which is how the
- * grace period tells "just rotated" from "logged out". Tokens this person retired within the grace
- * period go too, so one of those can't earn an access token after they've logged out.
+ * Ends a session by deleting its tokens. `revokedAt` only ever marks a rotated token, which is how
+ * the grace period tells "just rotated" from "logged out". The whole family goes, so nothing from
+ * this session can earn a token afterwards, whichever one the browser happened to hold.
  */
 export async function endSession(cookie: unknown): Promise<void> {
   const token = refreshTokenValue.safeParse(cookie);
   if (!token.success) return;
 
-  const tokenHash = hashRefreshToken(token.data);
   const stored = await prisma.refreshToken.findUnique({
-    where: { tokenHash },
-    select: { userId: true },
+    where: { tokenHash: hashRefreshToken(token.data) },
+    select: { userId: true, familyId: true },
   });
-  if (!stored) return;
-
-  await prisma.refreshToken.deleteMany({
-    where: {
-      OR: [
-        { tokenHash },
-        { userId: stored.userId, revokedAt: { gt: new Date(Date.now() - REFRESH_GRACE_MS) } },
-      ],
-    },
-  });
+  if (stored) await deleteFamily(stored.userId, stored.familyId);
 }

@@ -207,7 +207,7 @@ erDiagram
 The six core models are User, Restaurant, Table, Reservation, OpeningHour and Review. Four supporting models are also needed:
 - **BlockedPeriod** implements "block tables/dates". `tableId = null` blocks the whole restaurant.
 - **RestaurantPhoto** holds the Cloudinary photos. Each row keeps the `publicId` needed to transform or delete the image.
-- **RefreshToken** stores hashed refresh tokens, so logout and revocation work (§8).
+- **RefreshToken** stores hashed refresh tokens, so logout and revocation work. Every token from one sign-in shares a `familyId`, so one session can be ended alone (§8.2).
 - **PasswordResetToken** stores hashed, single-use password reset tokens (§8.2). It's added in Phase 7, so it isn't in the schema below yet (§4.5).
 
 ### 4.2 Prisma schema
@@ -302,6 +302,7 @@ model User {
 model RefreshToken {
   id        String    @id @default(uuid())
   userId    String
+  familyId  String // shared by every token from one sign-in, so one session can be ended alone
   tokenHash String    @unique // SHA-256 of the token; the raw value only lives in the cookie
   expiresAt DateTime
   revokedAt DateTime?
@@ -310,6 +311,7 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([familyId])
 }
 
 model Restaurant {
@@ -537,8 +539,8 @@ model PasswordResetToken {
 | POST | `/api/auth/register` | — | Sign up with email and password. `role` is `CUSTOMER` or `OWNER`, default `CUSTOMER`. Returns `201` and `{ user }`, or `409 EMAIL_TAKEN`. Sets the same cookies as login |
 | POST | `/api/auth/login` | — | Sign in. Returns `{ user }`, or `401 INVALID_CREDENTIALS`. Sets the `access_token` and `refresh_token` cookies |
 | POST | `/api/auth/google` | — | `{ credential, role? }`: verifies a Google ID token, then signs in or signs up |
-| POST | `/api/auth/refresh` | refresh cookie | Rotates the refresh token and issues a new access token. Returns `{ user }`, or `401 SESSION_EXPIRED`. A token retired in the last 10 seconds gets a new access token only (§8.2) |
-| POST | `/api/auth/logout` | refresh cookie | Deletes the refresh token and clears the cookies. Returns `204`, even if already signed out |
+| POST | `/api/auth/refresh` | refresh cookie | Rotates the refresh token and issues a new access token. Returns `{ user }`, or `401 SESSION_EXPIRED`. A token retired in the last 10 seconds gets a new access token only. One retired longer ago ends that session (§8.2) |
+| POST | `/api/auth/logout` | refresh cookie | Deletes that session's refresh tokens and clears the cookies. Returns `204`, even if already signed out |
 | POST | `/api/auth/forgot-password` | — | Phase 7. `{ email }`: emails a reset link if the account exists. The reply is always the same (§8.2) |
 | POST | `/api/auth/reset-password` | — | Phase 7. `{ token, password }`: sets the new password and revokes every refresh token. `400 INVALID_RESET_TOKEN` if the token is unknown, expired or used |
 | GET | `/api/me` | User | Current user, as `{ user }`. `401 UNAUTHORIZED` if the access token is missing, invalid or expired |
@@ -1077,22 +1079,30 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
 - **Refresh:** `POST /api/auth/refresh` hashes the cookie value and looks it up:
   - valid → retire it with `revokedAt` and issue a new pair. A compare-and-set in a transaction makes sure exactly one request wins
   - retired less than 10 seconds ago → a new access token only (see Grace period)
-  - **retired longer ago**, meaning a stolen token may be being replayed → revoke *all* of that user's refresh tokens, then `401`. Until the reuse detection task, this is a plain `401`
+  - **retired 10 seconds ago or more**, meaning a stolen token may be being replayed → delete that session's refresh tokens, then `401` (see Reuse detection)
   - unknown, expired or malformed → `401`
 
   A failed refresh never clears cookies, because a late reply could otherwise wipe the newer token another tab just received.
-- **Grace period (10 seconds):** browser tabs share cookies, so two tabs can refresh at once, and the second presents a token the first retired a moment earlier. That's normal, not theft. Treating it as theft would sign someone out of every device for having two tabs open.
+- **Grace period (10 seconds):** browser tabs share cookies, so two tabs can refresh at once, and the second presents a token the first retired a moment earlier. That's normal, not theft. Treating it as theft would end someone's session for having two tabs open.
   - **What it allows:** a token retired in the last 10 seconds gets a new access token. The browser keeps the refresh token the first request received.
   - **What it never allows:** a new refresh token, a longer window, or any use after logout. A late request doesn't move `revokedAt`, so it can't extend the window, and logout closes it.
   - **The trade-off:** someone with a stolen copy who uses it within 10 seconds of the real user's refresh gets about 15 minutes of access, and it isn't flagged. They get no lasting session. 10 seconds covers parallel tabs and slow networks, and keeps that exposure small.
-  - **Requests later than that:** a request in flight for 10 seconds or more looks exactly like a replay, so it gets a `401`. Nothing else changes today, and the newer token keeps working. Browsers attach cookies when a request is sent, so a tab that was asleep or offline sends the newest token and isn't affected.
-  - **Lost replies:** if a refresh reply never arrives, the browser keeps the old token, and the person signs in again once the window has passed. That fails safe.
-  - **With reuse detection:** that task only acts on a token retired 10 seconds ago or more. Inside the window nothing counts as theft, and unknown, expired or logged-out tokens give it nothing to act on. A false alarm then means signing in again on every device, which is the safe way to be wrong.
+  - **Requests later than that:** a request in flight for 10 seconds or more looks exactly like a replay, so it raises the alarm and that session ends (see Reuse detection). Browsers attach cookies when a request is sent, so a tab that was asleep or offline sends the newest token and isn't affected.
+  - **Lost replies:** if a refresh reply never arrives, the server has rotated but the browser still holds the old token. A retry inside the window gets an access token only, so the person carries on, and the next refresh raises the alarm, up to 15 minutes later. That browser signs in again, and other devices aren't affected. In real Chrome, reloading or closing a tab during a refresh did this every time with a plain `fetch`, so the client sends its refresh with `keepalive` (see Client side). A dropped connection can still cause it.
+- **Token families:** every token from one sign-in shares a `familyId`. Signing in creates it and rotation copies it forward, so a family is one session on one browser. A stolen token only ever leads to tokens in its own family, which is why ending the family is enough. Tokens that existed before the migration each became a family of one, so a token retired back then can only delete itself.
+- **Reuse detection:** a token retired 10 seconds ago or more means two parties hold a copy, and the server can't tell which is the real person. So it deletes every token in that family, in one transaction. This also removes a newer token a thief got by refreshing first. The reply is the same `401` as any other refusal, so a thief can't tell they were caught.
+  - **What counts:** only a token that exists, hasn't expired, and was retired 10 seconds ago or more. Inside the window nothing counts as theft, and unknown, expired or logged-out tokens give it nothing to act on.
+  - **Why one session, not the whole account:** a lost reply or a badly delayed request looks exactly like a replay. Ending the whole account would sign an innocent person out everywhere, and wouldn't remove any more of a thief's access. RFC 9700, Auth0, Okta and Supabase all end the session or grant, not the account. Signing out everywhere is kept for a password reset.
+  - **The cost:** a false alarm signs one browser out. That's the safe way to be wrong.
+  - **What's left:** an access token issued before the alarm works for up to 15 minutes. A thief with tokens from two sessions needs two alarms, and a thief with the password can sign straight back in, which is what a password reset is for. If nobody else presents a stolen token, nothing raises the alarm.
+  - **Logs:** one warning with the user id and family id, after the commit, so alarms can be counted. If false alarms turn out to be common, forgiving a token whose replacement was never used could be reconsidered. It lets a thief with a slightly old copy in until the real person returns, and needs a second column, because with a family id alone a thief and the real browser could take turns forever without an alarm.
+- **Locking:** rotation, reuse detection and logout each open a transaction and start by locking that person's `User` row with `SELECT … FOR UPDATE`, so their changes take turns. Without it, a delete can't see a token that a rotation hasn't committed yet, and that token could be a thief's. Taking the row first also avoids a deadlock, because creating a token needs the same row for its foreign key. A new sign-in needs no lock, because it starts a new family nothing else touches. A password reset (Phase 7) must take the same lock.
 - **Client side:**
   - `lib/api.ts` catches a `401`, calls `/api/auth/refresh` once, and retries the request.
   - The refresh is single-flight: parallel requests share one refresh call. This only covers one tab, which is why the server needs the grace period.
+  - The refresh is sent with `keepalive: true`, so the browser finishes it and stores the new cookie even if the page reloads or closes.
   - If the refresh fails, it tries once more before giving up, because a late request may only mean another tab already refreshed. Then it clears auth state and redirects to `/login?next=…`.
-- **Logout:** delete the token's row and clear both cookies, using the same cookie paths. Revoking a token means deleting its row, and `revokedAt` only ever marks a rotated token. That's how the grace period tells "just rotated" from "logged out". Tokens that person retired in the last 10 seconds are deleted too, so the window can't outlive a logout. A request with no session cookie clears nothing, so a forged form on another site can't sign someone out. A copied access token still works until it expires, at most 15 minutes later.
+- **Logout:** delete every token in that session's family and clear both cookies, using the same cookie paths. Revoking a token means deleting its row, and `revokedAt` only ever marks a rotated token. That's how the grace period tells "just rotated" from "logged out". Deleting the family closes the grace period too, and removes a newer token a thief might hold, even if the browser logs out with an older one. The person's other sessions aren't touched. A request with no session cookie clears nothing, so a forged form on another site can't sign someone out. A copied access token still works until it expires, at most 15 minutes later.
 - **Password recovery** (Phase 7, required before production launch):
   - **Asking for a link:** `POST /api/auth/forgot-password` gives the same reply whether or not the account exists, and the email goes out after the reply, so timing doesn't reveal it either. Google-only accounts can use this too, which gives them a password.
   - **The token:** 32 random bytes, base64url, like a refresh token. Only its SHA-256 hash is stored, in `PasswordResetToken`, and it expires after one hour. A new link cancels older ones for that account.
@@ -1316,7 +1326,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - a 15-minute access JWT and a 30-day rotating refresh token, hashed in `RefreshToken`
   - httpOnly cookies as in §8.1
   - `/refresh`, `/logout` and `GET /api/me`
-- [ ] Refresh-token reuse detection: if a token retired 10 seconds ago or more is presented, revoke all of that user's tokens (§8.2)
+- [x] Refresh-token reuse detection: if a token retired 10 seconds ago or more is presented, end that session by deleting its token family, and leave the person's other sessions alone (§8.2)
 - [ ] Google Sign-In: GIS button → `POST /api/auth/google` → `verifyIdToken` → sign in or create. An email match alone never links accounts, so agree that flow first (§8.2). Google's script loads only on Sign in and Sign up, never across the whole app (§8.3)
 - [ ] Middleware: `requireAuth`, `requireRole("OWNER")`, and `requireRestaurantOwner`, which loads `:restaurantId` and returns `404` if it isn't yours
 - [ ] Rate limiting on `/api/auth/*`

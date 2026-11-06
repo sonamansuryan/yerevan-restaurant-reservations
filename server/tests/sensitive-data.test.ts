@@ -34,6 +34,7 @@ vi.mock("../src/lib/prisma.ts", () => ({
       deleteMany: vi.fn(),
     },
     $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
   },
   isDatabaseReachable: vi.fn(),
 }));
@@ -86,6 +87,7 @@ afterEach(() => {
   vi.mocked(prisma.refreshToken.updateMany).mockReset();
   vi.mocked(prisma.refreshToken.deleteMany).mockReset();
   vi.mocked(prisma.$transaction).mockReset();
+  vi.mocked(prisma.$queryRaw).mockReset();
 });
 
 describe("a request the server can't read", () => {
@@ -297,12 +299,21 @@ describe("session tokens", () => {
     return {
       id: "token-1",
       userId: user.id,
+      familyId: "family-1",
       expiresAt: new Date(Date.now() + 60_000),
       revokedAt: null,
       user,
       ...extra,
     } as never;
   }
+
+  /** A token retired long ago, so presenting it sets off reuse detection. */
+  const replayedToken = (): never => storedToken({ revokedAt: new Date(Date.now() - 60_000) });
+
+  const reuseWarnings = (): Record<string, unknown>[] =>
+    lines
+      .map((line) => JSON.parse(line) as Record<string, unknown>)
+      .filter((entry) => entry["msg"] === "Refresh token reuse detected");
 
   test("signing in logs neither token, and the JSON holds neither", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
@@ -412,6 +423,84 @@ describe("session tokens", () => {
 
     const reply = await request(app)
       .post("/api/auth/refresh")
+      .set("Cookie", `refresh_token=${refresh}`);
+
+    expect(reply.status).toBe(500);
+    expect(reply.body).toEqual(safeReply);
+    expect(reply.headers["set-cookie"]).toBeUndefined();
+    await expectHidden(reply, [refresh, hash]);
+  });
+
+  test("a detected replay logs the two ids and nothing else, and leaves no token", async () => {
+    const refresh = newRefreshToken();
+    vi.mocked(prisma.refreshToken.findUnique).mockResolvedValueOnce(replayedToken());
+    vi.mocked(prisma.$transaction).mockImplementationOnce(((work: (tx: unknown) => unknown) =>
+      work(prisma)) as never);
+    vi.mocked(prisma.refreshToken.deleteMany).mockResolvedValueOnce({ count: 2 } as never);
+
+    const reply = await request(app)
+      .post("/api/auth/refresh")
+      .set("Cookie", `refresh_token=${refresh}`);
+
+    expect(reply.status).toBe(401);
+    expect(reply.body.error.code).toBe("SESSION_EXPIRED");
+    await expectHidden(reply, [refresh, hashRefreshToken(refresh)]);
+    expect(loggedError()).toBeUndefined();
+    const [warning] = reuseWarnings();
+    expect(warning).toMatchObject({ level: 40, userId: user.id, familyId: "family-1" });
+    expect(Object.keys(warning ?? {}).sort()).toEqual([
+      "familyId",
+      "hostname",
+      "level",
+      "msg",
+      "pid",
+      "time",
+      "userId",
+    ]);
+  });
+
+  test("a replay that finds its session already ended logs no warning", async () => {
+    const refresh = newRefreshToken();
+    vi.mocked(prisma.refreshToken.findUnique).mockResolvedValueOnce(replayedToken());
+    vi.mocked(prisma.$transaction).mockImplementationOnce(((work: (tx: unknown) => unknown) =>
+      work(prisma)) as never);
+    vi.mocked(prisma.refreshToken.deleteMany).mockResolvedValueOnce({ count: 0 } as never);
+
+    const reply = await request(app)
+      .post("/api/auth/refresh")
+      .set("Cookie", `refresh_token=${refresh}`);
+
+    expect(reply.status).toBe(401);
+    await vi.waitFor(() => expect(lines.length).toBeGreaterThan(0));
+    expect(reuseWarnings()).toEqual([]);
+  });
+
+  test("a failure while ending a session gives a generic reply and logs no token", async () => {
+    const refresh = newRefreshToken();
+    const hash = hashRefreshToken(refresh);
+    vi.mocked(prisma.refreshToken.findUnique).mockResolvedValueOnce(replayedToken());
+    vi.mocked(prisma.$transaction).mockRejectedValueOnce(errorQuoting(refresh, hash));
+
+    const reply = await request(app)
+      .post("/api/auth/refresh")
+      .set("Cookie", `refresh_token=${refresh}`);
+
+    expect(reply.status).toBe(500);
+    expect(reply.body).toEqual(safeReply);
+    expect(reply.headers["set-cookie"]).toBeUndefined();
+    await expectHidden(reply, [refresh, hash]);
+    expect(loggedError()).toMatchObject({ type: "Error" });
+    expect(reuseWarnings()).toEqual([]);
+  });
+
+  test("a failure while deleting a session at logout keeps the cookies and logs no token", async () => {
+    const refresh = newRefreshToken();
+    const hash = hashRefreshToken(refresh);
+    vi.mocked(prisma.refreshToken.findUnique).mockResolvedValueOnce(storedToken());
+    vi.mocked(prisma.$transaction).mockRejectedValueOnce(errorQuoting(refresh, hash));
+
+    const reply = await request(app)
+      .post("/api/auth/logout")
       .set("Cookie", `refresh_token=${refresh}`);
 
     expect(reply.status).toBe(500);

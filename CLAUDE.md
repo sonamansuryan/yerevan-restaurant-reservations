@@ -165,6 +165,7 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 - **Env files:** never commit `.env` files. Every new variable gets a placeholder in the matching `.env.example`.
 - **Logging:** never log passwords, tokens, cookies or auth request bodies. Unexpected errors are logged by type, code and location only, because their messages can repeat what they were given (PROJECT_PLAN.md §8.3).
 - **Auth storage:** auth tokens live in httpOnly cookies, never in `localStorage`. Hash passwords with argon2id.
+- **Refresh tokens:** every change to a person's existing tokens (rotation, reuse detection, logout, password reset) locks their `User` row first, so the changes take turns. Reuse ends one session, never the whole account (PROJECT_PLAN.md §8.2).
 - **Password reset tokens:** the emailed link carries the token after the `#`, never in a query string. The client reads it once into memory, clears it from the address, and sends it only in the `POST` body. It never goes into storage, logs, error reports or analytics, and no third-party script runs on that page (PROJECT_PLAN.md §8.2).
 - **Account linking:** sign-up doesn't verify email, so an email match alone never proves ownership. It never links accounts or signs anyone in (PROJECT_PLAN.md §8.2).
 - **Input validation:** validate every input (params, query, body) with Zod before it reaches a service.
@@ -228,6 +229,7 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 ### Database and migrations
 - Change the schema only through `prisma migrate dev`. Never use `db push` against a shared database. Never edit a migration that has been applied or committed; add a new one.
 - Constraints Prisma can't express (`EXCLUDE`, `CHECK`) go in hand-written migrations created with `--create-only`.
+- Prisma doesn't wrap a migration in a transaction, so a failure partway leaves it half done. A hand-written migration with several statements goes between `BEGIN;` and `COMMIT;`, except `CREATE INDEX CONCURRENTLY`, which can't run in one.
 - Never hard-delete restaurants, tables or reservations. Use `isPublished`, `isActive` or `status` instead.
 - Every new query pattern on `Reservation` gets a supporting index. Check with `EXPLAIN` when unsure.
 
