@@ -48,7 +48,7 @@ Working conventions (commands, folder structure, coding rules) are in [CLAUDE.md
 
 | Area | Core MVP | Advanced (optional) |
 |---|---|---|
-| Authentication | Email and password; Google Sign-In; access JWT plus rotating refresh token in httpOnly cookies, with reuse detection; role guards; ownership checks; rate limits | — |
+| Authentication | Email and password; Google Sign-In; access JWT plus rotating refresh token in httpOnly cookies, with reuse detection; role guards; ownership checks; rate limits; password recovery by email, required before launch (§8.2) | — |
 | Restaurant management | Profile, settings and publishing; Google Places search that prefills name, address, phone and website; photos (upload, cover, delete); tables; weekly hours with split shifts and after-midnight closing; table-level and restaurant-wide blocks | Suggested opening hours from Places; photo reordering |
 | Browsing and search | Filters, sorting and pagination; restaurant page; live availability | — |
 | Reservations | The locked booking transaction; customer cancel; owner confirm, cancel, mark arrived, mark no-show; My Reservations; owner day list | Idempotency keys for retried requests; `NO_SHOW` → `ARRIVED` for late guests; per-table timeline |
@@ -116,6 +116,12 @@ If someone else took the table a moment earlier, you see "This table was just bo
 1. Once the restaurant marks your visit **Arrived**, the past reservation shows a **Rate your visit** button.
 2. Give 1–5 stars and an optional comment. The review appears on the restaurant page, and the average rating updates.
 3. You can edit or delete your own review later.
+
+**C5: Recover a password** *(owners use the same path)*
+1. On **Sign in**, choose **Forgot your password?** and enter your email.
+2. If an account exists for that email, you get a link that works for one hour and only once. The page says the same thing either way, so it never reveals who has an account.
+3. The link opens **Create a new password**. Saving it signs you out on all your devices.
+4. You return to **Sign in**, which shows "Password updated."
 
 ### 2.3 Restaurant owner journeys
 
@@ -186,6 +192,7 @@ erDiagram
     User ||--o{ Reservation : books
     User ||--o{ Review : writes
     User ||--o{ RefreshToken : "signs in with"
+    User ||--o{ PasswordResetToken : "resets with"
     Restaurant ||--o{ RestaurantPhoto : has
     Restaurant ||--o{ Table : has
     Restaurant ||--o{ OpeningHour : has
@@ -197,10 +204,11 @@ erDiagram
     Reservation ||--o| Review : "may get"
 ```
 
-The six core models are User, Restaurant, Table, Reservation, OpeningHour and Review. Three supporting models are also needed:
+The six core models are User, Restaurant, Table, Reservation, OpeningHour and Review. Four supporting models are also needed:
 - **BlockedPeriod** implements "block tables/dates". `tableId = null` blocks the whole restaurant.
 - **RestaurantPhoto** holds the Cloudinary photos. Each row keeps the `publicId` needed to transform or delete the image.
 - **RefreshToken** stores hashed refresh tokens, so logout and revocation work (§8).
+- **PasswordResetToken** stores hashed, single-use password reset tokens (§8.2). It's added in Phase 7, so it isn't in the schema below yet (§4.5).
 
 ### 4.2 Prisma schema
 
@@ -473,6 +481,25 @@ Prisma's schema language can't express these, so they live in a custom migration
 - **IDs:** UUID strings stored as `text`, so raw SQL needs no casts. Slugs give readable public URLs.
 - **Google data:** only `googlePlaceId` is a lasting link to Google. Everything else is data the owner reviewed and saved (§9.1).
 
+### 4.5 Added in Phase 7
+
+Password recovery (§8.2) adds one table. Its own migration creates it in Phase 7, so it isn't part of `init` or §4.2. It follows the same pattern as `RefreshToken`, and `User` gains `passwordResetTokens PasswordResetToken[]`:
+
+```prisma
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique // SHA-256 of the token; the raw value only lives in the emailed link
+  expiresAt DateTime // one hour after it's created
+  usedAt    DateTime? // set when the token is used or cancelled, so a link only works once
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+```
+
 ---
 
 ## 5. REST API
@@ -511,6 +538,8 @@ Prisma's schema language can't express these, so they live in a custom migration
 | POST | `/api/auth/google` | — | `{ credential, role? }`: verifies a Google ID token, then signs in or signs up |
 | POST | `/api/auth/refresh` | refresh cookie | Rotates the refresh token and issues a new access token |
 | POST | `/api/auth/logout` | refresh cookie | Revokes the refresh token and clears the cookies |
+| POST | `/api/auth/forgot-password` | — | Phase 7. `{ email }`: emails a reset link if the account exists. The reply is always the same (§8.2) |
+| POST | `/api/auth/reset-password` | — | Phase 7. `{ token, password }`: sets the new password and revokes every refresh token. `400 INVALID_RESET_TOKEN` if the token is unknown, expired or used |
 | GET | `/api/me` | User | Current user |
 | PATCH | `/api/me` | User | Update name or phone |
 
@@ -1049,6 +1078,18 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
   - The refresh is single-flight: parallel requests share one refresh call.
   - If the refresh fails, it clears auth state and redirects to `/login?next=…`.
 - **Logout:** revoke the refresh token and clear both cookies.
+- **Password recovery** (Phase 7, required before production launch):
+  - **Asking for a link:** `POST /api/auth/forgot-password` gives the same reply whether or not the account exists, and the email goes out after the reply, so timing doesn't reveal it either. Google-only accounts can use this too, which gives them a password.
+  - **The token:** 32 random bytes, base64url, like a refresh token. Only its SHA-256 hash is stored, in `PasswordResetToken`, and it expires after one hour. A new link cancels older ones for that account.
+  - **The link:** `${APP_URL}/reset-password#token=…`. Browsers never send what follows the `#` to a server, so it can't reach `pino-http`'s URL log or a proxy's logs. A query string would.
+  - **In the browser:**
+    - the page reads the token once into memory, and clears it straight away with `navigate(…, { replace: true })`, so the address bar and history no longer hold it
+    - it goes only into the `POST` body, never into storage, cookies, logs, error reports or analytics
+    - no third-party script runs on this page: Google's script loads only on Sign in and Sign up, and any analytics added later stay off it
+    - a reload loses the token on purpose and shows the expired screen, while the emailed link keeps working until it's used or expires
+  - **Setting the password:** `POST /api/auth/reset-password` takes `{ token, password }`. An unknown, expired or used token returns `400 INVALID_RESET_TOKEN`. Otherwise the password is hashed first, because argon2id is slow, then one transaction marks the token used with a compare-and-set, saves the hash and revokes all that user's refresh tokens. Two parallel requests with one token can't both succeed. The reply clears both cookies.
+  - **Signed out everywhere:** other devices lose access when their access token expires, at most 15 minutes later, because access tokens are stateless (§8.1).
+  - **Already checked:** the browser steps were tested in Chrome with React Router 8.5.1 on 2026-11-06. A test server confirmed the token reached it in no URL or header.
 
 ### 8.3 Security baseline
 
@@ -1059,11 +1100,13 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
   | Route group | Limit |
   |---|---|
   | Auth routes | 10 per minute per IP |
+  | Password reset emails | 1 every 5 minutes per account, on top of the auth route limit |
   | Booking | 10 per minute per user |
   | Places proxy | 30 per minute per owner |
 
 - **Validation and authorization:** Zod validates every input. Authorization happens in middleware (role) and in queries (ownership scoping). Other owners' resources return `404`.
 - **Privacy:** owners see a guest's name and phone only on reservations at their own restaurant. Public reviews show first name and last initial.
+- **Reset tokens:** never in a query string, a log, an error report or analytics, and no third-party script runs on `/reset-password` (§8.2).
 - **Secrets:** app secrets live only in `server/.env` and are validated at boot. The root `.env` holds only `POSTGRES_PASSWORD`, which Docker Compose uses for the local database. Phase 8 checks that the client build contains no secrets.
 
 ### 8.4 Configuration
@@ -1120,10 +1163,12 @@ Places is used only when an owner onboards a restaurant (search, then prefill). 
 | `CONFIRMED` | Customer | Date, time, table, address, map link |
 | Cancelled by the customer | Owner | Booking cancelled |
 | Cancelled by the restaurant | Customer | Cancellation, with the owner's reason |
+| Password reset requested | The account's email | A link that works for one hour and only once (§8.2), and a line saying to ignore the email if it wasn't you |
 | *Advanced:* day-before reminder | Customer | Reminder, with a cancel link |
 
 - **Sent after commit,** from `server/src/integrations/email/`. Failures are logged with the reservation id and never fail the API call. A later upgrade could add an outbox table with retries.
 - **Templates** are small TypeScript functions that return `{ subject, html, text }`. Times are formatted in `Asia/Yerevan`.
+- **Reset emails:** click tracking stays off, so the link isn't rewritten or sent through a tracking service. A failed send is logged with the user id, never the link or token.
 - **Dev gotcha:** until a sending domain is verified, Resend's test sender (`onboarding@resend.dev`) delivers only to the email address of your own Resend account. Verify a domain before the demo.
 
 ---
@@ -1140,7 +1185,7 @@ Each phase ends with something you can demo. Tick the **Exit** box only when tha
 | 4 | Owner dashboard: restaurant setup | 3 | A restaurant created and published from the Seghan-styled dashboard |
 | 5 | Customer browsing and availability | 2 (seed data), 4 | Find a restaurant from the Seghan homepage and see its free tables |
 | 6 | **Reservations and double-booking prevention** ★ | 3, 5 | Book, then confirm and mark arrived in the dashboard; race tests green |
-| 7 | Reviews and notifications | 6 | Review after a visit; emails on every status change |
+| 7 | Reviews, notifications and password recovery | 6 | Review after a visit; emails on every status change; reset a forgotten password by email |
 | 8 | Hardening, polish and deployment | all | Live URL, E2E suite, final demo |
 
 ### Phase 1: Foundation and tooling
@@ -1244,7 +1289,8 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 - [x] Core shared components in `client/src/components/`: Button, Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, and empty and error states (§13.3)
 - [x] App shell: site header with a mobile menu, site footer, page container, and Seghan-styled not-found and error pages. Replace the old name in `client/index.html` and `HomePage.tsx` (§1.2)
 - [x] A dev-only `/design` page that shows every token and shared component, so the foundation can be reviewed before real screens use it
-- [ ] Agree the designs for the sign-in and sign-up screens (§13.4)
+- [x] Agree the designs for the sign-in and sign-up screens (§13.4)
+- [ ] Not-found page wording: replace "This page isn’t in the book." and the "Table 404" line with a clear, functional heading, such as "Page not found" (§13.8). A separate improvement, recorded during the sign-in design
 
 **Authentication**
 
@@ -1254,13 +1300,14 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - httpOnly cookies as in §8.1
   - `/refresh`, `/logout` and `GET /api/me`
 - [ ] Refresh-token reuse detection: if a revoked token is presented, revoke all of that user's tokens
-- [ ] Google Sign-In: GIS button → `POST /api/auth/google` → `verifyIdToken` → sign in, link by verified email, or create (§8.2)
+- [ ] Google Sign-In: GIS button → `POST /api/auth/google` → `verifyIdToken` → sign in, link by verified email, or create (§8.2). Google's script loads only on Sign in and Sign up, never across the whole app (§8.3)
 - [ ] Middleware: `requireAuth`, `requireRole("OWNER")`, and `requireRestaurantOwner`, which loads `:restaurantId` and returns `404` if it isn't yours
 - [ ] Rate limiting on `/api/auth/*`
 - [ ] Client:
   - `lib/api.ts`: typed fetch wrapper with `credentials: "include"`, error parsing, and a single-flight refresh on `401`
   - `AuthProvider` and `useAuth`
-  - login and register pages in the Seghan style, with a customer/owner toggle and the Google button
+  - login and register pages as agreed in §13.10, with the customer/owner choice and the Google button
+  - the new shared components from §13.10, each added to `/design`
   - the header's signed-in state: account menu, sign out, and a dashboard link for owners
   - a `<RequireAuth role>` route guard with a `?next=` redirect
 - [ ] Tests:
@@ -1330,7 +1377,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 - [ ] Time helpers (`lib/time.ts` on server and client) with their own tests
 - [ ] Agree the designs for the browse page, restaurant page and booking widget (§13.4)
 - [ ] UI in the Seghan style (§13):
-  - the homepage, built on the mockup with real data (§13.5), replacing the Phase 1 status page
+  - the homepage, built on the mockup with real data (§13.5), replacing the Phase 1 status page. Its hero headline is "Choose your *Seghan.*" (§13.4)
   - browse page with search
   - a filter bar synced to URL params
   - restaurant cards
@@ -1372,7 +1419,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 - [ ] `NO_SHOW` → `ARRIVED` for late guests: the table lock plus the booking's block and overlap checks. Test it over a newer booking (`409 SLOT_TAKEN`) and over a newer block (`409 TABLE_BLOCKED`)
 - [ ] Per-table timeline in the owner day view
 
-### Phase 7: Reviews and notifications
+### Phase 7: Reviews, notifications and password recovery
 
 - [ ] Reviews API:
   - create: your own `ARRIVED` reservation, after its start, one per reservation
@@ -1387,11 +1434,21 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - the owner's reviews page
 - [ ] Resend integration and templates for the §9.3 triggers, with a verified sending domain
 - [ ] Emails are sent after commit. Failures are logged, never thrown to the client
+- [ ] **Password recovery, required before production launch** (§8.2, design in §13.10):
+  - the `PasswordResetToken` migration (§4.5)
+  - `POST /api/auth/forgot-password` and `/reset-password`, with the reset email (§9.3)
+  - the "Forgot your password?" link on Sign in, and the password screens
+  - the token rules: read once into memory, cleared from the address, and kept out of storage, logs, error reports and analytics
 - [ ] Tests:
   - [ ] review eligibility: not arrived, someone else's reservation, duplicate review
   - [ ] rating math, including two reviews written at once (§7.9 #16)
   - [ ] the right email goes out for each transition, with Resend mocked
-- [ ] **Exit:** a completed visit can be reviewed in the Seghan-styled UI, and every booking state change sends the right email
+  - [ ] password recovery requests: the same reply for a known and an unknown email, one email per account every 5 minutes, and a new link cancels the old one
+  - [ ] a reset token works only once and only for one hour, and two requests at once give one winner
+  - [ ] a reset revokes every refresh token
+  - [ ] the token leaves the address and browser history, and reaches no log
+  - [ ] a screen reader announces "Password updated."
+- [ ] **Exit:** a completed visit can be reviewed in the Seghan-styled UI, every booking state change sends the right email, and a forgotten password can be reset by email
 
 **Advanced** (optional, not needed for Exit, §1.1):
 - [ ] A scheduled job (`node-cron`) for day-before reminders and for auto-cancelling `PENDING` bookings whose start time has passed. It changes statuses through the status service (§7.6)
@@ -1403,6 +1460,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - [ ] search `client/dist` for secret values
   - [ ] check the cookie flags in production
   - [ ] give every owner route an ownership test
+  - [ ] confirm a reset token reaches no server log, and that no third-party script runs on `/reset-password` (§8.2)
 - [ ] Playwright end-to-end tests:
   - [ ] a customer signs up, books, and sees the booking as Pending
   - [ ] the owner confirms it and marks the guest arrived
@@ -1425,10 +1483,11 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - [ ] a single Node service, with Express serving `client/dist` and an SPA fallback (`app.get("/{*splat}")`)
   - [ ] `npm run db:deploy -w server` as the release step
   - [ ] env vars set, HTTPS on, `trust proxy` configured
+  - [ ] password recovery works on the live URL, with a real email from the verified domain. This is required before launch (§8.2)
 - [ ] Ops basics: structured logs, an uptime check on `/api/health`, and optional error tracking
 - [ ] `README.md` with setup, scripts, an architecture diagram and demo accounts
 - [ ] A 5-minute demo script that includes a live race: two browsers trying to book the same table at once
-- [ ] **Exit:** the app is live on a public URL with seeded data, the final regression is green, the Seghan design review passes, and the demo script runs end to end without errors
+- [ ] **Exit:** the app is live on a public URL with seeded data, password recovery works there, the final regression is green, the Seghan design review passes, and the demo script runs end to end without errors
 
 ---
 
@@ -1459,7 +1518,7 @@ These are left out on purpose to protect the timeline, unlike the Advanced items
 | Major-version drift. On 2026-11-03, npm's `latest` tag for `prisma` was `8.0.0-rc.29`, and `@types/node` was already on 26.x | Broken installs, changed error shapes | Pin majors (CLAUDE.md). The Phase 2 test records the exclusion-error shape |
 | Timezone bugs | Wrong slots, or bookings at the wrong hour | Store UTC, keep one helper module, and test in a second timezone. Yerevan has no DST, which hides bugs |
 | Google Places cost or terms | An unexpected bill, or storing data we shouldn't | Owners only, minimal field masks, a budget alert, and only place IDs stored long-term |
-| Email deliverability | Guests miss confirmations | Verify a domain early (Phase 7). The in-app status is the source of truth |
+| Email deliverability | Guests miss confirmations or reset links | Verify a domain early (Phase 7). The in-app status is the source of truth for bookings |
 | Scope creep | Core features left unfinished | Every phase ends demo-able. New ideas go to §11 |
 | A migration silently drops the constraint | Double bookings return without anyone noticing | Review migration SQL. The Phase 2 DB tests fail if the constraint is missing |
 | The mockup covers only the homepage | Screens drift apart visually, or get built with no design | One set of tokens and shared components, an agreed design before each phase's UI work (§13.4), and the Phase 8 design review |
@@ -1470,7 +1529,7 @@ These are left out on purpose to protect the timeline, unlike the Advanced items
 2. When should customer cancellation close: any time before the start (the v1 default), or, for example, 2 hours before?
 3. Should reservation duration depend on party size, for example 90 min for 2 and 150 min for 6+?
 4. What hosting or cloud budget is available for the Phase 8 deployment?
-5. Does the assignment require Google Sign-In, Google Places and email notifications? Core assumes yes because the stack names them. Any that aren't required can move to Advanced (§1.1).
+5. Does the assignment require Google Sign-In, Google Places and email notifications? Core assumes yes because the stack names them. Any that aren't required can move to Advanced (§1.1). Email can't move entirely, because password recovery needs it (§8.2).
 6. Should after-midnight slots be listed under the calendar date they start on (the current rule, §6.2) or under the evening they belong to? The owner's day view follows the same choice.
 7. Should we stay on Node.js 24 (Maintenance LTS, supported until April 2028) or move to Node.js 26 (Active LTS since 2026-10-28)?
 8. **Resolved:** the public product name is Seghan (§1.2).
@@ -1486,7 +1545,7 @@ Seghan is a premium restaurant and hospitality platform, not a generic SaaS appl
 - **A starting point, not a specification.** Nothing is kept just because the mockup has it. Typography, color, spacing, proportions, components, layouts, interactions and motion can all change when that makes the product better, including significant changes. Avoid generic templates, heavy decoration, needless gradients and dated effects.
 - **Hospitality, not software.** Judge every screen as a restaurant would: does it welcome people and help them find a table, or does it read like an admin tool? This includes the owner's dashboard (§13.8).
 - **Every frontend task is a design task.** Review what exists and name what could be better. Consider the whole app, not only the current component. Recommend the best design, not the closest match to the mockup, and explain the reasoning. Show it in the browser whenever possible.
-- **Suggest something distinctive.** Every design proposal includes at least one idea that makes the screen memorable and unmistakably Seghan, instead of stopping at the standard pattern (§13.9). If the standard pattern really is the best answer, say why and keep it.
+- **Suggest something distinctive.** Every design proposal includes at least one idea that makes the screen memorable and unmistakably Seghan, instead of stopping at the standard pattern (§13.9). The idea comes from layout, type or interaction, not clever wording (§13.8). If the standard pattern really is the best answer, say why and keep it.
 - **Usability comes first.** Function, readability, accessibility and usability outrank every visual idea. Keep familiar patterns where people rely on them. A detail stays only if it helps someone or adds real character, and anything that slows a booking goes.
 - **Approval before implementing.** Before implementing a significant UI change, explain the design reasoning and show the proposed result, then wait for approval. A proposal is a temporary preview, not code in the app. Significant means something a user would notice, such as a token value, a layout or a component's look. Approved changes are recorded in §13.6.
 - **EmptyState and ErrorState are protected.** They keep their approved look, and don't follow the rest of the design or later token changes (§13.7).
@@ -1529,19 +1588,19 @@ The mockup never sets `box-sizing`, so its padding and borders add to the sizes 
 | Source | Components |
 |---|---|
 | In the mockup | Button (primary, accent, ghost, light), slot button, icon button, nav link, search field, photo placeholder, restaurant card, category tile, section heading, rating, site header, site footer |
-| New, needed by this plan | Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, empty state, error state, mobile menu, Tabs, Pagination, date picker, star input |
+| New, needed by this plan | Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, empty state, error state, mobile menu, Tabs, Pagination, date picker, star input, password field, form notice, choice lines, "or" divider (§13.10) |
 
 The Phase 3 foundation builds what the shell and sign-in need. Later phases add the rest here, using the same tokens. None of this needs a new runtime package: icons are small inline SVG components, and Modal uses the native `<dialog>`. Component tests use `jsdom` and Testing Library, which are dev packages only. `jsdom` can't run `<dialog>`, so Modal's focus, Esc and backdrop behavior are checked in a real browser. The development-only `/design` page shows every token and shared component, and a test fails if a new one isn't added to it.
 
 ### 13.4 Screens and their design status
 
-*Mockup* means a design exists to start from. *New* means it needs an agreed design first.
+*Mockup* means a design exists to start from. *New* means it needs an agreed design first. *Agreed* means its design is decided and recorded.
 
 | Screen | Phase | Design |
 |---|---|---|
 | Site header and footer | 3 | Mockup, plus a *New* mobile menu and signed-in state |
-| Sign in | 3 | New |
-| Sign up, with the customer/owner toggle and Google button | 3 | New |
+| Sign in | 3 | Agreed (§13.10) |
+| Sign up, with the customer/owner toggle and Google button | 3 | Agreed (§13.10) |
 | Not-found and error pages | 3 | New |
 | Dashboard shell, with the restaurant switcher | 4 | New |
 | Add restaurant, with Places search and prefill | 4 | New |
@@ -1550,7 +1609,7 @@ The Phase 3 foundation builds what the shell and sign-in need. Later phases add 
 | Tables | 4 | New |
 | Opening hours weekly editor | 4 | New |
 | Blocks, with the conflict list | 4 | New |
-| Homepage | 5 | Mockup, desktop only. The phone layout needs agreeing |
+| Homepage | 5 | Mockup, desktop only. The phone layout needs agreeing. The hero headline is agreed: "Choose your *Seghan.*", and isn't built yet |
 | Browse, with filters and pagination | 5 | New |
 | Restaurant page | 5 | New |
 | Booking widget: date, party size, slots, table picker | 5 | New, reusing the mockup's slot button |
@@ -1562,6 +1621,7 @@ The Phase 3 foundation builds what the shell and sign-in need. Later phases add 
 | Rate your visit | 7 | New |
 | Review list and rating summary | 7 | New |
 | Owner's reviews page | 7 | New |
+| Reset your password, Create a new password and the expired link | 7 | Agreed (§13.10) |
 
 The mockup links to `Discover`, `Restaurant`, `Auth`, `Account` and `DashOverview`, but those files aren't in the folder.
 
@@ -1636,15 +1696,23 @@ Seghan should feel like a fine restaurant: elegant, sophisticated, warm and welc
 
 | Quality | On screen |
 |---|---|
-| Typography | Type does the work that boxes and icons do in most apps. Serif for names and big moments, sans for controls and data |
+| Typography | Type does the work that boxes and icons do in most apps. Serif for names and big moments, sans for controls and data. Wine italic is kept for branding and selected editorial content |
 | Spacing | Generous and even, like a well-set table. Group with space and hairlines before reaching for a card |
 | Color | Warm paper, ink and one deep wine. Wine marks what matters most on a screen, so it stays rare. Color is never the only signal |
 | Hierarchy | One clear next step on each screen. The restaurant, the time and the table lead, and everything else steps back |
 | Photography | Real photos of each restaurant's food, rooms and atmosphere, given room and a consistent crop. Owners supply them, so layouts have to flatter any photo, and the photo screen should help owners choose well. A restaurant with no photo still looks deliberate, and none of the seeded restaurants has one yet |
 | Interactions | Subtle and unhurried: a line that warms, a tick that draws itself. Motion confirms what just happened, and stops for people who ask for less motion |
 | Details | Times and prices line up, the `֏` sign and Armenian names look right, and long names still fit |
-| Words | A host's voice: warm, brief and honest. "Book this table", not "Submit". No invented urgency (§13.5), and a pending booking is never called confirmed |
+| Words | Plain, warm and honest. "Book this table", not "Submit". No invented urgency (§13.5), and a pending booking is never called confirmed. The **Writing** rules below apply |
 | Discovering and booking | Intuitive and enjoyable, not just efficient. Browsing should feel like leafing through a good guide, and booking like talking to a good host. It still takes under a minute (§1) |
+
+**Writing.** The visual design carries Seghan's hospitality, so the words stay plain.
+
+- **Expressive language is rare.** It belongs in branding, the homepage and important marketing sections, such as "Choose your *Seghan.*" and the footer's "See you at the *table.*"
+- **Functional headings everywhere else.** Authentication, forms, account management, errors and confirmations use clear, familiar headings, such as "Sign in" and "Page not found". They're upright, in ink, with no full stop.
+- **Wine italic is reserved** for branding and selected editorial content. Expressive lines end with a full stop.
+- **Supporting text is short, natural and useful.** It doesn't repeat the heading, or the restaurant and reservation-book metaphors.
+- **Clarity first.** Clarity, usability and consistency come before creative wording.
 
 **Limits.** Usability comes first (§13.1). We take the logic of menus and books, not their costume: no paper textures, script fonts, ornaments or fake book pages. Seghan lists places at every price, from ֏ to ֏֏֏֏, so premium means care, not exclusivity.
 
@@ -1656,8 +1724,110 @@ Ideas that could make Seghan distinctive and memorable. They're proposals, not d
 |---|---|---|---|
 | The word for table | Site footer | 3 | Approved and built. սեղան, the Armenian word for table, is set once in serif in the footer's closing row, as a quiet mark of where Seghan comes from (§1.2) |
 | Menu lines | Mobile menu, not-found page, restaurant page, table picker | 3, 5 | A dotted line joins a name to its value, as on a printed menu: `Monday ····· 12:00–23:00`. Free tables group by zone, like menu sections: `T4 ····· 2–4 seats` under Terrace. Approved and built for the mobile menu and not-found page. The restaurant page and table picker are still to be shown |
+| The open book | Sign in, Sign up, password screens | 3, 7 | Approved, not built yet. A two-page spread: what the page is for on the left, the form on the right, and the fold running down from the logo. On guest sign-up, the name you type appears on a line of the book (§13.10) |
 | Times by course | Booking widget | 5 | Times are grouped like a menu's courses, such as Lunch and Dinner, instead of one long grid. An "After midnight" group also explains the 00:00 and 00:30 slots that Friday's late service adds to Saturday's list (§6.2) |
 | The menu cover | Restaurant card, restaurant page | 5 | A restaurant with no photo shows its name in large serif on a photo tone, like the cover of a menu, instead of an empty color block |
 | The read-back | Booking confirm step | 6 | One serif sentence repeats the booking before it's sent, as a host does on the phone: "A table for four on Friday at 20:00, on the terrace." It also helps people catch a mistake |
 | The reserved card | Booking success page, My Reservations | 6 | The small card a restaurant sets on your table, with your name, the time and the table. Its wording follows the real status, so a pending booking doesn't say Reserved |
 | The day's page | Owner day view | 6 | The day as a page of the maître d's book: times down the margin, guest names in serif, ruled lines between them. Marking a guest as arrived draws the same tick as Checkbox |
+
+### 13.10 Sign-in and password recovery screens
+
+The agreed design, called **the open book**. Sign in and Sign up are built in Phase 3, and the password screens in Phase 7. It was reviewed as a browser preview and approved on 2026-11-06. That preview was temporary, so this section is the record, and building it needs no new proposal.
+
+**Layout**
+
+- From 1024 px, the page is a two-page spread. The fold runs down the center, under the logo, from the header's double rule to the footer's. Below 1024 px the two pages stack.
+- The left page holds today's date in Yerevan, the page's only heading and a short description. The right page holds the form, 400 px wide to match Google's button. It has no title of its own, so nothing is said twice.
+- The date uses `text-eyebrow text-ink-muted uppercase`, for example `FRIDAY 6 NOVEMBER`.
+- The heading uses `mt-3 font-display text-balance text-hero`. It's upright, in ink, with no full stop (§13.8).
+- The description uses `mt-4 max-w-105 text-lead text-pretty text-ink-secondary`. `text-pretty` stops a last line holding a single word.
+
+```tsx
+<PageContainer className="open-book">
+  <div className="relative grid flex-1 lg:-mb-section-sm lg:min-h-160 lg:grid-cols-2 lg:before:absolute lg:before:inset-y-0 lg:before:left-1/2 lg:before:w-px lg:before:bg-line-rule">
+    <div className="pt-8 pb-10 md:pt-12 lg:py-section-sm lg:pr-16 xl:pr-24">{/* date, heading, description */}</div>
+    <div className="lg:py-section-sm lg:pl-16 xl:pl-24">
+      <div className="max-w-100">{/* the form */}</div>
+    </div>
+  </div>
+</PageContainer>
+```
+
+The fold needs one small layout change, so it reaches the footer on tall windows:
+
+```css
+main:has(.open-book) { display: flex; flex-direction: column; }
+.open-book { flex: 1; display: flex; flex-direction: column; }
+```
+
+**Screens**
+
+| Screen | Address | Heading | Description | Main action |
+|---|---|---|---|---|
+| Sign in | `/login` | Sign in | See your reservations or manage your restaurant. | Sign in |
+| Sign up, as a guest | `/register` | Create an account | Book tables and keep your reservations in one place. | Create account |
+| Sign up, as a restaurant | `/register?role=owner` | Create an account | Add your restaurant and publish it when you’re ready. | Create account |
+| Either one, arriving from a booking | Decided in Phase 6 | Sign in, or Create an account | You’ll need an account to finish your booking. | Sign in, or Create account |
+| Forgot password | `/forgot-password` | Reset your password | Enter your email and we’ll send you a reset link. | Send reset link, then Resend link |
+| Set new password | `/reset-password` | Create a new password | To keep your account safe, you’ll be signed out on all your devices. | Update password |
+| Expired or used link | `/reset-password` | Your reset link has expired | Reset links work for one hour and can only be used once. | Request a new link |
+| After a reset | `/login` | Sign in | See your reservations or manage your restaurant. | Sign in, with "Password updated." above the form |
+
+The homepage hero, "Choose your *Seghan.*", is the one expressive heading here (Phase 5). It's branding, so it keeps the wine italic on its last word and its full stop.
+
+**Left page extras**
+
+- **Guest:** the live name line, three ruled rows of a book page: `19:30 · Table 4 · 2 guests`, `20:00 · Your name ····· in the book` in wine, and `20:30 · Table 7 · 4 guests`. What's typed in Your name appears on the middle row. Below 1024 px only that row shows. It's decoration, so it's `aria-hidden`, and a long name is cut short rather than widening the line.
+- **Restaurant:** menu lines: Tables ····· Seats and zones, Opening hours ····· Split shifts and late nights, Bookings ····· Accept, cancel, mark arrivals.
+- **Arriving from a booking:** the restaurant, date and table as menu lines, then "Your choices are kept. The table isn’t held until you confirm." The guest or restaurant choice is hidden, because a booking means a guest.
+
+**Fields and links**
+
+- **Sign in:** Email (`type="email"`, `autoComplete="email"`, `inputMode="email"`) and Password (`current-password`), then the button, the "or" divider, Google's button, and "New to Seghan? Create an account". The link "Forgot your password?" sits under the password. It's added in Phase 7, so it never leads nowhere.
+- **Sign up:** the choice "I’m joining as", with A guest (Book tables) and A restaurant (Manage bookings). `?role=owner` preselects the restaurant, and switching keeps what's typed and leaves the heading in place. Then Your name (`name`, with the guest-only hint "Restaurants see this on your booking."), Email and Password (`new-password`, with the hint "At least 8 characters."). Then the button, the "or" divider, Google's button, and "Already have an account? Sign in".
+- **Reset your password:** Email, the button, and "Back to sign in".
+- **Create a new password:** New password (`new-password`, with the hint "At least 8 characters."), and the button.
+- **Expired or used link:** the button goes to `/forgot-password`, and "Back to sign in" sits below it.
+
+**Messages**
+
+| When | Words | Where |
+|---|---|---|
+| Email left empty | Enter your email. | Under the field |
+| Email incomplete | Enter a full email address. | Under the field |
+| Password left empty on Sign in | Enter your password. | Under the field |
+| Name left empty | Enter your name. | Under the field |
+| New password too short | Use at least 8 characters. | Under the field, replacing the hint |
+| Wrong email or password | Incorrect email or password. Please try again. | Form notice |
+| Too many tries | Too many attempts. Please wait a minute and try again. | Form notice |
+| The email already has an account | There’s already an account with this email. Sign in instead | Form notice, with a link to Sign in |
+| A reset link was requested | If an account exists for this email, we’ve sent a reset link. It works for one hour. | Success notice |
+| The password was changed | Password updated. | Success notice on Sign in, gone at the next attempt |
+
+**Behavior**
+
+- Each tab title is the page's heading, then `· Seghan`, for example "Reset your password · Seghan".
+- Forms use `noValidate`. A failed submit moves focus to the first problem, and the button shows its loading state while sending.
+- Show and Hide on a password field replace a "confirm password" field.
+- There's no phone field, no "Remember me" and no terms checkbox.
+- Google's button sits below the form, under the "or" divider. Google draws it, so it can't be restyled. Its 40 px height is the one known exception to the 44 px rule, and its width has to be passed in pixels, so measure it on phones.
+- Text links use `inline-flex min-h-touch items-center md:min-h-0`, so they reach 44 px on phones.
+- A link with no token shows the expired screen straight away. An old link can't be judged until the form is sent, so it shows the form first, and the expired screen after **Update password**. Focus then moves to the new heading.
+
+**New components** (each is added to `/design` when it's built)
+
+| Component | What it is |
+|---|---|
+| Password field | `Field` with an input, plus a Show or Hide button on the ruled line, named "Show password" or "Hide password" for screen readers |
+| Form notice | News about the whole form: a dot and words on `error-soft` (`role="alert"`) or `success-soft` (`role="status"`). EmptyState and ErrorState stay out of this |
+| Choice lines | A real radio group set as menu lines: a ring with the logo's dot inside, the name in serif, a dotted leader and a note. Phones hide the leader |
+| "or" divider | Two hairlines with a muted serif italic word |
+| Autofill styling | Browsers paint saved details pale blue, which breaks the ruled line, so fields keep their own look |
+
+**Still to check when built**
+
+- Google's real button, because the preview used a stand-in.
+- Real password manager autofill, because the preview simulated it.
+- Screen readers announcing "Password updated." The page and the message arrive together, and a screen reader can skip a message that appears that way, so fill it in just after the page loads, and test it.
+- Browsers other than Chrome, and real phones, because the preview was tested only in Chrome with emulated phones.
