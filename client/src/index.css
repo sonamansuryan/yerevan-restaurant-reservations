@@ -1,1 +1,419 @@
 @import "tailwindcss";
+
+/*
+ * Seghan design tokens. They started from design-reference/seghan/Main.dc.html, and PROJECT_PLAN.md
+ * §13.6 records what has changed since. Components use these names, never raw values.
+ *
+ * A token's prefix decides which classes Tailwind creates: --color-accent gives bg-accent and
+ * text-accent, and --radius-card gives rounded-card. `static` keeps every token available as a
+ * CSS variable, even before a class uses it.
+ *
+ * Sizes are in rem so they follow the browser's font-size setting. 1rem is 16px by default, and
+ * the comments give the px value.
+ */
+@theme static {
+  /* Surfaces */
+  --color-surface-page: #fbfaf7;
+  --color-surface-raised: #ffffff;
+  --color-surface-tinted: #f3f0ea;
+  --color-surface-dark: #17140f;
+
+  /* Text */
+  --color-ink: #17140f;
+  --color-ink-secondary: #4a453d;
+  --color-ink-muted: #6f6a60;
+
+  /* Text on a colored background */
+  --color-on-dark: #fbfaf7;
+  --color-on-dark-secondary: #c9c2b5;
+  --color-on-accent: #ffffff;
+
+  /* Accent */
+  --color-accent: #7a1e2c;
+  --color-accent-hover: #631823;
+
+  /* Lines. Real form inputs use line-control, because the others are too faint for them (§13.6). */
+  --color-line-soft: #ece8e0;
+  --color-line: #e4dfd6;
+  --color-line-strong: #ddd8ce;
+  --color-line-control: #8a8478;
+  --color-line-divider: #efebe4;
+  --color-line-underline: #d3cdc2;
+  --color-line-rule: #b9b2a5;
+  --color-line-on-dark: #4a453d;
+
+  /* Control fills */
+  --color-fill-slot: #f1eee8;
+  --color-fill-hover: #f6f4ef;
+  --color-fill-primary-hover: #2e2922;
+  --color-fill-overlay: rgb(251 250 247 / 0.92);
+
+  /*
+   * Status colors. The mockup has none, so these sit at the same depth as the accent. Error is a
+   * brighter red than the wine accent, so an error never looks like the brand. Each text color
+   * passes 4.5:1 on its soft fill and on every surface.
+   */
+  --color-success: #346841;
+  --color-success-soft: #e7efe4;
+  --color-warning: #80571a;
+  --color-warning-soft: #f6ecda;
+  --color-error: #9e2b25;
+  --color-error-soft: #f8e9e4;
+  --color-info: #2d6276;
+  --color-info-soft: #e5edee;
+  --color-neutral-soft: #e9e4db;
+
+  /* The dimmed page behind an open Modal */
+  --color-backdrop: rgb(23 20 15 / 0.45);
+
+  /* Color blocks for restaurants with no photo */
+  --color-tone-1: #5a2e24;
+  --color-tone-2: #4b2b33;
+  --color-tone-3: #3a3027;
+  --color-tone-4: #26363b;
+  --color-tone-5: #6b5a45;
+  --color-tone-6: #2a2622;
+
+  /*
+   * Fonts. Instrument Sans has no Cyrillic, so Russian text comes from Geist, next in the list.
+   * Neither sans font nor Instrument Serif has Armenian letters or the ֏ sign, so those come from
+   * the Noto fonts (§13.6). Tailwind also uses --font-sans as the app's default font.
+   */
+  --font-sans:
+    "Instrument Sans", "Geist", "Noto Sans Armenian", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-display: "Instrument Serif", "Noto Serif Armenian", ui-serif, Georgia, serif;
+
+  /*
+   * UI text. Every size sets a fixed line height, because `line-height: normal` lets a fallback
+   * font stretch the line: in the mockup, a ֏ makes a 13px line 18px tall instead of 17px.
+   * These heights are what `normal` renders for Geist, so Latin text still matches the mockup.
+   */
+  --text-label: 0.6875rem; /* 11px */
+  --text-label--line-height: 0.875rem;
+  --text-label--letter-spacing: 0.06em;
+  --text-label--font-weight: 500;
+  --text-caption: 0.75rem; /* 12px */
+  --text-caption--line-height: 1rem;
+  --text-eyebrow: 0.75rem; /* 12px */
+  --text-eyebrow--line-height: 1rem;
+  --text-eyebrow--letter-spacing: 0.08em;
+  --text-eyebrow--font-weight: 500;
+  --text-meta: 0.8125rem; /* 13px */
+  --text-meta--line-height: 1.0625rem;
+  --text-ui: 0.875rem; /* 14px */
+  --text-ui--line-height: 1.125rem;
+  --text-input: 0.9375rem; /* 15px */
+  --text-input--line-height: 1.1875rem;
+  --text-body: 1rem; /* 16px */
+  --text-body--line-height: 1.6;
+  --text-lead: 1.125rem; /* 18px */
+  --text-lead--line-height: 1.55;
+
+  /* Display text, used with font-display */
+  --text-title-xs: 1.25rem; /* 20px */
+  --text-title-xs--line-height: 1.625rem;
+  --text-title-xs--letter-spacing: -0.01em;
+  --text-title-sm: 1.375rem; /* 22px */
+  --text-title-sm--line-height: 1.1;
+  --text-title-sm--letter-spacing: -0.01em;
+  --text-title: 1.5rem; /* 24px */
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.01em;
+  --text-logo-sm: 1.75rem; /* 28px */
+  --text-logo-sm--line-height: 1;
+  --text-logo-sm--letter-spacing: -0.01em;
+  --text-logo: 1.875rem; /* 30px */
+  --text-logo--line-height: 1;
+  --text-logo--letter-spacing: -0.01em;
+  --text-masthead: 2.125rem; /* 34px, the logo in the desktop header */
+  --text-masthead--line-height: 1;
+  --text-masthead--letter-spacing: -0.01em;
+  --text-section: 2.5rem; /* 40px */
+  --text-section--line-height: 1.05;
+  --text-section--letter-spacing: -0.01em;
+  --text-feature: 3rem; /* 48px */
+  --text-feature--line-height: 1.02;
+  --text-feature--letter-spacing: -0.01em;
+  --text-hero: clamp(3.25rem, 7vw, 5.75rem); /* 52px to 92px */
+  --text-hero--line-height: 0.98;
+  --text-hero--letter-spacing: -0.025em;
+
+  /* For the two places that need these without a whole text size: footer headings and intro */
+  --tracking-label: 0.06em;
+  --leading-copy: 1.55;
+
+  /*
+   * Layout. The mockup never sets box-sizing, so its padding sits outside its widths: 1280px of
+   * content plus two 32px gutters renders 1344px wide. Tailwind counts padding inside the width,
+   * so the container is the full 1344px. Use max-w-page together with px-gutter.
+   */
+  --container-page: 84rem; /* 1344px */
+  --spacing-gutter: 2rem; /* 32px */
+  --spacing-gutter-sm: 1.25rem; /* 20px, on phones */
+  --spacing-header: 5.25rem; /* 84px */
+  --spacing-header-sm: 4rem; /* 64px, on phones */
+  --spacing-section-sm: 4.5rem; /* 72px */
+  --spacing-section-md: 5.5rem; /* 88px */
+  --spacing-section-lg: 6rem; /* 96px */
+  --spacing-touch: 2.75rem; /* 44px, the smallest tap target on phones (§13.6) */
+
+  /* Radii. Tight corners feel tailored, which suits the fine lines of the reservation book. */
+  --radius-check: 0.1875rem; /* 3px, checkboxes */
+  --radius-slot: 0.375rem; /* 6px */
+  --radius-control: 0.375rem; /* 6px, buttons */
+  --radius-cta: 0.375rem; /* 6px, the search bar's button */
+  --radius-media: 0.5rem; /* 8px */
+  --radius-card: 0.625rem; /* 10px, cards, modals and the search bar */
+  --radius-hero: 0.75rem; /* 12px */
+  --radius-band: 1rem; /* 16px */
+  --radius-pill: 999px;
+
+  /* Shadows. The rule shadows thicken a field's line without moving the layout. */
+  --shadow-search: 0 1px 2px rgb(23 20 15 / 0.04), 0 12px 32px -16px rgb(23 20 15 / 0.16);
+  --shadow-float: 0 24px 48px -20px rgb(23 20 15 / 0.35);
+  --shadow-rule-focus: 0 1px 0 0 var(--color-accent);
+  --shadow-rule-error: 0 1px 0 0 var(--color-error);
+
+  /* Motion. Color changes use Tailwind's default 150ms. The default easing is the plain CSS one. */
+  --default-transition-timing-function: ease;
+  --transition-duration-button: 180ms;
+  --transition-duration-check: 200ms;
+  --transition-duration-modal: 240ms;
+  --transition-duration-image: 400ms;
+  --transition-duration-tile: 500ms;
+  --ease-tile: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* The logo's dot, breathing, is how a page shows it's loading. */
+  --animate-breathe: breathe 1.4s ease-in-out infinite;
+
+  @keyframes breathe {
+    0%,
+    100% {
+      opacity: 0.25;
+      scale: 0.8;
+    }
+    50% {
+      opacity: 1;
+      scale: 1;
+    }
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--color-surface-page);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* §13.6: one visible focus ring everywhere. The mockup's search inputs had none. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring, var(--color-accent));
+    outline-offset: 2px;
+  }
+
+  /* §13.6: the mockup's placeholder color is too faint, at 3.72:1 on white. */
+  ::placeholder {
+    color: var(--color-ink-muted);
+  }
+
+  /*
+   * A modal dialog doesn't stop the page behind it from scrolling, so that happens here. The
+   * scrollbar's space stays reserved at all times, so the page doesn't jump sideways when the
+   * scrollbar goes away. Reserving it only while a modal is open would make short pages jump.
+   */
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  html:has(dialog:modal) {
+    overflow: hidden;
+  }
+}
+
+/*
+ * §13.6: the accent focus ring is too faint on the dark band, at 2.47:1. CSS variables pass down
+ * to child elements, so one class here gives everything inside the dark surface a light ring.
+ */
+@utility surface-dark {
+  background-color: var(--color-surface-dark);
+  color: var(--color-on-dark);
+  --focus-ring: var(--color-on-dark);
+}
+
+/*
+ * EmptyState and ErrorState are protected designs (PROJECT_PLAN.md §13.7): they keep their approved
+ * look while the rest of the app moves on. CSS variables pass down to child elements, so repeating
+ * every token they use here, as a fixed value, means changes to the tokens above can't reach them.
+ * This is the only place raw values appear outside @theme, and a test fails if one changes.
+ */
+@utility state-card {
+  --font-sans:
+    "Geist", "Noto Sans Armenian", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Instrument Serif", "Noto Serif Armenian", ui-serif, Georgia, serif;
+  --font-weight-medium: 500;
+  --text-title: 1.5rem;
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.01em;
+  --text-ui: 0.875rem;
+  --text-ui--line-height: 1.125rem;
+  --color-ink: #17140f;
+  --color-ink-secondary: #4a453d;
+  --color-ink-muted: #6f6a60;
+  --color-on-dark: #fbfaf7;
+  --color-surface-raised: #ffffff;
+  --color-line: #e4dfd6;
+  --color-line-strong: #ddd8ce;
+  --color-fill-slot: #f1eee8;
+  --color-fill-primary-hover: #2e2922;
+  --color-error: #9e2b25;
+  --focus-ring: #9e2b25;
+  --radius-card: 1rem;
+  --radius-control: 0.625rem;
+  --radius-pill: 999px;
+  --spacing: 0.25rem;
+  --default-transition-timing-function: ease;
+  --transition-duration-button: 180ms;
+  --animate-spin: spin 1s linear infinite;
+
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+@layer components {
+  /* The check mark draws itself. The dash starts longer than the line, so it begins invisible. */
+  .check-mark path {
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
+    transition: stroke-dashoffset var(--transition-duration-check) var(--ease-tile);
+  }
+
+  input:checked + .check-mark path {
+    stroke-dashoffset: 0;
+  }
+
+  /*
+   * The modal settles into place, and rises from the bottom on phones. @starting-style sets where
+   * it comes from. A closed dialog is display: none, and allow-discrete keeps it on screen until
+   * the closing animation has finished.
+   */
+  .modal-sheet {
+    opacity: 0;
+    translate: 0 0.625rem;
+    transition:
+      opacity var(--transition-duration-modal) var(--ease-tile),
+      translate var(--transition-duration-modal) var(--ease-tile),
+      overlay var(--transition-duration-modal) allow-discrete,
+      display var(--transition-duration-modal) allow-discrete;
+  }
+
+  .modal-sheet[open] {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  @starting-style {
+    .modal-sheet[open] {
+      opacity: 0;
+      translate: 0 0.625rem;
+    }
+  }
+
+  .modal-sheet::backdrop {
+    background-color: transparent;
+    transition:
+      background-color var(--transition-duration-modal) var(--ease-tile),
+      overlay var(--transition-duration-modal) allow-discrete,
+      display var(--transition-duration-modal) allow-discrete;
+  }
+
+  .modal-sheet[open]::backdrop {
+    background-color: var(--color-backdrop);
+  }
+
+  @starting-style {
+    .modal-sheet[open]::backdrop {
+      background-color: transparent;
+    }
+  }
+
+  @media (width < 48rem) {
+    .modal-sheet {
+      translate: 0 100%;
+    }
+
+    @starting-style {
+      .modal-sheet[open] {
+        translate: 0 100%;
+      }
+    }
+  }
+
+  /*
+   * The dots between a name and its value on a printed menu. A background gives round, evenly
+   * spaced dots, which a dotted border can't. It sits on the text's baseline inside a flex row.
+   */
+  .menu-leader {
+    flex: 1;
+    min-width: 1rem;
+    height: 0.125rem;
+    background-image: radial-gradient(
+      circle at center,
+      var(--color-line-control) 0.7px,
+      transparent 1px
+    );
+    background-size: 0.375rem 0.125rem;
+    background-repeat: repeat-x;
+  }
+
+  /* The mobile menu fades in over the page, then its list settles into place. */
+  .menu-sheet {
+    opacity: 0;
+    transition:
+      opacity var(--transition-duration-modal) var(--ease-tile),
+      overlay var(--transition-duration-modal) allow-discrete,
+      display var(--transition-duration-modal) allow-discrete;
+  }
+
+  .menu-sheet[open] {
+    opacity: 1;
+  }
+
+  @starting-style {
+    .menu-sheet[open] {
+      opacity: 0;
+    }
+  }
+
+  .menu-sheet::backdrop {
+    background-color: transparent;
+  }
+
+  .menu-sheet-list {
+    translate: 0 0.5rem;
+    transition: translate var(--transition-duration-modal) var(--ease-tile);
+  }
+
+  .menu-sheet[open] .menu-sheet-list {
+    translate: 0 0;
+  }
+
+  @starting-style {
+    .menu-sheet[open] .menu-sheet-list {
+      translate: 0 0.5rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .check-mark path,
+    .modal-sheet,
+    .modal-sheet::backdrop,
+    .menu-sheet,
+    .menu-sheet-list {
+      transition: none;
+    }
+  }
+}

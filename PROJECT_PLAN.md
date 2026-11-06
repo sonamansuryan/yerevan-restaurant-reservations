@@ -1,9 +1,10 @@
-# Yerevan Restaurant Reservation Platform: Project Plan
+# Seghan: Project Plan
 
 | | |
 |---|---|
 | **Status** | Draft v2, 3 November 2026: Core/Advanced split, overnight availability, one locking protocol, version check, verification plan |
-| **Project** | Internship project, full-stack web application |
+| **Project** | Yerevan Restaurant Reservation Platform: internship project, full-stack web application |
+| **Public name** | Seghan ([§1.2](#12-product-name)) |
 | **Stack** | React (Vite, TS), React Router, Tailwind · Express (TS) REST API · PostgreSQL + Prisma · JWT + Google OAuth · Google Places, Cloudinary, Resend |
 | **Core challenge** | Zero double bookings, enforced by PostgreSQL transactions and constraints ([§7](#7-double-booking-prevention)) |
 
@@ -55,9 +56,25 @@ Working conventions (commands, folder structure, coding rules) are in [CLAUDE.md
 | Notifications | Emails after commit when a booking is created, confirmed or cancelled | Day-before reminders and auto-cancelling stale `PENDING` bookings (`node-cron`) |
 | Double-booking prevention | Exclusion constraint, the locking protocol (§7.6), compare-and-set, the concurrency suite | — |
 | Quality and delivery | Unit, integration and concurrency tests; CI; Playwright for the core flows; deployment; demo | Error tracking |
-| Visual design | The Seghan design system (tokens and shared components), recreated in our stack; every Core screen built in that style (§13) | — |
+| Visual design | The Seghan design system (tokens and shared components), built in our stack; every Core screen built in that style (§13) | — |
 
 None of the Advanced items affect integrity: the constraint and the locks stop overlaps on their own. For example, without idempotency keys a repeated booking request can't create a second reservation. It gets `409 SLOT_TAKEN`, and the UI disables **Book** while a request is pending.
+
+### 1.2 Product name
+
+The public name is **Seghan**. It goes on everything a customer or restaurant owner can see. Internal names don't change: users never see them, and renaming them would only add risk.
+
+| Where | Use | Examples |
+|---|---|---|
+| Text people read | `Seghan` | Page titles, headings, emails, `© 2026 Seghan` |
+| The logo | `seghan`, in lowercase | The wordmark in the site header and footer, as in the mockup |
+| Internal identifiers | Unchanged | The `yerevan-reservations` repository and package, the `yerevan_dev` and `yerevan_test` databases, the `yerevan` database user, Docker names |
+
+- **Project title:** "Yerevan Restaurant Reservation Platform" describes the internship project. Users don't see it.
+- **Retired names:** "Yerevan Reservations" and "Yerevan Tables" are no longer used.
+- **The city:** Yerevan in copy and seed data, and the `Asia/Yerevan` time zone, aren't product names, so they stay.
+- **Language:** the v1 UI has one language (§11), so the name is written in Latin letters only. The one exception is the footer, which sets the Armenian word սեղան once as a brand detail (§13.9).
+- **Set outside this repository:** the app name on Google's sign-in consent screen (Phase 3), and the email sender name and domain (Phase 7).
 
 ---
 
@@ -150,7 +167,7 @@ flowchart LR
 | PostgreSQL is the single source of truth for availability | Nothing that could cause a double booking is cached. Availability is computed on each request |
 | External APIs are called only from the server | Keys never reach the browser. The two exceptions, Cloudinary signed uploads and the Google Sign-In button, are designed for browsers |
 | Layered server modules (routes → controller → service) | A thin HTTP layer, and business logic that can be tested on its own |
-| Seghan is the visual foundation, recreated in our own components (§13) | One consistent look from a single set of tokens. The exported mockup stays a read-only reference and never ships |
+| Seghan's design system is built in our own components (§13) | One consistent look from a single set of tokens. The exported mockup stays a read-only reference and never ships |
 
 **A booking request, end to end:**
 1. `POST /api/reservations` passes `requireAuth`, then Zod `validate`.
@@ -1064,7 +1081,7 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` | server | no | Upload target, returned to the client together with a signature |
 | `CLOUDINARY_API_SECRET` | server | **yes** | Signs uploads and deletes assets |
 | `RESEND_API_KEY` | server | **yes** | Sends email |
-| `EMAIL_FROM` | server | no | For example `Yerevan Tables <bookings@your-domain>` |
+| `EMAIL_FROM` | server | no | For example `Seghan <bookings@your-domain>` |
 | `VITE_GOOGLE_CLIENT_ID` | client | no (public by design) | Renders the Google Sign-In button |
 
 ---
@@ -1222,11 +1239,11 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 
 **Seghan foundation (§13).** These come first, because every later screen builds on them. They don't depend on the auth API.
 
-- [ ] Confirm the public product name (§12, question 8)
-- [ ] Design tokens: colors, fonts, type sizes, spacing, radii and shadows as Tailwind `@theme` tokens in `client/src/index.css`, including the fixes in §13.6 (§13.2)
-- [ ] Core shared components in `client/src/components/`: Button, Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, and empty and error states (§13.3)
-- [ ] App shell: site header with a mobile menu, site footer, page container, and Seghan-styled not-found and error pages
-- [ ] A dev-only `/design` page that shows every token and shared component, so the foundation can be reviewed before real screens use it
+- [x] Confirm the public product name (§12, question 8)
+- [x] Design tokens: colors, fonts, type sizes, spacing, radii and shadows as Tailwind `@theme` tokens in `client/src/index.css`, including the fixes in §13.6 (§13.2)
+- [x] Core shared components in `client/src/components/`: Button, Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, and empty and error states (§13.3)
+- [x] App shell: site header with a mobile menu, site footer, page container, and Seghan-styled not-found and error pages. Replace the old name in `client/index.html` and `HomePage.tsx` (§1.2)
+- [x] A dev-only `/design` page that shows every token and shared component, so the foundation can be reviewed before real screens use it
 - [ ] Agree the designs for the sign-in and sign-up screens (§13.4)
 
 **Authentication**
@@ -1313,7 +1330,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 - [ ] Time helpers (`lib/time.ts` on server and client) with their own tests
 - [ ] Agree the designs for the browse page, restaurant page and booking widget (§13.4)
 - [ ] UI in the Seghan style (§13):
-  - the homepage, recreated from the mockup with real data (§13.5), replacing the Phase 1 status page
+  - the homepage, built on the mockup with real data (§13.5), replacing the Phase 1 status page
   - browse page with search
   - a filter bar synced to URL params
   - restaurant cards
@@ -1456,45 +1473,56 @@ These are left out on purpose to protect the timeline, unlike the Advanced items
 5. Does the assignment require Google Sign-In, Google Places and email notifications? Core assumes yes because the stack names them. Any that aren't required can move to Advanced (§1.1).
 6. Should after-midnight slots be listed under the calendar date they start on (the current rule, §6.2) or under the evening they belong to? The owner's day view follows the same choice.
 7. Should we stay on Node.js 24 (Maintenance LTS, supported until April 2028) or move to Node.js 26 (Active LTS since 2026-10-28)?
-8. What is the public product name? The mockup's wordmark says Seghan, while the code and docs use Yerevan Reservations, Yerevan Tables and Yerevan Restaurant Reservation Platform.
+8. **Resolved:** the public product name is Seghan (§1.2).
 
 ---
 
 ## 13. Seghan Design Integration
 
-Seghan is the visual foundation of the app. `design-reference/seghan/` holds one exported screen, the homepage. This section explains how that one mockup becomes a full, consistent UI. The matching tasks are in Phases 3–8 of §10.
+Seghan is a premium restaurant and hospitality platform, not a generic SaaS application. Its purpose is discovering restaurants and making reservations, and every screen should feel connected to that. §13.8 describes the direction, and §13.9 collects ideas that make Seghan distinctive. `design-reference/seghan/` holds one exported screen, the homepage. It's our starting point and inspiration, not a specification. This section explains how we get from it to a full, consistent UI. The matching tasks are in Phases 3–8 of §10.
 
 ### 13.1 Rules
 
-- **Read-only reference.** The app never edits, imports, bundles or serves `design-reference/seghan/`.
-- **Recreate, never copy.** `Main.dc.html`, `support.js` and `vendor/` aren't production code. We read the values from them and rebuild each screen with our own React components, TypeScript and Tailwind.
+- **A starting point, not a specification.** Nothing is kept just because the mockup has it. Typography, color, spacing, proportions, components, layouts, interactions and motion can all change when that makes the product better, including significant changes. Avoid generic templates, heavy decoration, needless gradients and dated effects.
+- **Hospitality, not software.** Judge every screen as a restaurant would: does it welcome people and help them find a table, or does it read like an admin tool? This includes the owner's dashboard (§13.8).
+- **Every frontend task is a design task.** Review what exists and name what could be better. Consider the whole app, not only the current component. Recommend the best design, not the closest match to the mockup, and explain the reasoning. Show it in the browser whenever possible.
+- **Suggest something distinctive.** Every design proposal includes at least one idea that makes the screen memorable and unmistakably Seghan, instead of stopping at the standard pattern (§13.9). If the standard pattern really is the best answer, say why and keep it.
+- **Usability comes first.** Function, readability, accessibility and usability outrank every visual idea. Keep familiar patterns where people rely on them. A detail stays only if it helps someone or adds real character, and anything that slows a booking goes.
+- **Approval before implementing.** Before implementing a significant UI change, explain the design reasoning and show the proposed result, then wait for approval. A proposal is a temporary preview, not code in the app. Significant means something a user would notice, such as a token value, a layout or a component's look. Approved changes are recorded in §13.6.
+- **EmptyState and ErrorState are protected.** They keep their approved look, and don't follow the rest of the design or later token changes (§13.7).
+- **Read-only reference.** The app never imports, bundles or serves `design-reference/seghan/`, and the folder isn't edited unless that's explicitly requested.
+- **Learn from it, never copy.** `Main.dc.html`, `support.js` and `vendor/` aren't production code. We use them as reference and build each screen with our own React components, TypeScript and Tailwind.
 - **Tokens, not raw values.** Colors, fonts, radii and shadows are defined once as `@theme` tokens in `client/src/index.css`. Components use those tokens, never hex values or one-off sizes.
 - **Shared components first.** Pages compose `client/src/components/`. A new visual pattern is added there, not invented inside a page.
-- **Design before build.** A screen marked *New* in §13.4 gets an agreed design before its UI work starts. That can be a new export added to the reference folder by its owner, or a short written layout using the tokens and components below.
+- **Design before build.** A screen marked *New* in §13.4 gets an agreed design before its UI work starts, consistent with the whole app and modern UI/UX practice. That can be a new export added to the reference folder by its owner, or a browser preview using the tokens and components below.
 - **CLAUDE.md beats the mockup** on accessibility and code rules (§13.6).
-- **This plan beats the mockup on scope.** A feature shown only in the mockup adds no backend or database work (§13.5).
+- **This plan beats the mockup on scope.** A feature shown only in the mockup adds no backend or database work (§13.5). A design idea that needs such work is a scope decision first.
 
 ### 13.2 Design tokens
 
-Starting values, taken from `Main.dc.html`:
+Current values. They started from `Main.dc.html`, and can change with approval:
 
 | Group | Roles | Values |
 |---|---|---|
 | Surfaces | page, raised surface, tinted band, dark band | `#FBFAF7`, `#FFFFFF`, `#F3F0EA`, `#17140F` |
 | Text | primary, secondary, muted | `#17140F`, `#4A453D`, `#6F6A60` |
 | Text on dark | primary, secondary | `#FBFAF7`, `#C9C2B5` |
-| Accent | default, hover | `#9E2B25`, `#85221D` |
-| Lines | soft, default, strong, form control | `#ECE8E0`, `#E4DFD6`, `#DDD8CE`, `#8A8478` |
-| Control fills | slot button, field hover | `#F1EEE8`, `#F6F4EF` |
+| Accent | default, hover | `#7A1E2C`, `#631823` |
+| Lines | soft, default, strong, form control, search divider, link underline, hero rule, on dark | `#ECE8E0`, `#E4DFD6`, `#DDD8CE`, `#8A8478`, `#EFEBE4`, `#D3CDC2`, `#B9B2A5`, `#4A453D` |
+| Control fills | slot button, field hover, protected button hover (§13.7), icon button over a photo | `#F1EEE8`, `#F6F4EF`, `#2E2922`, `rgb(251 250 247 / .92)` |
+| Status (new, not in the mockup) | text and soft fill for success, warning, error and info, then a neutral fill | `#346841` `#E7EFE4`, `#80571A` `#F6ECDA`, `#9E2B25` `#F8E9E4`, `#2D6276` `#E5EDEE`, `#E9E4DB` |
+| Backdrop (new) | behind an open modal | `rgb(23 20 15 / .45)` |
 | Photo tones | color blocks shown when a restaurant has no photo | `#5A2E24`, `#4B2B33`, `#3A3027`, `#26363B`, `#6B5A45`, `#2A2622` |
-| Fonts | UI, display | Geist 400, 500, 600; Instrument Serif 400 and italic |
-| Type sizes | UI text, card titles, section titles, hero | 11–18 px, 20–30 px, 40–48 px, `clamp(52px, 7vw, 92px)` |
-| Spacing | scale, page width, side gutter, section padding | Tailwind's 4 px scale, 1280 px, 32 px, 72–96 px |
-| Radii | slot, button and field, media, card and search bar, hero media, dark band, pill | 8, 10, 14, 16, 20, 24, 999 px |
+| Fonts | UI, display, fallbacks | Instrument Sans 400, 500, 600; Instrument Serif 400 and italic; Geist 400, 500, 600 for Cyrillic and the protected designs (§13.7); Noto Sans Armenian 400, 500, 600 and Noto Serif Armenian 400 (§13.6) |
+| Type sizes | UI text, card titles, header logo, section titles, hero | 11–18 px, 20–30 px, 34 px, 40–48 px, `clamp(52px, 7vw, 92px)` |
+| Spacing | scale, page content width, side gutter, header height, section padding | Tailwind's 4 px scale, 1280 px, 32 px (20 px on phones), 84 px (64 px on phones), 72–96 px |
+| Radii | checkbox (new), slot, button, search button, media, card and search bar, hero media, dark band, pill | 3, 6, 6, 6, 8, 10, 12, 16, 999 px |
 | Shadows | search bar, floating card | `0 1px 2px rgba(23,20,15,.04), 0 12px 32px -16px rgba(23,20,15,.16)`, `0 24px 48px -20px rgba(23,20,15,.35)` |
-| Motion | color changes, image hover | .15–.18 s, .4–.5 s |
+| Motion | color changes, image hover, tile easing | .15–.18 s, .4–.5 s, `cubic-bezier(.2, .7, .2, 1)` |
 
 Fonts load from Google Fonts with a `<link>` in `client/index.html`, so they need no new package.
+
+The mockup never sets `box-sizing`, so its padding and borders add to the sizes in its CSS, while Tailwind counts them inside. Our starting sizes follow what the mockup renders, not the numbers in its CSS: the page container is 1344 px (1280 px of content plus two 32 px gutters), the search button is 58 px and slot buttons are 36 px. Buttons are 48 px, a deliberate change from the mockup's 46 px.
 
 ### 13.3 Shared components
 
@@ -1503,11 +1531,11 @@ Fonts load from Google Fonts with a `<link>` in `client/index.html`, so they nee
 | In the mockup | Button (primary, accent, ghost, light), slot button, icon button, nav link, search field, photo placeholder, restaurant card, category tile, section heading, rating, site header, site footer |
 | New, needed by this plan | Input, Select, Textarea, Checkbox, Modal, Badge, Spinner, empty state, error state, mobile menu, Tabs, Pagination, date picker, star input |
 
-The Phase 3 foundation builds what the shell and sign-in need. Later phases add the rest here, using the same tokens. None of this needs a new package: icons are small inline SVG components, and Modal uses the native `<dialog>`. Component tests would need `jsdom` and Testing Library, which aren't approved yet, so ask before adding them.
+The Phase 3 foundation builds what the shell and sign-in need. Later phases add the rest here, using the same tokens. None of this needs a new runtime package: icons are small inline SVG components, and Modal uses the native `<dialog>`. Component tests use `jsdom` and Testing Library, which are dev packages only. `jsdom` can't run `<dialog>`, so Modal's focus, Esc and backdrop behavior are checked in a real browser. The development-only `/design` page shows every token and shared component, and a test fails if a new one isn't added to it.
 
 ### 13.4 Screens and their design status
 
-*Mockup* means the design exists. *New* means it needs an agreed design first.
+*Mockup* means a design exists to start from. *New* means it needs an agreed design first.
 
 | Screen | Phase | Design |
 |---|---|---|
@@ -1552,7 +1580,7 @@ The mockup links to `Discover`, `Restaurant`, `Auth`, `Account` and `DashOvervie
 | Photo placeholders | Cloudinary photos, and seeded restaurants may have none | The real cover photo, or a color block from the photo tones |
 | Sample restaurants | Data comes from the API | Real data only |
 
-### 13.6 Mockup problems to fix, not copy
+### 13.6 Improvements over the mockup
 
 | Problem | Measured | Fix |
 |---|---|---|
@@ -1562,4 +1590,74 @@ The mockup links to `Discover`, `Restaurant`, `Auth`, `Account` and `DashOvervie
 | Form input borders | `#E4DFD6` on white is 1.33:1, and needs 3:1 | Use `#8A8478` for real form inputs, which is 3.72:1 |
 | No navigation on phones | Below 760 px the nav and Sign in link are hidden | A mobile menu |
 | No Armenian letters or `֏` | Geist and Instrument Serif don't cover them | Add Noto Sans Armenian and Noto Serif Armenian as fallback fonts |
-| Small touch targets | Slot buttons are 34 px tall and icon buttons 36 px | At least 44 px on phones |
+| Small touch targets | Slot buttons and icon buttons render 36 px tall | At least 44 px on phones |
+| Selects look like plain text | `.field select` removes the arrow and adds nothing | A quiet arrow on a native select |
+| Form labels are hard to read | 11 px uppercase suits the search bar, not forms | 13 px sentence case in forms. The search bar keeps its labels |
+| Phones zoom into fields | Field text is 15 px, and iPhones zoom below 16 px | 16 px field text at every width |
+| No disabled, loading or pressed states | None in the mockup | A flat fill on disabled buttons (4.64:1), a dashed line on disabled fields, a loading state that keeps its size, and a 1 px press |
+| The accent reads as an alert | `#9E2B25` is brick red, at hue 28 | Wine `#7A1E2C`. `#9E2B25` stays for errors, so they no longer share the brand color |
+| The sans font feels technical | Geist was drawn for developer tools | Instrument Sans, drawn to accompany Instrument Serif |
+| Soft corners feel like a SaaS kit | Radii of 10 to 24 px | Radii of 6 to 16 px |
+| Boxed forms feel heavy | A strong outline around every field | Ruled lines, like a reservation book, with text aligned to the labels |
+| Primary hover is almost invisible | `#2E2922` on `#17140F` | Primary warms to wine on hover |
+| The photo glow is decoration | A radial gradient over every color block | Flat color blocks |
+| A logo on the left reads like a SaaS app | Logo, links and button follow the default app layout | A centered nameplate, with links to its left and actions to its right |
+| Header links look like an app bar | 14 px sans | 20 px serif links, with the logo's dot marking the current page |
+| The header line is faint, and stops short of the scrollbar | One 1 px full-width line | A double rule inside the page margins, which opens and closes every page |
+| Two header links open the same page | Discover and Neighborhoods both go to Browse | Neighborhoods leaves the header, and districts move to the footer and mobile menu |
+| The header sits tight against the top of the window | 72 px tall | 84 px tall, and 64 px on phones |
+| Side margins are wide on phones | 32 px on a 360 px screen | 20 px on phones |
+| The footer has no voice | A logo and a tagline | A host's sign-off: "See you at the table." |
+| The tab shows Vite's icon | `client/public/favicon.svg` came from the template | The logo's wine dot, on paper so it shows on dark tab bars |
+
+### 13.7 Protected designs
+
+`EmptyState` and `ErrorState` keep their approved look on purpose. They don't follow the reservation book direction, and later token changes don't reach them.
+
+| Part | Stays as |
+|---|---|
+| Layout | Centered, with a 1 px border, a 16 px radius, and padding of 48 px top and bottom, 24 px at the sides |
+| Type | Title in 24 px Instrument Serif, text in 14 px Geist |
+| Icon | The 28 px alert icon on ErrorState |
+| Button | 46 px tall, 10 px radius, in Geist, centered below the text, with its hover, focus ring and 2 px loading ring |
+
+Their values are frozen in the `state-card` block in `client/src/index.css`, the only place raw values appear outside `@theme`. `Button`'s `classic` look is for these two only. Don't restyle them or change those values unless that's explicitly requested. A test fails if a frozen value changes.
+
+### 13.8 Design direction
+
+Seghan should feel like a fine restaurant: elegant, sophisticated, warm and welcoming. *Seghan* is the Armenian word for table, and every screen exists to help someone find one. The approved idea behind the look is **the reservation book**: the ruled book a maître d' keeps, with serif names, hairlines instead of boxes and one deep wine. The owner's dashboard is the back of the same house: denser and more practical, but never a generic admin panel. `EmptyState` and `ErrorState` are the exception, and stay exactly as documented in §13.7.
+
+| Source | What we take from it | Where it shows most |
+|---|---|---|
+| Reservation books | Ruled lines, serif names and a calm, ordered page | Forms, My Reservations, the owner's day view |
+| Restaurant menus | Clear sections, type instead of boxes, and names joined to their values | Restaurant page, opening hours, booking widget |
+| Fine dining | A host's manners: a warm welcome, quiet guidance, nothing rushed | The booking flow, confirmations, our words |
+| Editorial hospitality design | Large serif headlines, generous space, photography given room | Homepage, Browse, restaurant page |
+
+| Quality | On screen |
+|---|---|
+| Typography | Type does the work that boxes and icons do in most apps. Serif for names and big moments, sans for controls and data |
+| Spacing | Generous and even, like a well-set table. Group with space and hairlines before reaching for a card |
+| Color | Warm paper, ink and one deep wine. Wine marks what matters most on a screen, so it stays rare. Color is never the only signal |
+| Hierarchy | One clear next step on each screen. The restaurant, the time and the table lead, and everything else steps back |
+| Photography | Real photos of each restaurant's food, rooms and atmosphere, given room and a consistent crop. Owners supply them, so layouts have to flatter any photo, and the photo screen should help owners choose well. A restaurant with no photo still looks deliberate, and none of the seeded restaurants has one yet |
+| Interactions | Subtle and unhurried: a line that warms, a tick that draws itself. Motion confirms what just happened, and stops for people who ask for less motion |
+| Details | Times and prices line up, the `֏` sign and Armenian names look right, and long names still fit |
+| Words | A host's voice: warm, brief and honest. "Book this table", not "Submit". No invented urgency (§13.5), and a pending booking is never called confirmed |
+| Discovering and booking | Intuitive and enjoyable, not just efficient. Browsing should feel like leafing through a good guide, and booking like talking to a good host. It still takes under a minute (§1) |
+
+**Limits.** Usability comes first (§13.1). We take the logic of menus and books, not their costume: no paper textures, script fonts, ornaments or fake book pages. Seghan lists places at every price, from ֏ to ֏֏֏֏, so premium means care, not exclusivity.
+
+### 13.9 Signature ideas
+
+Ideas that could make Seghan distinctive and memorable. They're proposals, not decisions: each one is shown at its task, and its row is updated when it's approved or dropped. None of them adds backend or database work. New ideas are added here as they come up.
+
+| Idea | Screen | Phase | What it is |
+|---|---|---|---|
+| The word for table | Site footer | 3 | Approved and built. սեղան, the Armenian word for table, is set once in serif in the footer's closing row, as a quiet mark of where Seghan comes from (§1.2) |
+| Menu lines | Mobile menu, not-found page, restaurant page, table picker | 3, 5 | A dotted line joins a name to its value, as on a printed menu: `Monday ····· 12:00–23:00`. Free tables group by zone, like menu sections: `T4 ····· 2–4 seats` under Terrace. Approved and built for the mobile menu and not-found page. The restaurant page and table picker are still to be shown |
+| Times by course | Booking widget | 5 | Times are grouped like a menu's courses, such as Lunch and Dinner, instead of one long grid. An "After midnight" group also explains the 00:00 and 00:30 slots that Friday's late service adds to Saturday's list (§6.2) |
+| The menu cover | Restaurant card, restaurant page | 5 | A restaurant with no photo shows its name in large serif on a photo tone, like the cover of a menu, instead of an empty color block |
+| The read-back | Booking confirm step | 6 | One serif sentence repeats the booking before it's sent, as a host does on the phone: "A table for four on Friday at 20:00, on the terrace." It also helps people catch a mistake |
+| The reserved card | Booking success page, My Reservations | 6 | The small card a restaurant sets on your table, with your name, the time and the table. Its wording follows the real status, so a pending booking doesn't say Reserved |
+| The day's page | Owner day view | 6 | The day as a page of the maître d's book: times down the margin, guest names in serif, ruled lines between them. Marking a guest as arrived draws the same tick as Checkbox |
