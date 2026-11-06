@@ -3,6 +3,8 @@ const MESSAGES: Record<string, string> = {
   SLOT_TAKEN:
     "Sorry, this table was just booked for that time. Please choose another time or table.",
   DATABASE_UNAVAILABLE: "The database is unavailable right now. Please try again.",
+  EMAIL_TAKEN: "There’s already an account with this email.",
+  INVALID_CREDENTIALS: "Incorrect email or password. Please try again.",
 };
 
 /** An error we expected and can explain to the client. Anything else is treated as a bug. */

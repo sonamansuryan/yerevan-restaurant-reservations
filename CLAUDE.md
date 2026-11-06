@@ -112,7 +112,7 @@ Older tutorials and model training data often get these wrong. The notes on the 
     │   ├── index.ts          # starts the HTTP server
     │   ├── app.ts            # builds the Express app (tests import this)
     │   ├── config/env.ts     # Zod-validated env, the ONLY place in the app that reads process.env
-    │   ├── lib/              # prisma.ts, errors.ts, db-errors.ts, logger.ts, time.ts
+    │   ├── lib/              # prisma.ts, errors.ts, db-errors.ts, logger.ts, password.ts, time.ts
     │   ├── middleware/       # requireAuth, requireRole, requireRestaurantOwner, validate, errorHandler
     │   ├── modules/<name>/   # <name>.routes.ts · .controller.ts · .service.ts · .schemas.ts (· .rules.ts for pure logic)
     │   ├── integrations/     # google-places.ts · cloudinary.ts · email/ (Resend + templates)
@@ -163,9 +163,10 @@ The shell is non-interactive, so always pass `--name` to `db:migrate` when the s
 - **The client holds no secrets.** Every `VITE_*` variable is bundled into public JavaScript, so only public values go there (today that is just `VITE_GOOGLE_CLIENT_ID`).
 - **External calls:** Google Places, Cloudinary signing and deletion, and Resend are called only from `server/src/integrations/`. The browser talks only to our `/api`. The exceptions are the signed direct upload to Cloudinary, the Google Sign-In button and the Google Fonts stylesheet.
 - **Env files:** never commit `.env` files. Every new variable gets a placeholder in the matching `.env.example`.
-- **Logging:** never log passwords, tokens, cookies or auth request bodies.
+- **Logging:** never log passwords, tokens, cookies or auth request bodies. Unexpected errors are logged by type, code and location only, because their messages can repeat what they were given (PROJECT_PLAN.md §8.3).
 - **Auth storage:** auth tokens live in httpOnly cookies, never in `localStorage`. Hash passwords with argon2id.
 - **Password reset tokens:** the emailed link carries the token after the `#`, never in a query string. The client reads it once into memory, clears it from the address, and sends it only in the `POST` body. It never goes into storage, logs, error reports or analytics, and no third-party script runs on that page (PROJECT_PLAN.md §8.2).
+- **Account linking:** sign-up doesn't verify email, so an email match alone never proves ownership. It never links accounts or signs anyone in (PROJECT_PLAN.md §8.2).
 - **Input validation:** validate every input (params, query, body) with Zod before it reaches a service.
 - **Identity and ownership:** identity comes from `req.user`, never from the request body. Every `/api/owner/*` route checks ownership. Queries are scoped by both id and owner (`where: { id, restaurantId }`) to prevent IDOR.
 

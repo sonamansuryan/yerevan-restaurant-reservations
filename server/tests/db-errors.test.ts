@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 
 import { Prisma } from "../src/generated/prisma/client.ts";
-import { isExclusionViolation } from "../src/lib/db-errors.ts";
+import { isExclusionViolation, isUniqueViolation } from "../src/lib/db-errors.ts";
 
 // Builds the error Prisma throws, with the fields measured from real constraint violations.
 function prismaError(code: string, sqlState: string): Prisma.PrismaClientKnownRequestError {
@@ -38,4 +38,19 @@ test("ignores anything that isn't a Prisma error", () => {
   expect(isExclusionViolation(new Error("Something else"))).toBe(false);
   expect(isExclusionViolation("23P01")).toBe(false);
   expect(isExclusionViolation(null)).toBe(false);
+});
+
+test("recognises a unique violation", () => {
+  expect(isUniqueViolation(prismaError("P2002", "23505"))).toBe(true);
+});
+
+test("a unique violation isn't an exclusion or foreign key violation", () => {
+  expect(isUniqueViolation(prismaError("P2039", "23P01"))).toBe(false);
+  expect(isUniqueViolation(prismaError("P2003", "23503"))).toBe(false);
+});
+
+test("a unique violation has to be a Prisma error", () => {
+  expect(isUniqueViolation(new Error("P2002"))).toBe(false);
+  expect(isUniqueViolation("P2002")).toBe(false);
+  expect(isUniqueViolation(null)).toBe(false);
 });

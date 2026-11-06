@@ -518,6 +518,7 @@ model PasswordResetToken {
   | `403` | Wrong role |
   | `404` | Not found, or not yours |
   | `409` | Conflict |
+  | `413` | Request body too large |
   | `429` | Rate limited |
 
 - **Pagination:** `?page=1&pageSize=20` returns `{ "data": [ … ], "meta": { "page": 1, "pageSize": 20, "total": 57 } }`.
@@ -533,8 +534,8 @@ model PasswordResetToken {
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/api/auth/register` | — | Sign up with email and password. `role` is `CUSTOMER` or `OWNER` |
-| POST | `/api/auth/login` | — | Sign in. Sets the `access_token` and `refresh_token` cookies |
+| POST | `/api/auth/register` | — | Sign up with email and password. `role` is `CUSTOMER` or `OWNER`, default `CUSTOMER`. Returns `201` and `{ user }`, or `409 EMAIL_TAKEN` |
+| POST | `/api/auth/login` | — | Sign in. Returns `{ user }`, or `401 INVALID_CREDENTIALS`. Sets the `access_token` and `refresh_token` cookies, from the token service task on |
 | POST | `/api/auth/google` | — | `{ credential, role? }`: verifies a Google ID token, then signs in or signs up |
 | POST | `/api/auth/refresh` | refresh cookie | Rotates the refresh token and issues a new access token |
 | POST | `/api/auth/logout` | refresh cookie | Revokes the refresh token and clears the cookies |
@@ -1059,16 +1060,20 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
 
 ### 8.2 Flows
 
-- **Email sign-up and sign-in:** validated with Zod, passwords at least 8 characters, hashed with argon2id. Unknown email and wrong password return the same generic error.
+- **Email sign-up and sign-in:** validated with Zod. Emails are trimmed and lowercased, passwords are 8 to 128 characters, and hashing uses argon2id. An unknown email, a wrong password and an account with no password all get the same generic error, after the same amount of work, so neither the reply nor its timing reveals who has an account. Sign-up does reveal it: a taken email gets `409 EMAIL_TAKEN`, which the agreed design shows (§13.10).
 - **Google Sign-In:**
   1. The client shows the Google Identity Services button (`VITE_GOOGLE_CLIENT_ID`), which returns an ID token (`credential`).
   2. The server verifies the token with `google-auth-library`: `verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID })`.
   3. The server then finds the account:
      - a user with this `googleId` → sign in
-     - otherwise, a user with the same email, **and Google reports `email_verified`** → link `googleId` to that account, then sign in
+     - otherwise, a user with the same email → **don't link automatically** (see Unverified emails below). The safe flow is agreed at the Google Sign-In task, before it's built
      - otherwise → create a user with `role` from the request (default `CUSTOMER`, never `ADMIN`)
 
   This flow never needs the OAuth client secret.
+- **Unverified emails:** sign-up doesn't prove that someone owns the address they typed, so a matching email never proves that a Seghan account and a Google account belong to the same person. `email_verified` only covers the Google side.
+  - **The risk:** someone registers a victim's address with their own password. If the victim's Google sign-in then links to that account, both can get in, and the attacker can see the victim's bookings and details.
+  - **The rule:** an email match alone never links accounts or signs anyone in. Linking needs proof of control of the existing account, such as signing in with its password.
+  - **Until Phase 7:** the address's real owner can't sign up while it's taken (`409 EMAIL_TAKEN`). Password recovery lets them take the account back, because only they receive the link.
 - **Refresh:** `POST /api/auth/refresh` hashes the cookie value and looks it up:
   - valid → revoke it and issue a new pair
   - unknown or expired → `401`
@@ -1107,6 +1112,7 @@ Both cookies also get `Secure` in production. `SameSite=Strict` works here becau
 - **Validation and authorization:** Zod validates every input. Authorization happens in middleware (role) and in queries (ownership scoping). Other owners' resources return `404`.
 - **Privacy:** owners see a guest's name and phone only on reservations at their own restaurant. Public reviews show first name and last initial.
 - **Reset tokens:** never in a query string, a log, an error report or analytics, and no third-party script runs on `/reset-password` (§8.2).
+- **Logs and error replies:** requests are logged by id, method, URL and status, never their bodies. Unexpected errors are logged by type, code and location only. Their text is left out, because it can repeat a password or hash: a Prisma validation error prints the whole call, and `JSON.parse` quotes its input. Replies only ever carry a fixed message, and an unreadable request body gets `INVALID_BODY` without being logged.
 - **Secrets:** app secrets live only in `server/.env` and are validated at boot. The root `.env` holds only `POSTGRES_PASSWORD`, which Docker Compose uses for the local database. Phase 8 checks that the client build contains no secrets.
 
 ### 8.4 Configuration
@@ -1294,13 +1300,13 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
 
 **Authentication**
 
-- [ ] `POST /api/auth/register` and `/login`, with Zod validation, argon2id hashing and generic error messages
+- [x] `POST /api/auth/register` and `/login`, with Zod validation, argon2id hashing and generic error messages
 - [ ] Token service:
   - a 15-minute access JWT and a 30-day rotating refresh token, hashed in `RefreshToken`
   - httpOnly cookies as in §8.1
   - `/refresh`, `/logout` and `GET /api/me`
 - [ ] Refresh-token reuse detection: if a revoked token is presented, revoke all of that user's tokens
-- [ ] Google Sign-In: GIS button → `POST /api/auth/google` → `verifyIdToken` → sign in, link by verified email, or create (§8.2). Google's script loads only on Sign in and Sign up, never across the whole app (§8.3)
+- [ ] Google Sign-In: GIS button → `POST /api/auth/google` → `verifyIdToken` → sign in or create. An email match alone never links accounts, so agree that flow first (§8.2). Google's script loads only on Sign in and Sign up, never across the whole app (§8.3)
 - [ ] Middleware: `requireAuth`, `requireRole("OWNER")`, and `requireRestaurantOwner`, which loads `:restaurantId` and returns `404` if it isn't yours
 - [ ] Rate limiting on `/api/auth/*`
 - [ ] Client:
@@ -1315,7 +1321,7 @@ Planned server compiler options (Phase 1 confirms them with `npm run typecheck`)
   - [ ] refresh rotation
   - [ ] refresh-token reuse detection
   - [ ] logout
-  - [ ] Google flow with a mocked verifier, including the unverified-email case
+  - [ ] Google flow with a mocked verifier, including the unverified-email case and an email that matches an existing account
   - [ ] role guards
   - [ ] **IDOR:** owner A gets `404` on owner B's restaurant
 - [ ] **Exit:** users sign up and sign in with email or Google on Seghan-styled screens, stay signed in across reloads, and can't reach routes their role doesn't allow
@@ -1519,6 +1525,7 @@ These are left out on purpose to protect the timeline, unlike the Advanced items
 | Timezone bugs | Wrong slots, or bookings at the wrong hour | Store UTC, keep one helper module, and test in a second timezone. Yerevan has no DST, which hides bugs |
 | Google Places cost or terms | An unexpected bill, or storing data we shouldn't | Owners only, minimal field masks, a budget alert, and only place IDs stored long-term |
 | Email deliverability | Guests miss confirmations or reset links | Verify a domain early (Phase 7). The in-app status is the source of truth for bookings |
+| Unverified email addresses | Someone keeps access to an account that's later linked to its address's real owner | An email match never links accounts (§8.2). Password recovery lets the real owner take the account back (Phase 7) |
 | Scope creep | Core features left unfinished | Every phase ends demo-able. New ideas go to §11 |
 | A migration silently drops the constraint | Double bookings return without anyone noticing | Review migration SQL. The Phase 2 DB tests fail if the constraint is missing |
 | The mockup covers only the homepage | Screens drift apart visually, or get built with no design | One set of tokens and shared components, an agreed design before each phase's UI work (§13.4), and the Phase 8 design review |

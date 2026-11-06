@@ -1,6 +1,14 @@
 import { Prisma } from "../generated/prisma/client.ts";
 
 const PG_EXCLUSION_VIOLATION = "23P01"; // PostgreSQL SQLSTATE
+const PRISMA_UNIQUE_VIOLATION = "P2002";
+
+/** True when Postgres rejected a write because a unique index already holds that value. */
+export function isUniqueViolation(err: unknown): boolean {
+  return (
+    err instanceof Prisma.PrismaClientKnownRequestError && err.code === PRISMA_UNIQUE_VIOLATION
+  );
+}
 
 /**
  * True when Postgres rejected a write because of an EXCLUDE constraint, such as
