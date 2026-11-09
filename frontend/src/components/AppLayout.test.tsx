@@ -8,6 +8,7 @@ import { RouterProvider } from "react-router/dom";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { AppLayout } from "@/components/AppLayout";
+import { ME_QUERY_KEY } from "@/lib/queryClient";
 import type { AuthUser } from "@/types/api";
 
 type TestRouter = ReturnType<typeof createMemoryRouter>;
@@ -219,5 +220,31 @@ describe("who's signed in", () => {
     expect((await header().findByRole("alert")).textContent).toBe("Couldn’t sign out");
     expect(header().getByRole("button", { name: "Sign out" })).toBeDefined();
     expect(router.state.location.pathname).toBe("/another");
+  });
+
+  test("once someone is known, a failed check in the background keeps them signed in", async () => {
+    fakeApi(lilit);
+    const queryClient = new QueryClient();
+    const router = createMemoryRouter([
+      { element: <AppLayout />, children: [{ index: true, element: <p>The home page</p> }] },
+    ]);
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+    await header().findByRole("button", { name: "Sign out" });
+
+    fakeApi(lilit, "unreachable");
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: ME_QUERY_KEY });
+      // TanStack Query tells components on the next tick, so give the failure time to show.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    // The check really failed, and the header kept the person anyway.
+    expect(queryClient.getQueryState(ME_QUERY_KEY)?.status).toBe("error");
+    expect(header().getByRole("button", { name: "Sign out" })).toBeDefined();
+    expect(header().queryByRole("link", { name: "Sign in" })).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import { useLocation } from "react-router";
 
 import { LinkButton } from "@/components/Button";
 import { FormNotice } from "@/components/FormNotice";
@@ -11,6 +12,8 @@ import type { ApiError } from "@/lib/api";
  * answer came. A problem with one field shows under that field instead.
  */
 export function ServerNotice({ error }: { error: ApiError | null }): ReactElement | null {
+  // Passed on to Sign in, so someone a guard sent here still comes back afterwards.
+  const { state: returnState } = useLocation();
   if (!error || Object.keys(fieldMessages(error)).length > 0) return null;
 
   return (
@@ -19,7 +22,7 @@ export function ServerNotice({ error }: { error: ApiError | null }): ReactElemen
       {error.code === "EMAIL_TAKEN" && (
         <>
           {" "}
-          <LinkButton variant="link" to="/login">
+          <LinkButton variant="link" to="/login" state={returnState}>
             Sign in instead
           </LinkButton>
         </>

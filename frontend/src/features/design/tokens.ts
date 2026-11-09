@@ -237,6 +237,7 @@ export const screenStates = {
   ],
   signUp: ["A guest (live)", "A restaurant", "Field errors", "Sending", "Email taken"],
   leftPage: ["A guest, before typing", "A guest, with a name", "A long name", "A restaurant"],
+  guard: ["Checking your account", "Not for this account", "Couldn’t check"],
 } as const;
 
 function componentsIn(section: string): number {

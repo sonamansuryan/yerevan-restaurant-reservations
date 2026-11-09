@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 // Sign in and Create an account, through the real routes, shell and hooks, with a fake API.
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { Mock } from "vitest";
 
+import { returnPath, returnStateFor } from "@/features/auth/returnTo";
 import { routes } from "@/router";
 import type { AuthUser } from "@/types/api";
 
@@ -71,14 +72,19 @@ function fakeApi(outcome: "works" | "refuses"): Mock {
       signedIn = { ...lilit, name, email, role };
       return Promise.resolve(json({ user: signedIn }, 201));
     }
+    if (url === "/api/auth/logout") {
+      signedIn = null;
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }
     return new Promise(() => {});
   });
   vi.stubGlobal("fetch", fetch);
   return fetch;
 }
 
-function renderAt(path: string): TestRouter {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
+/** Opens the app at an address, with the state a guard would pass along, if any. */
+function renderAt(entry: string | { pathname: string; state: unknown }): TestRouter {
+  const router = createMemoryRouter(routes, { initialEntries: [entry] });
   render(
     <QueryClientProvider client={new QueryClient()}>
       <RouterProvider router={router} />
@@ -161,4 +167,67 @@ test("a taken email keeps the page, with a way to sign in instead", async () => 
     "There’s already an account with this email. Sign in instead",
   );
   expect(router.state.location.pathname).toBe("/register");
+});
+
+test("a signed-out visitor to My reservations signs in, and is brought back there", async () => {
+  fakeApi("works");
+  const router = renderAt("/reservations");
+
+  expect(await main().findByRole("heading", { level: 1, name: "Sign in" })).toBeDefined();
+  await signIn();
+
+  expect(await main().findByRole("heading", { level: 1, name: "My reservations" })).toBeDefined();
+  expect(router.state.location.pathname).toBe("/reservations");
+});
+
+test("switching to Create an account on the way there keeps the destination", async () => {
+  fakeApi("works");
+  const router = renderAt("/reservations");
+
+  await userEvent.click(await main().findByRole("link", { name: "Create an account" }));
+  await createAccount();
+
+  expect(await main().findByRole("heading", { level: 1, name: "My reservations" })).toBeDefined();
+  expect(router.state.location.pathname).toBe("/reservations");
+});
+
+test("Sign in instead, offered when an email is taken, keeps the destination too", async () => {
+  fakeApi("refuses");
+  const state = returnStateFor({ pathname: "/reservations", search: "", hash: "" });
+  const router = renderAt({ pathname: "/register", state });
+
+  await createAccount();
+  await userEvent.click(await main().findByRole("link", { name: "Sign in instead" }));
+
+  await waitFor(() => expect(router.state.location.pathname).toBe("/login"));
+  expect(returnPath(router.state.location.state)).toBe("/reservations");
+});
+
+test("signing out on My reservations goes home, not to Sign in", async () => {
+  fakeApi("works");
+  const router = renderAt("/reservations");
+  await signIn();
+  await main().findByRole("heading", { level: 1, name: "My reservations" });
+
+  await userEvent.click(header().getByRole("button", { name: "Sign out" }));
+  await header().findByRole("link", { name: "Sign in" });
+  // Let any redirect still on its way arrive, so a wrong turn after home can't be missed.
+  await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+
+  // Someone who chose to sign out isn't sent to Sign in, as if their session had ended.
+  expect(router.state.location.pathname).toBe("/");
+  expect(router.state.location.state).toBeNull();
+  expect(main().getByRole("heading", { level: 1 }).textContent).toBe("Seghan");
+});
+
+test("a guest who heads for the dashboard signs in, and is told it's for restaurants", async () => {
+  fakeApi("works");
+  const router = renderAt("/dashboard");
+
+  await signIn();
+
+  expect(
+    await main().findByRole("heading", { level: 1, name: "This page is for restaurants" }),
+  ).toBeDefined();
+  expect(router.state.location.pathname).toBe("/dashboard");
 });

@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import type { ReactElement } from "react";
 import { useForm } from "react-hook-form";
+import { useLocation } from "react-router";
 
 import { Button, LinkButton } from "@/components/Button";
 import { Input } from "@/components/Input";
@@ -52,6 +53,10 @@ export function SignInForm({
     if (validateOnMount) void trigger();
   }, [validateOnMount, trigger]);
 
+  // Where a guard sent this person from, if it did, passed on to Create an account so they still
+  // come back after signing up.
+  const { state: returnState } = useLocation();
+
   return (
     // noValidate: the browser's own bubbles would come before these messages, in its own words.
     <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
@@ -75,7 +80,7 @@ export function SignInForm({
       </Button>
       <p className="text-ui text-ink-secondary">
         New to Seghan?{" "}
-        <LinkButton variant="link" to="/register">
+        <LinkButton variant="link" to="/register" state={returnState}>
           Create an account
         </LinkButton>
       </p>

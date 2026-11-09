@@ -1,6 +1,11 @@
 import type { ReactElement } from "react";
 
 import { GuestBookLines, RestaurantLines } from "@/features/auth/components/BookExtras";
+import {
+  AccountCheckFailed,
+  CheckingAccount,
+  NotForThisAccount,
+} from "@/features/auth/components/GuardStates";
 import { SignInForm } from "@/features/auth/components/SignInForm";
 import { SignUpForm } from "@/features/auth/components/SignUpForm";
 import { Group, Section } from "@/features/design/components/parts";
@@ -76,6 +81,22 @@ const leftPage: Record<StateOf<"leftPage">, ReactElement> = {
   "A restaurant": <RestaurantLines />,
 };
 
+// What a guarded page shows instead of itself. Each sits in a column, as on the page.
+const guard: Record<StateOf<"guard">, ReactElement> = {
+  // Centred, as on the page, where the dot is all there is.
+  "Checking your account": (
+    <div className="flex min-h-40 items-center justify-center">
+      <CheckingAccount />
+    </div>
+  ),
+  "Not for this account": (
+    <div className="flex flex-col items-center gap-6">
+      <NotForThisAccount title="This page is for restaurants" name="Lilit Harutyunyan" />
+    </div>
+  ),
+  "Couldn’t check": <AccountCheckFailed onRetry={ignore} retrying={false} />,
+};
+
 function Specimens({ specimens }: { specimens: Record<string, ReactElement> }): ReactElement {
   return (
     <div className="grid gap-x-16 gap-y-12 xl:grid-cols-2">
@@ -112,6 +133,12 @@ export function ScreensSection(): ReactElement {
         note="Under the sentence. A guest's name is written into the book as it's typed, and a restaurant sees what its dashboard holds."
       >
         <Specimens specimens={leftPage} />
+      </Group>
+      <Group
+        title="Pages that need an account"
+        note="What My reservations and the dashboard show instead of themselves. Someone signed out never sees these: they're sent to Sign in, and brought back afterwards."
+      >
+        <Specimens specimens={guard} />
       </Group>
     </Section>
   );

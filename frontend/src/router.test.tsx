@@ -95,6 +95,18 @@ test("/register?role=owner chooses A restaurant, as the header's link expects", 
   );
 });
 
+test.each(["/reservations", "/dashboard"])(
+  "%s waits with the breathing dot while the app checks who's signed in",
+  async (path) => {
+    renderRoutes(path);
+
+    const main = await screen.findByRole("main");
+
+    expect(within(main).getByRole("status", { name: "Checking your account" })).toBeDefined();
+    expect(within(main).queryByRole("heading", { level: 1 })).toBeNull();
+  },
+);
+
 test.each(["/nowhere", "/restaurants", "/a/deep/path"])(
   "%s shows the not-found page in the shell, until a page exists there",
   async (path) => {
@@ -170,8 +182,17 @@ describe("in a production build", () => {
     vi.resetModules();
     const production = await import("@/router");
 
-    const paths = production.routes[0]?.children?.[0]?.children?.map((route) => route.path);
+    // A guard is a layout route without a path, so its pages sit one level inside it.
+    const paths = (list: RouteObject[] = []): (string | undefined)[] =>
+      list.flatMap((route) => (route.children ? paths(route.children) : [route.path]));
 
-    expect(paths).toEqual([undefined, "login", "register", "*"]);
+    expect(paths(production.routes[0]?.children?.[0]?.children)).toEqual([
+      undefined,
+      "login",
+      "register",
+      "reservations",
+      "dashboard",
+      "*",
+    ]);
   });
 });

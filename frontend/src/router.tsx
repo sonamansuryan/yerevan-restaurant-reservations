@@ -3,10 +3,14 @@ import type { RouteObject } from "react-router";
 
 import { AppLayout } from "@/components/AppLayout";
 import { Spinner } from "@/components/Spinner";
+import { RequireAuth } from "@/features/auth/components/RequireAuth";
+import { SignedOutOnly } from "@/features/auth/components/SignedOutOnly";
+import { DashboardPage } from "@/pages/DashboardPage";
 import { DevErrorPage } from "@/pages/DevErrorPage";
 import { ErrorPage } from "@/pages/ErrorPage";
 import { HomePage } from "@/pages/HomePage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
+import { ReservationsPage } from "@/pages/ReservationsPage";
 import { SignInPage } from "@/pages/SignInPage";
 import { SignUpPage } from "@/pages/SignUpPage";
 
@@ -43,8 +47,28 @@ export const routes: RouteObject[] = [
         errorElement: <ErrorPage />,
         children: [
           { index: true, element: <HomePage /> },
-          { path: "login", element: <SignInPage /> },
-          { path: "register", element: <SignUpPage /> },
+          // A guard is a layout route without a path: it decides, then shows the page inside it
+          // through <Outlet />. The API checks every request too, which is the real protection.
+          {
+            // For people who aren't signed in. Anyone signed in goes on to where they were heading.
+            element: <SignedOutOnly />,
+            children: [
+              { path: "login", element: <SignInPage /> },
+              { path: "register", element: <SignUpPage /> },
+            ],
+          },
+          {
+            // For anyone signed in.
+            element: <RequireAuth />,
+            children: [{ path: "reservations", element: <ReservationsPage /> }],
+          },
+          {
+            // For restaurant owners only.
+            element: (
+              <RequireAuth roles={["OWNER"]} notAllowedTitle="This page is for restaurants" />
+            ),
+            children: [{ path: "dashboard", element: <DashboardPage /> }],
+          },
           ...devRoutes,
           { path: "*", element: <NotFoundPage /> },
         ],

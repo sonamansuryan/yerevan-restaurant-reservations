@@ -15,11 +15,15 @@ export function useSignOut(): UseMutationResult<void, Error, void> {
 
   return useMutation({
     mutationFn: () => apiPost<void>("/api/auth/logout"),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Go home first, and only then say nobody's signed in. The other way round, a page that
+      // needs an account, such as My reservations, would see nobody while still on screen, and its
+      // guard would send the person to Sign in, as if their session had ended. flushSync puts home
+      // on screen before navigate() finishes, instead of a moment later.
+      await navigate("/", { flushSync: true });
       // Nobody is signed in now, and the server has just said so, so no need to ask it again.
       // Anything else private in the cache must go too; today ["me"] is the only such query.
       queryClient.setQueryData(ME_QUERY_KEY, null);
-      void navigate("/");
     },
   });
 }

@@ -58,7 +58,7 @@ Everything marked ✅ is already built, and stays as it is.
 - ✅ **Stack:** React, TypeScript, React Router and Tailwind; Node.js, Express and REST; PostgreSQL and Prisma, run locally in Docker.
 - ✅ **One address for the browser:** Vite forwards `/api` to Express now, and Vercel will in Step 10.
 - ✅ **Sign-in:** passwords hashed with argon2. Sessions use `httpOnly` cookies with a rotating refresh token, which is more than required but works.
-- 🟡 **Roles:** guest, restaurant and admin, checked by `requireRole` ✅. Asking for someone else's restaurant returns `404` ⬜ (task 4.1).
+- 🟡 **Roles:** guest, restaurant and admin, checked by `requireRole` on the server ✅ and by the route guard in the browser ✅. Asking for someone else's restaurant returns `404` ⬜ (task 4.1).
 - ✅ **Safety basics:** Zod checks every input, all errors share one JSON format, secrets live only in `backend/.env`, and logs never contain secrets. Sign-in and sign-up allow 10 tries per minute per address.
 - ✅ **Data:** times are stored in UTC. Nothing important is deleted: restaurants are unpublished, tables deactivated and bookings cancelled instead.
 - 🟡 **Double booking:** the database constraint ✅, plus a transaction that locks the table's row ⬜ (§5).
@@ -86,18 +86,19 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (9 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 892 tests ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 920 tests ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
   - demo data, with demo accounts that sign in with `DEMO_PASSWORD`
   - register, log in, refresh, log out and "who am I"
   - `lib/api.ts`: GET, POST, PATCH and DELETE, renewing an expired session once
+  - route guards: signed-out visitors go to Sign in and come back afterwards, and owner pages are for owners only
   - the Seghan foundation and `/design`
 - **Partly built:**
   - `requireAuth` and `requireRole` exist, but there are no ownership checks yet (task 4.1)
   - the time helpers
-  - a placeholder homepage
+  - placeholder pages: the homepage, My reservations (task 8.3) and the dashboard (Step 4)
 - **Still missing:**
   - no test proves the double-booking guarantee on real PostgreSQL yet (from task 6.4)
 
@@ -181,7 +182,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 |---|---|---|
 | Foundations | Color, type, space, shape, motion | ✅ |
 | Components | Actions, forms, feedback, brand and shell, protected designs, responsive | ✅ |
-| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in and Create an account |
+| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, and the route guard's states |
 | Flows | "Book a table" (the assignment's final result) and "Handle a reservation" | ⬜ |
 
 **Key states:** loading, empty, error with a retry, field errors, sending, success, not allowed, and each feature's own errors. A step is done only when its screens are in `/design`. `EmptyState` and `ErrorState` keep their approved look.
@@ -214,7 +215,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 - [x] **2.4 `lib/api.ts`:** add POST, PATCH and DELETE; on a `401`, refresh once and retry. *Check:* unit tests with a fake `fetch`.
 - [x] **2.5 Signed-in header and mobile menu,** showing the person's name and Sign out. *Check:* sign in and out in the browser.
 - [x] **2.6 Sign in and Sign up pages** in the agreed design, with their new components and states in `/design`. *Check:* component tests for the form errors, and a review in `/design`.
-- [ ] **2.7 Route guard:** signed-out visitors go to Sign in and come back afterwards; guests are kept out of owner pages. *Check:* in the browser.
+- [x] **2.7 Route guard:** signed-out visitors go to Sign in and come back afterwards; guests are kept out of owner pages. *Check:* in the browser.
 - [ ] **2.8 Google OAuth:**
   - Create a Google client ID.
   - `POST /api/auth/google` checks Google's token on the server.

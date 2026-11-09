@@ -18,6 +18,8 @@ const pages = [
   { value: "/login", label: "Sign in" },
   { value: "/register", label: "Create an account" },
   { value: "/register?role=owner", label: "Create an account, as a restaurant" },
+  { value: "/reservations", label: "My reservations (needs an account)" },
+  { value: "/dashboard", label: "Dashboard (restaurants only)" },
   { value: "/a-page-that-does-not-exist", label: "Not found" },
   { value: "/dev/error", label: "Error" },
 ];

@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import type { ReactElement } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import { useLocation } from "react-router";
 
 import { Button, LinkButton } from "@/components/Button";
 import { ChoiceLines } from "@/components/ChoiceLines";
@@ -64,6 +65,8 @@ export function SignUpForm({
     defaultValues: { role: defaultRole, name: "", email: "", password: "", ...defaultValues },
   });
 
+  // Where a guard sent this person from, if it did, passed on to Sign in so they still come back.
+  const { state: returnState } = useLocation();
   const role = useWatch({ control, name: "role" });
   const name = useWatch({ control, name: "name" });
   useEffect(() => {
@@ -115,7 +118,7 @@ export function SignUpForm({
       </Button>
       <p className="text-ui text-ink-secondary">
         Already have an account?{" "}
-        <LinkButton variant="link" to="/login">
+        <LinkButton variant="link" to="/login" state={returnState}>
           Sign in
         </LinkButton>
       </p>
