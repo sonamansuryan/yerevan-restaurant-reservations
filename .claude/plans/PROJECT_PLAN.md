@@ -195,11 +195,11 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 7. Roadmap
 
-### Step 1: Project setup 🟡
+### Step 1: Project setup ✅
 
 ✅ Already built: React, TypeScript, React Router and Tailwind; an Express REST API; PostgreSQL with Prisma, run in Docker; the schema, migrations and demo data; tests and lint; the Seghan foundation and `/design`.
 
-- [ ] **1.1 Confirm the setup works.** *Check:*
+- [x] **1.1 Confirm the setup works.** *Check:*
   - the database starts in Docker, and its migrations are up to date
   - the demo data is there (7 restaurants)
   - `npm run dev` serves the homepage, which reads "API: ok", and `/design` opens
