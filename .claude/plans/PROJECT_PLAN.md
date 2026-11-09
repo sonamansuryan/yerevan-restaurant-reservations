@@ -58,7 +58,7 @@ Everything marked ✅ is already built, and stays as it is.
 - ✅ **Stack:** React, TypeScript, React Router and Tailwind; Node.js, Express and REST; PostgreSQL and Prisma, run locally in Docker.
 - ✅ **One address for the browser:** Vite forwards `/api` to Express now, and Vercel will in Step 10.
 - ✅ **Sign-in:** passwords hashed with argon2. Sessions use `httpOnly` cookies with a rotating refresh token, which is more than required but works.
-- ⬜ **Roles:** guest, restaurant and admin. Asking for someone else's restaurant returns `404`.
+- 🟡 **Roles:** guest, restaurant and admin, checked by `requireRole` ✅. Asking for someone else's restaurant returns `404` ⬜ (task 4.1).
 - ✅ **Safety basics:** Zod checks every input, all errors share one JSON format, secrets live only in `backend/.env`, and logs never contain secrets. Sign-in and sign-up allow 10 tries per minute per address.
 - ✅ **Data:** times are stored in UTC. Nothing important is deleted: restaurants are unpublished, tables deactivated and bookings cancelled instead.
 - 🟡 **Double booking:** the database constraint ✅, plus a transaction that locks the table's row ⬜ (§5).
@@ -95,7 +95,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - the Seghan foundation and `/design`
 - **Partly built:**
   - `lib/api.ts` handles GET requests only
-  - `requireAuth` exists, but there are no role or ownership checks yet
+  - `requireAuth` and `requireRole` exist, but there are no ownership checks yet (task 4.1)
   - the time helpers
   - a placeholder homepage
 - **Still missing:**
@@ -210,7 +210,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 - [x] **2.1 Demo passwords:** the seed reads `DEMO_PASSWORD` from `.env`. This rebuilds the local database, so ask first. *Check:* you can log in as each demo account.
 - [x] **2.2 Rate limit:** 10 sign-in tries per minute. *Check:* the 11th try in a test gets `429`.
-- [ ] **2.3 Roles:** add `requireRole`. *Check:* a guest gets `403` on an owner route.
+- [x] **2.3 Roles:** add `requireRole`. *Check:* a guest gets `403` on an owner route.
 - [ ] **2.4 `lib/api.ts`:** add POST, PATCH and DELETE; on a `401`, refresh once and retry. *Check:* unit tests with a fake `fetch`.
 - [ ] **2.5 Signed-in header and mobile menu,** showing the person's name and Sign out. *Check:* sign in and out in the browser.
 - [ ] **2.6 Sign in and Sign up pages** in the agreed design, with their new components and states in `/design`. *Check:* component tests for the form errors, and a review in `/design`.
