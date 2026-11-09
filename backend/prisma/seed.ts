@@ -1,6 +1,9 @@
 // Fills yerevan_dev with demo data. It only ever adds rows that are missing: there are no deletes,
-// and an existing row is never changed, so running it again does nothing.
+// and an existing row is never changed, so running it again does nothing. Every demo account signs
+// in with DEMO_PASSWORD from backend/.env.
+import { env } from "../src/config/env.ts";
 import type { Prisma } from "../src/generated/prisma/client.ts";
+import { hashPassword, verifyPassword } from "../src/lib/password.ts";
 import { prisma } from "../src/lib/prisma.ts";
 import {
   openingHoursFor,
@@ -40,7 +43,7 @@ async function assertSeedDatabase(): Promise<void> {
  * Lists everything that doesn't match the demo data. An empty database is fine, and so is one that
  * holds only the demo data. Anything else could be real work, so the seed leaves it alone.
  */
-async function findProblems(): Promise<string[]> {
+async function findProblems(demoPassword: string): Promise<string[]> {
   const problems: string[] = [];
 
   const constraints = await prisma.$queryRaw<{ name: string }[]>`
@@ -51,11 +54,23 @@ async function findProblems(): Promise<string[]> {
     if (!constraintNames.has(name)) problems.push(`Missing constraint: ${name}`);
   }
 
-  const users = await prisma.user.findMany({ select: { email: true, role: true } });
-  for (const { email, role } of users) {
+  const users = await prisma.user.findMany({
+    select: { email: true, role: true, passwordHash: true },
+  });
+  // A demo user made before DEMO_PASSWORD existed, or with an older one, can't sign in with it.
+  // The seed never changes an existing row, so the only fix is to rebuild the database.
+  const withoutDemoPassword: string[] = [];
+  for (const { email, role, passwordHash } of users) {
     const expected = USERS.find((user) => user.email === email);
     if (!expected) problems.push(`Unexpected user: ${email}`);
     else if (expected.role !== role) problems.push(`User ${email} has a different role: ${role}`);
+    else if (!(await verifyPassword(passwordHash, demoPassword))) withoutDemoPassword.push(email);
+  }
+  if (withoutDemoPassword.length > 0) {
+    problems.push(
+      `These demo users don't sign in with DEMO_PASSWORD: ${withoutDemoPassword.join(", ")}. ` +
+        "Rebuild the database with db:reset, then run db:seed again.",
+    );
   }
 
   const restaurants = await prisma.restaurant.findMany({
@@ -133,14 +148,15 @@ async function findProblems(): Promise<string[]> {
   return problems;
 }
 
-async function writeSeedData(tx: Prisma.TransactionClient): Promise<void> {
+async function writeSeedData(tx: Prisma.TransactionClient, passwordHash: string): Promise<void> {
   const userIds = new Map<string, string>();
   for (const { email, name, phone, role } of USERS) {
     // `update: {}` is what makes this safe to repeat: a row that already exists stays as it is.
+    // Every demo account gets the same hash, made once from DEMO_PASSWORD.
     const user = await tx.user.upsert({
       where: { email },
       update: {},
-      create: { email, name, phone, role },
+      create: { email, name, phone, role, passwordHash },
     });
     userIds.set(email, user.id);
   }
@@ -220,16 +236,28 @@ async function writeSeedData(tx: Prisma.TransactionClient): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  // Checked before anything else: without it, nobody could sign in to the demo accounts.
+  const demoPassword = env.DEMO_PASSWORD;
+  if (!demoPassword) {
+    throw new Error(
+      "Set DEMO_PASSWORD in backend/.env first: every demo account gets it as its password.",
+    );
+  }
+
   await assertSeedDatabase();
 
-  const problems = await findProblems();
+  const problems = await findProblems(demoPassword);
   if (problems.length > 0) {
     throw new Error(`Nothing was written, because of:\n- ${problems.join("\n- ")}`);
   }
 
+  // Hashed once, before the transaction: argon2 is slow on purpose, and a transaction should stay
+  // as short as it can.
+  const passwordHash = await hashPassword(demoPassword);
+
   // One transaction, so a failure partway through leaves nothing half-written. The timeout is
   // longer than the app's 5 seconds because this runs well over a hundred statements.
-  await prisma.$transaction(writeSeedData, { timeout: 30_000 });
+  await prisma.$transaction((tx) => writeSeedData(tx, passwordHash), { timeout: 30_000 });
 
   const counts = {
     users: await prisma.user.count(),

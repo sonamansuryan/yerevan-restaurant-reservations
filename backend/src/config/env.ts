@@ -19,6 +19,13 @@ const envSchema = z.object({
   CLOUDINARY_API_SECRET: z.string().min(1),
   RESEND_API_KEY: z.string().min(1),
   EMAIL_FROM: z.string().min(1),
+  // Only the seed reads this: every demo account gets it as its password. It's optional, so the
+  // server starts without it, and it follows the sign-up rule of 8 to 128 characters.
+  DEMO_PASSWORD: z
+    .string()
+    .min(8, "must be at least 8 characters, like any account password")
+    .max(128, "must be at most 128 characters, like any account password")
+    .optional(),
 });
 
 const result = envSchema.safeParse(process.env);

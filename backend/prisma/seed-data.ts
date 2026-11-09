@@ -86,8 +86,8 @@ interface SeedReservation {
 }
 
 // All addresses use example.com, which is reserved and can never reach a real person. The phone
-// numbers use a prefix that isn't assigned in Armenia. There are no passwords yet, because login
-// arrives in Phase 3.
+// numbers use a prefix that isn't assigned in Armenia. Every account signs in with DEMO_PASSWORD
+// from backend/.env, which seed.ts hashes, so no password is ever written here.
 export const USERS: SeedUser[] = [
   { email: "admin@example.com", name: "Demo Admin", phone: null, role: "ADMIN" },
   { email: "ani.owner@example.com", name: "Ani Sargsyan", phone: "+37400000001", role: "OWNER" },

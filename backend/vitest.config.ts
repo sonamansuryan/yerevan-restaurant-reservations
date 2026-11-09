@@ -14,6 +14,7 @@ const FAKE_ENV = {
   CLOUDINARY_API_SECRET: "test",
   RESEND_API_KEY: "test",
   EMAIL_FROM: "Test <test@example.com>",
+  DEMO_PASSWORD: "test-only-demo-password",
 };
 
 export default defineConfig({

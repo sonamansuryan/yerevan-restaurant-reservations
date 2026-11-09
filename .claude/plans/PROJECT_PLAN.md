@@ -90,7 +90,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
-  - demo data
+  - demo data, with demo accounts that sign in with `DEMO_PASSWORD`
   - register, log in, refresh, log out and "who am I"
   - the Seghan foundation and `/design`
 - **Partly built:**
@@ -99,7 +99,6 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - the time helpers
   - a placeholder homepage
 - **Still missing:**
-  - the demo accounts have no password (task 2.1)
   - no test proves the double-booking guarantee on real PostgreSQL yet (from task 6.4)
 
 ## 4. Data model
@@ -209,7 +208,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ✅ Already built: register, log in, log out, "who am I", and sessions.
 
-- [ ] **2.1 Demo passwords:** the seed reads `DEMO_PASSWORD` from `.env`. This rebuilds the local database, so ask first. *Check:* you can log in as each demo account.
+- [x] **2.1 Demo passwords:** the seed reads `DEMO_PASSWORD` from `.env`. This rebuilds the local database, so ask first. *Check:* you can log in as each demo account.
 - [ ] **2.2 Rate limit:** 10 sign-in tries per minute. *Check:* the 11th try in a test gets `429`.
 - [ ] **2.3 Roles:** add `requireRole`. *Check:* a guest gets `403` on an owner route.
 - [ ] **2.4 `lib/api.ts`:** add POST, PATCH and DELETE; on a `401`, refresh once and retry. *Check:* unit tests with a fake `fetch`.
