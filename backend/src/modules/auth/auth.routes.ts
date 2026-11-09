@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { RequestHandler } from "express";
 
+import { signInLimiter } from "../../middleware/rateLimit.ts";
 import { requireAuth } from "../../middleware/requireAuth.ts";
 import { validate } from "../../middleware/validate.ts";
 import { login, logout, me, refresh, register } from "./auth.controller.ts";
@@ -15,8 +16,10 @@ const noStore: RequestHandler = (_req, res, next) => {
 export const authRouter = Router();
 
 authRouter.use(noStore);
-authRouter.post("/register", validate(registerSchema), register);
-authRouter.post("/login", validate(loginSchema), login);
+// The limiter runs first, so a refused try costs almost nothing: no input check, no hashing.
+// Refresh and logout aren't limited, because browsers call them by themselves.
+authRouter.post("/register", signInLimiter, validate(registerSchema), register);
+authRouter.post("/login", signInLimiter, validate(loginSchema), login);
 authRouter.post("/refresh", refresh);
 authRouter.post("/logout", logout);
 

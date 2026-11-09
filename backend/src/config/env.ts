@@ -13,6 +13,9 @@ const envSchema = z.object({
     .string()
     .min(32, "must be at least 32 characters. Generate one with: openssl rand -base64 32"),
   GOOGLE_CLIENT_ID: z.string().min(1),
+  // Sign-in and sign-up tries per IP address per minute (src/middleware/rateLimit.ts). Tests raise
+  // it in vitest.config.ts, because they sign in far more often than a person does.
+  SIGN_IN_ATTEMPTS_PER_MINUTE: z.coerce.number().int().min(1).default(10),
   GOOGLE_PLACES_API_KEY: z.string().min(1),
   CLOUDINARY_CLOUD_NAME: z.string().min(1),
   CLOUDINARY_API_KEY: z.string().min(1),

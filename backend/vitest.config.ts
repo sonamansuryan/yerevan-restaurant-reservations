@@ -15,6 +15,9 @@ const FAKE_ENV = {
   RESEND_API_KEY: "test",
   EMAIL_FROM: "Test <test@example.com>",
   DEMO_PASSWORD: "test-only-demo-password",
+  // Far above the real 10, because the auth tests sign in hundreds of times from one address.
+  // tests/rate-limit.test.ts sets the real limit back for itself.
+  SIGN_IN_ATTEMPTS_PER_MINUTE: "1000",
 };
 
 export default defineConfig({

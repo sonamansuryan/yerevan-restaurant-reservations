@@ -59,7 +59,7 @@ Everything marked ✅ is already built, and stays as it is.
 - ✅ **One address for the browser:** Vite forwards `/api` to Express now, and Vercel will in Step 10.
 - ✅ **Sign-in:** passwords hashed with argon2. Sessions use `httpOnly` cookies with a rotating refresh token, which is more than required but works.
 - ⬜ **Roles:** guest, restaurant and admin. Asking for someone else's restaurant returns `404`.
-- ✅ **Safety basics:** Zod checks every input, all errors share one JSON format, secrets live only in `backend/.env`, and logs never contain secrets. ⬜ A sign-in rate limit is still to come.
+- ✅ **Safety basics:** Zod checks every input, all errors share one JSON format, secrets live only in `backend/.env`, and logs never contain secrets. Sign-in and sign-up allow 10 tries per minute per address.
 - ✅ **Data:** times are stored in UTC. Nothing important is deleted: restaurants are unpublished, tables deactivated and bookings cancelled instead.
 - 🟡 **Double booking:** the database constraint ✅, plus a transaction that locks the table's row ⬜ (§5).
 - ✅ **UI/UX:** the Seghan design, 20 shared components, and the protected `EmptyState` and `ErrorState`. 🟡 `/design` keeps growing (§6).
@@ -209,7 +209,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 ✅ Already built: register, log in, log out, "who am I", and sessions.
 
 - [x] **2.1 Demo passwords:** the seed reads `DEMO_PASSWORD` from `.env`. This rebuilds the local database, so ask first. *Check:* you can log in as each demo account.
-- [ ] **2.2 Rate limit:** 10 sign-in tries per minute. *Check:* the 11th try in a test gets `429`.
+- [x] **2.2 Rate limit:** 10 sign-in tries per minute. *Check:* the 11th try in a test gets `429`.
 - [ ] **2.3 Roles:** add `requireRole`. *Check:* a guest gets `403` on an owner route.
 - [ ] **2.4 `lib/api.ts`:** add POST, PATCH and DELETE; on a `401`, refresh once and retry. *Check:* unit tests with a fake `fetch`.
 - [ ] **2.5 Signed-in header and mobile menu,** showing the person's name and Sign out. *Check:* sign in and out in the browser.

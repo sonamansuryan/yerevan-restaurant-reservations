@@ -63,6 +63,17 @@ export class ConflictError extends AppError {
   }
 }
 
+export class TooManyRequestsError extends AppError {
+  constructor(code = "TOO_MANY_REQUESTS", message?: string, details?: unknown) {
+    super(
+      429,
+      code,
+      message ?? MESSAGES[code] ?? "Too many attempts. Please wait a minute and try again.",
+      details,
+    );
+  }
+}
+
 export class ServiceUnavailableError extends AppError {
   constructor(code = "SERVICE_UNAVAILABLE", message?: string, details?: unknown) {
     super(
