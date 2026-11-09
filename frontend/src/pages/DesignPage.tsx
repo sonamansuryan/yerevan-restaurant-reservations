@@ -11,6 +11,7 @@ import { FormSection } from "@/features/design/components/FormSection";
 import { MotionSection } from "@/features/design/components/MotionSection";
 import { ProtectedSection } from "@/features/design/components/ProtectedSection";
 import { ResponsiveSection } from "@/features/design/components/ResponsiveSection";
+import { ScreensSection } from "@/features/design/components/ScreensSection";
 import { ShapeSection } from "@/features/design/components/ShapeSection";
 import { SpaceSection } from "@/features/design/components/SpaceSection";
 import { TypeSection } from "@/features/design/components/TypeSection";
@@ -46,6 +47,7 @@ export function DesignPage(): ReactElement {
           <BrandSection />
           <ProtectedSection />
           <ResponsiveSection />
+          <ScreensSection />
         </div>
       </div>
     </PageContainer>

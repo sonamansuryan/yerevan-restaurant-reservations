@@ -203,7 +203,11 @@ export const shownComponents: ShownComponent[] = [
   { name: "Textarea", file: "Textarea", section: "forms" },
   { name: "Checkbox", file: "Checkbox", section: "forms" },
   { name: "Field", file: "Field", section: "forms" },
+  { name: "PasswordField", file: "PasswordField", section: "forms" },
+  { name: "ChoiceLines", file: "ChoiceLines", section: "forms" },
+  { name: "OrDivider", file: "OrDivider", section: "forms" },
   { name: "Badge", file: "Badge", section: "feedback" },
+  { name: "FormNotice", file: "FormNotice", section: "feedback" },
   { name: "Spinner", file: "Spinner", section: "feedback" },
   { name: "Modal", file: "Modal", section: "feedback" },
   { name: "Icons", file: "icons", section: "feedback" },
@@ -217,6 +221,23 @@ export const shownComponents: ShownComponent[] = [
   { name: "EmptyState", file: "EmptyState", section: "protected" },
   { name: "ErrorState", file: "ErrorState", section: "protected" },
 ];
+
+/**
+ * The states each screen is shown in, in the Screens section. That section has a specimen for every
+ * label here, and TypeScript holds it to that, so the count in the contents stays true.
+ */
+export const screenStates = {
+  signIn: [
+    "Ready (live)",
+    "Field errors",
+    "Sending",
+    "Wrong email or password",
+    "Too many tries",
+    "No connection",
+  ],
+  signUp: ["A guest (live)", "A restaurant", "Field errors", "Sending", "Email taken"],
+  leftPage: ["A guest, before typing", "A guest, with a name", "A long name", "A restaurant"],
+} as const;
 
 function componentsIn(section: string): number {
   return shownComponents.filter((component) => component.section === section).length;
@@ -243,4 +264,5 @@ export const contents = [
   { id: "brand", title: "Brand and shell", items: componentsIn("brand") },
   { id: "protected", title: "Protected designs", items: componentsIn("protected") },
   { id: "responsive", title: "Responsive", items: "live" },
+  { id: "screens", title: "Screens", items: Object.values(screenStates).flat().length },
 ];

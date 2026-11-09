@@ -219,6 +219,21 @@
   }
 
   /*
+   * Browsers paint saved details pale blue or yellow, which hides the ruled line of a field. So
+   * fields keep their own look: Chrome and Safari's tint is put off for good with a transition that
+   * never ends, Firefox's filter is switched off, and the text keeps its own color. :is() forgives
+   * a selector a browser doesn't know, where a plain list would drop the whole rule.
+   */
+  input:is(:-webkit-autofill, :autofill) {
+    -webkit-text-fill-color: var(--color-ink);
+    caret-color: var(--color-ink);
+    filter: none;
+    transition:
+      background-color 600000s 0s,
+      color 600000s 0s;
+  }
+
+  /*
    * A modal dialog doesn't stop the page behind it from scrolling, so that happens here. The
    * scrollbar's space stays reserved at all times, so the page doesn't jump sideways when the
    * scrollbar goes away. Reserving it only while a modal is open would make short pages jump.

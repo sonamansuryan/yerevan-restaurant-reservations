@@ -25,7 +25,7 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | Feature | Step | Status |
 |---|---|---|
 | **Customers** | | |
-| Register and log in, by email or Google | 2 | 🟡 Email works in the API |
+| Register and log in, by email or Google | 2 | 🟡 Email works, with Sign in and Sign up pages; Google is task 2.8 |
 | Browse, search and filter restaurants | 3 | ⬜ |
 | Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | ⬜ |
 | Choose a date, time and number of guests; see available tables | 6 | ⬜ |
@@ -62,7 +62,7 @@ Everything marked ✅ is already built, and stays as it is.
 - ✅ **Safety basics:** Zod checks every input, all errors share one JSON format, secrets live only in `backend/.env`, and logs never contain secrets. Sign-in and sign-up allow 10 tries per minute per address.
 - ✅ **Data:** times are stored in UTC. Nothing important is deleted: restaurants are unpublished, tables deactivated and bookings cancelled instead.
 - 🟡 **Double booking:** the database constraint ✅, plus a transaction that locks the table's row ⬜ (§5).
-- ✅ **UI/UX:** the Seghan design, 20 shared components, and the protected `EmptyState` and `ErrorState`. 🟡 `/design` keeps growing (§6).
+- ✅ **UI/UX:** the Seghan design, 24 shared components, and the protected `EmptyState` and `ErrorState`. 🟡 `/design` keeps growing (§6).
 - 🟡 **Tests:** unit, API and real-PostgreSQL tests.
 
 ### 2.3 Optional improvements (postponed)
@@ -86,7 +86,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (9 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 843 tests ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 892 tests ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
@@ -181,7 +181,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 |---|---|---|
 | Foundations | Color, type, space, shape, motion | ✅ |
 | Components | Actions, forms, feedback, brand and shell, protected designs, responsive | ✅ |
-| Screens | Each feature's screens in their key states, added in its step | ⬜ |
+| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in and Create an account |
 | Flows | "Book a table" (the assignment's final result) and "Handle a reservation" | ⬜ |
 
 **Key states:** loading, empty, error with a retry, field errors, sending, success, not allowed, and each feature's own errors. A step is done only when its screens are in `/design`. `EmptyState` and `ErrorState` keep their approved look.
@@ -213,7 +213,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 - [x] **2.3 Roles:** add `requireRole`. *Check:* a guest gets `403` on an owner route.
 - [x] **2.4 `lib/api.ts`:** add POST, PATCH and DELETE; on a `401`, refresh once and retry. *Check:* unit tests with a fake `fetch`.
 - [x] **2.5 Signed-in header and mobile menu,** showing the person's name and Sign out. *Check:* sign in and out in the browser.
-- [ ] **2.6 Sign in and Sign up pages** in the agreed design, with their new components and states in `/design`. *Check:* component tests for the form errors, and a review in `/design`.
+- [x] **2.6 Sign in and Sign up pages** in the agreed design, with their new components and states in `/design`. *Check:* component tests for the form errors, and a review in `/design`.
 - [ ] **2.7 Route guard:** signed-out visitors go to Sign in and come back afterwards; guests are kept out of owner pages. *Check:* in the browser.
 - [ ] **2.8 Google OAuth:**
   - Create a Google client ID.

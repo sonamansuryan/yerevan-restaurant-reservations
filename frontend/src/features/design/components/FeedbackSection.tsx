@@ -3,7 +3,8 @@ import type { ReactElement } from "react";
 
 import { Badge } from "@/components/Badge";
 import type { BadgeTone } from "@/components/Badge";
-import { Button } from "@/components/Button";
+import { Button, LinkButton } from "@/components/Button";
+import { FormNotice } from "@/components/FormNotice";
 import {
   AlertIcon,
   ArrowRightIcon,
@@ -51,6 +52,21 @@ export function FeedbackSection(): ReactElement {
               {word}
             </Badge>
           ))}
+        </div>
+      </Group>
+      <Group
+        title="FormNotice"
+        note="News about a whole form, not one field. A problem is announced at once, and good news politely."
+      >
+        <div className="grid max-w-100 gap-4">
+          <FormNotice tone="error">Incorrect email or password. Please try again.</FormNotice>
+          <FormNotice tone="error">
+            There’s already an account with this email.{" "}
+            <LinkButton variant="link" to="/login">
+              Sign in instead
+            </LinkButton>
+          </FormNotice>
+          <FormNotice tone="success">Password updated.</FormNotice>
         </div>
       </Group>
       <Group

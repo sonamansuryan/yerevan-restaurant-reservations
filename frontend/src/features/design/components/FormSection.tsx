@@ -1,12 +1,20 @@
 import type { ReactElement, ReactNode } from "react";
 
 import { Checkbox } from "@/components/Checkbox";
+import { ChoiceLines } from "@/components/ChoiceLines";
 import { Input } from "@/components/Input";
+import { OrDivider } from "@/components/OrDivider";
+import { PasswordField } from "@/components/PasswordField";
 import { Select } from "@/components/Select";
 import { Textarea } from "@/components/Textarea";
 import { Group, Section } from "@/features/design/components/parts";
 
 const note = "Allergies, a birthday, a quiet corner";
+
+const roles = [
+  { value: "CUSTOMER", label: "A guest", note: "Book tables" },
+  { value: "OWNER", label: "A restaurant", note: "Manage bookings" },
+];
 
 function FieldGrid({ children }: { children: ReactNode }): ReactElement {
   return <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 xl:grid-cols-3">{children}</div>;
@@ -101,6 +109,65 @@ export function FormSection(): ReactElement {
           <Checkbox label="Disabled" disabled />
           <Checkbox label="Disabled and checked" disabled defaultChecked />
         </FieldGrid>
+      </Group>
+      <Group
+        title="PasswordField"
+        note="Show and Hide replace a second field to confirm the password, so try the live one."
+      >
+        <FieldGrid>
+          <PasswordField label="Rest (live)" />
+          <PasswordField label="Filled" defaultValue="a long password" />
+          <Frozen>
+            <PasswordField label="Focus" defaultValue="a long password" data-force="focus" />
+          </Frozen>
+          <PasswordField label="With a hint" hint="At least 8 characters." />
+          <PasswordField
+            label="With an error"
+            defaultValue="short"
+            error="Use at least 8 characters."
+          />
+          <PasswordField label="Disabled" defaultValue="a long password" disabled />
+        </FieldGrid>
+      </Group>
+      <Group
+        title="ChoiceLines"
+        note="A radio group set as menu lines, with the logo's dot in the chosen ring. Arrow keys move between the lines."
+      >
+        <div className="grid max-w-220 gap-x-12 gap-y-8 lg:grid-cols-2">
+          <ChoiceLines
+            legend="Rest (live)"
+            name="design-choice-live"
+            options={roles}
+            defaultChoice="CUSTOMER"
+          />
+          <ChoiceLines
+            legend="The other line chosen"
+            name="design-choice-other"
+            options={roles}
+            defaultChoice="OWNER"
+          />
+          <Frozen>
+            <ChoiceLines
+              legend="Focus"
+              name="design-choice-focus"
+              options={roles}
+              defaultChoice="CUSTOMER"
+              data-force="focus"
+            />
+          </Frozen>
+          <ChoiceLines
+            legend="With an error"
+            name="design-choice-error"
+            options={roles}
+            error="Choose a guest or restaurant account."
+          />
+        </div>
+      </Group>
+      <Group
+        title="OrDivider"
+        note="Between two ways to do one thing, such as the form and Google's button (task 2.8)."
+      >
+        <OrDivider className="max-w-100" />
       </Group>
     </Section>
   );

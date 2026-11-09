@@ -7,6 +7,8 @@ import { DevErrorPage } from "@/pages/DevErrorPage";
 import { ErrorPage } from "@/pages/ErrorPage";
 import { HomePage } from "@/pages/HomePage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
+import { SignInPage } from "@/pages/SignInPage";
+import { SignUpPage } from "@/pages/SignUpPage";
 
 // Pages for development only. Vite replaces import.meta.env.DEV with false in a production build,
 // so this list is empty there. The dynamic import goes with it, which means the design page's code
@@ -41,6 +43,8 @@ export const routes: RouteObject[] = [
         errorElement: <ErrorPage />,
         children: [
           { index: true, element: <HomePage /> },
+          { path: "login", element: <SignInPage /> },
+          { path: "register", element: <SignUpPage /> },
           ...devRoutes,
           { path: "*", element: <NotFoundPage /> },
         ],

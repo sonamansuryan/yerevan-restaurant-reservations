@@ -66,7 +66,36 @@ test("the old name is gone from the home page", async () => {
   expect(document.body.textContent).not.toContain("Yerevan Reservations");
 });
 
-test.each(["/nowhere", "/restaurants", "/login", "/a/deep/path"])(
+test("/login shows Sign in, in the shell", async () => {
+  renderRoutes("/login");
+
+  const main = await screen.findByRole("main");
+
+  expect(within(main).getByRole("heading", { level: 1 }).textContent).toBe("Sign in");
+  expect(within(main).getByRole("button", { name: "Sign in" })).toBeDefined();
+  expect(screen.getByRole("banner")).toBeDefined();
+});
+
+test("/register shows Create an account, with a guest chosen", async () => {
+  renderRoutes("/register");
+
+  const main = await screen.findByRole("main");
+
+  expect(within(main).getByRole("heading", { level: 1 }).textContent).toBe("Create an account");
+  expect(within(main).getByRole<HTMLInputElement>("radio", { name: /A guest/ }).checked).toBe(true);
+});
+
+test("/register?role=owner chooses A restaurant, as the header's link expects", async () => {
+  renderRoutes("/register?role=owner");
+
+  const main = await screen.findByRole("main");
+
+  expect(within(main).getByRole<HTMLInputElement>("radio", { name: /A restaurant/ }).checked).toBe(
+    true,
+  );
+});
+
+test.each(["/nowhere", "/restaurants", "/a/deep/path"])(
   "%s shows the not-found page in the shell, until a page exists there",
   async (path) => {
     renderRoutes(path);
@@ -143,6 +172,6 @@ describe("in a production build", () => {
 
     const paths = production.routes[0]?.children?.[0]?.children?.map((route) => route.path);
 
-    expect(paths).toEqual([undefined, "*"]);
+    expect(paths).toEqual([undefined, "login", "register", "*"]);
   });
 });
