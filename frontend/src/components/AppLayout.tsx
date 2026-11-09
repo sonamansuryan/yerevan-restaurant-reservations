@@ -4,9 +4,11 @@ import { Outlet, ScrollRestoration, useLocation } from "react-router";
 
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { useAccount } from "@/features/auth/hooks/useAccount";
 
 /** The shell around every page. It's a layout route: <Outlet /> is where the page appears. */
 export function AppLayout(): ReactElement {
+  const account = useAccount();
   const { pathname } = useLocation();
   const mainRef = useRef<HTMLElement>(null);
   const shownPath = useRef(pathname);
@@ -28,7 +30,7 @@ export function AppLayout(): ReactElement {
       >
         Skip to content
       </a>
-      <SiteHeader />
+      <SiteHeader account={account} />
       {/* tabIndex -1 lets code and the skip link focus it, without adding a Tab stop. */}
       <main id="main" ref={mainRef} tabIndex={-1} className="flex-1 outline-hidden">
         <Outlet />

@@ -1,7 +1,31 @@
 import type { ReactElement } from "react";
 
+import type { Account } from "@/components/account";
 import { CurrentPageDot, Logo } from "@/components/Logo";
-import { Group, Section } from "@/features/design/components/parts";
+import { MenuAccountLine } from "@/components/MobileMenu";
+import { HeaderAccount } from "@/components/SiteHeader";
+import { Group, Section, Specimen, SpecimenRow } from "@/features/design/components/parts";
+
+/** A sample account: undefined while checking, null for nobody, or a person by name. */
+function sampleAccount(name: string | null | undefined, state: Partial<Account> = {}): Account {
+  const user =
+    typeof name === "string"
+      ? { id: "sample", email: "lilit@example.com", name, phone: null, role: "CUSTOMER" as const }
+      : name;
+  return { user, onSignOut: () => {}, signingOut: false, signOutFailed: false, ...state };
+}
+
+const accountStates = [
+  { label: "Checking: nothing yet", account: sampleAccount(undefined) },
+  { label: "Signed out", account: sampleAccount(null) },
+  { label: "Signed in", account: sampleAccount("Lilit Harutyunyan") },
+  { label: "A long Armenian name", account: sampleAccount("Հովհաննեսյանց Մկրտչյան-Շահումյան") },
+  { label: "Signing out", account: sampleAccount("Lilit Harutyunyan", { signingOut: true }) },
+  {
+    label: "Sign-out failed",
+    account: sampleAccount("Lilit Harutyunyan", { signOutFailed: true }),
+  },
+];
 
 const shell = [
   { name: "SiteHeader, MastheadRow", where: "The top of this page" },
@@ -33,6 +57,36 @@ export function BrandSection(): ReactElement {
           Discover
           <CurrentPageDot />
         </span>
+      </Group>
+      <Group
+        title="Account, in the header"
+        note="The corner beside Reserve a table, from tablet width up. Sign out keeps its place, and the first name sits above it."
+      >
+        <SpecimenRow>
+          {accountStates.map(({ label, account }) => (
+            <Specimen key={label} label={label} frozen>
+              {/* Right-aligned as in the header, with room above, because the name sits over
+                  Sign out and grows to the left. */}
+              <div className="flex w-full justify-end pt-5">
+                <HeaderAccount account={account} />
+              </div>
+            </Specimen>
+          ))}
+        </SpecimenRow>
+      </Group>
+      <Group
+        title="Account, in the menu"
+        note="The menu's last line on phones. Signed in, the note is the person's full name."
+      >
+        <div className="grid max-w-180 gap-x-10 gap-y-5 sm:grid-cols-2">
+          {accountStates.map(({ label, account }) => (
+            <Specimen key={label} label={label} frozen>
+              <ul className="w-full">
+                <MenuAccountLine account={account} onClose={() => {}} />
+              </ul>
+            </Specimen>
+          ))}
+        </div>
       </Group>
       <Group
         title="The shell"

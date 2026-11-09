@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { ReactElement } from "react";
 import { Link, NavLink } from "react-router";
 
+import type { Account } from "@/components/account";
 import { LinkButton } from "@/components/Button";
 import { CurrentPageDot, Logo } from "@/components/Logo";
 import { MastheadRow, MenuToggle } from "@/components/Masthead";
@@ -12,7 +13,11 @@ import type { SiteLink } from "@/components/site-links";
 interface MobileMenuProps {
   open: boolean;
   onClose: () => void;
+  account: Account;
 }
+
+// One line of the menu: a name, the dotted line, and a note.
+const menuLine = "group flex min-h-16 items-baseline gap-2 py-4";
 
 function MenuLine({ link, onClose }: { link: SiteLink; onClose: () => void }): ReactElement {
   return (
@@ -21,7 +26,7 @@ function MenuLine({ link, onClose }: { link: SiteLink; onClose: () => void }): R
         to={link.to}
         onClick={onClose}
         aria-current={link.marksPage === false ? "false" : "page"}
-        className="group flex min-h-16 items-baseline gap-2 py-4"
+        className={menuLine}
       >
         <span className="inline-flex items-baseline gap-1 font-display text-logo-sm">
           {link.label}
@@ -36,11 +41,63 @@ function MenuLine({ link, onClose }: { link: SiteLink; onClose: () => void }): R
 }
 
 /**
+ * The menu's last line: Sign in, or Sign out with the person's name where the note goes. While the
+ * app is still asking who's signed in, the line waits, rather than show the wrong one.
+ */
+export function MenuAccountLine({
+  account,
+  onClose,
+}: {
+  account: Account;
+  onClose: () => void;
+}): ReactElement | null {
+  const { user, onSignOut, signingOut, signOutFailed } = account;
+  if (user === undefined) return null;
+  if (user === null) return <MenuLine link={signIn} onClose={onClose} />;
+
+  return (
+    <li className={menuLine}>
+      {/* Only the words Sign out are the button, so a tap on the name signs nobody out. The
+          padding makes the tap area 44px or more without moving the line. */}
+      <button
+        type="button"
+        onClick={signingOut ? undefined : onSignOut}
+        aria-busy={signingOut || undefined}
+        aria-disabled={signingOut || undefined}
+        className="-my-3 shrink-0 py-3 font-display text-logo-sm whitespace-nowrap aria-busy:text-ink-muted"
+      >
+        Sign out
+      </button>{" "}
+      <span aria-hidden="true" className="menu-leader" />
+      {signOutFailed ? (
+        <span role="alert" className="text-meta text-error">
+          Couldn&rsquo;t sign out. Try again.
+        </span>
+      ) : (
+        <span className="min-w-0 truncate text-meta text-ink-muted">
+          <span className="sr-only">Signed in as </span>
+          {user.name}
+        </span>
+      )}
+    </li>
+  );
+}
+
+/**
  * The menu on phones, set like a printed menu. It's built on the native <dialog>, like Modal:
  * showModal() keeps focus inside, closes on Esc, and returns focus to the Menu button.
  */
-export function MobileMenu({ open, onClose }: MobileMenuProps): ReactElement {
+export function MobileMenu({ open, onClose, account }: MobileMenuProps): ReactElement {
   const dialogRef = useRef<HTMLDialogElement>(null);
+
+  // Signing out from the menu closes it, as following one of its links does. It compares values
+  // rather than using a first-render flag, so StrictMode running this twice changes nothing.
+  const signedIn = Boolean(account.user);
+  const wasSignedIn = useRef(signedIn);
+  useEffect(() => {
+    if (wasSignedIn.current && !signedIn && open) onClose();
+    wasSignedIn.current = signedIn;
+  }, [signedIn, open, onClose]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -80,7 +137,7 @@ export function MobileMenu({ open, onClose }: MobileMenuProps): ReactElement {
             <ul>
               <MenuLine link={discover} onClose={onClose} />
               <MenuLine link={forRestaurants} onClose={onClose} />
-              <MenuLine link={signIn} onClose={onClose} />
+              <MenuAccountLine account={account} onClose={onClose} />
             </ul>
           </nav>
 
