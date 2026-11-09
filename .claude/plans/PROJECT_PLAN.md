@@ -86,15 +86,15 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (9 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 804 tests ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 824 tests ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
   - demo data, with demo accounts that sign in with `DEMO_PASSWORD`
   - register, log in, refresh, log out and "who am I"
+  - `lib/api.ts`: GET, POST, PATCH and DELETE, renewing an expired session once
   - the Seghan foundation and `/design`
 - **Partly built:**
-  - `lib/api.ts` handles GET requests only
   - `requireAuth` and `requireRole` exist, but there are no ownership checks yet (task 4.1)
   - the time helpers
   - a placeholder homepage
@@ -211,7 +211,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 - [x] **2.1 Demo passwords:** the seed reads `DEMO_PASSWORD` from `.env`. This rebuilds the local database, so ask first. *Check:* you can log in as each demo account.
 - [x] **2.2 Rate limit:** 10 sign-in tries per minute. *Check:* the 11th try in a test gets `429`.
 - [x] **2.3 Roles:** add `requireRole`. *Check:* a guest gets `403` on an owner route.
-- [ ] **2.4 `lib/api.ts`:** add POST, PATCH and DELETE; on a `401`, refresh once and retry. *Check:* unit tests with a fake `fetch`.
+- [x] **2.4 `lib/api.ts`:** add POST, PATCH and DELETE; on a `401`, refresh once and retry. *Check:* unit tests with a fake `fetch`.
 - [ ] **2.5 Signed-in header and mobile menu,** showing the person's name and Sign out. *Check:* sign in and out in the browser.
 - [ ] **2.6 Sign in and Sign up pages** in the agreed design, with their new components and states in `/design`. *Check:* component tests for the form errors, and a review in `/design`.
 - [ ] **2.7 Route guard:** signed-out visitors go to Sign in and come back afterwards; guests are kept out of owner pages. *Check:* in the browser.
