@@ -2,14 +2,21 @@
 node_modules/
 
 # Environment files hold secrets. Only the .env.example templates are committed.
+# These patterns match in every folder: frontend/.env and backend/.env.
 .env*
 !.env.example
 
 # Build output
 dist/
 
-# Prisma client, rebuilt by `npm run db:generate -w server`
-server/src/generated/
+# Prisma client, rebuilt by `npm run db:generate -w backend`
+backend/src/generated/
+
+# Personal Claude Code settings. The plan and rules in .claude/ are committed.
+.claude/settings.local.json
+
+# The Team Lead's assignment stays on this machine until publishing it is approved.
+.claude/plans/ASSIGNMENT.md
 
 # WebStorm settings
 .idea/

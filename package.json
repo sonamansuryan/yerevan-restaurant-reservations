@@ -2,11 +2,11 @@
   "name": "yerevan-reservations",
   "private": true,
   "workspaces": [
-    "client",
-    "server"
+    "frontend",
+    "backend"
   ],
   "scripts": {
-    "dev": "concurrently --names server,client --prefix-colors cyan,magenta --kill-others-on-fail \"npm run dev -w server\" \"npm run dev -w client\"",
+    "dev": "concurrently --names backend,frontend --prefix-colors cyan,magenta --kill-others-on-fail \"npm run dev -w backend\" \"npm run dev -w frontend\"",
     "build": "npm run build --workspaces",
     "typecheck": "npm run typecheck --workspaces",
     "lint": "npm run lint --workspaces",

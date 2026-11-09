@@ -1,0 +1,33 @@
+# Local development database. Set POSTGRES_PASSWORD in backend/.env, then run this from the
+# repository root:
+#   docker compose --env-file backend/.env -f backend/docker/docker-compose.yml up -d
+
+# Keep this name. Without it Compose names the project after this folder ("docker"), which also
+# renames the volume, so the database would start empty and the real data would look lost.
+name: yerevan-reservations
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: yerevan
+      # Compose fills this in from --env-file, and stops with this message if it's missing.
+      # Only this one value reaches the container. Don't use env_file: here, because that would
+      # copy every secret in backend/.env into the database container.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Pass --env-file backend/.env and set POSTGRES_PASSWORD there}
+      POSTGRES_DB: yerevan_dev
+    ports:
+      # 127.0.0.1 means only this computer can connect, not the whole network.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # Keeps the data when the container is removed.
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # -h 127.0.0.1 checks over TCP, which only opens after first-time setup has finished.
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "yerevan", "-d", "yerevan_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
