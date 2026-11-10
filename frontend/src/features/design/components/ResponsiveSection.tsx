@@ -24,6 +24,11 @@ const pages = [
   { value: "/register?role=owner", label: "Create an account, as a restaurant" },
   { value: "/reservations", label: "My reservations (needs an account)" },
   { value: "/dashboard", label: "Dashboard (restaurants only)" },
+  { value: "/dashboard/new", label: "Add a restaurant (restaurants only)" },
+  {
+    value: "/dashboard/00000000-0000-4000-8000-000000000000",
+    label: "A restaurant that isn’t yours (restaurants only)",
+  },
   { value: "/a-page-that-does-not-exist", label: "Not found" },
   { value: "/dev/error", label: "Error" },
 ];

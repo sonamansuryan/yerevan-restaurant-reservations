@@ -6,6 +6,19 @@ import type { OpeningHours } from "../restaurants/restaurants.service.ts";
 import type { Opening } from "./opening-hours.rules.ts";
 
 /**
+ * One restaurant's week as saved, in the same order and shape a save answers with. The restaurant
+ * is the one requireRestaurantOwner checked, so its id is enough here.
+ */
+export async function getWeek(restaurantId: string): Promise<OpeningHours[]> {
+  const rows = await prisma.openingHour.findMany({
+    where: { restaurantId },
+    orderBy: [{ dayOfWeek: "asc" }, { opensAt: "asc" }],
+    select: { dayOfWeek: true, opensAt: true, closesAt: true },
+  });
+  return rows.map(toOpeningHours);
+}
+
+/**
  * Replaces the week of opening hours of one of this owner's restaurants, in one transaction:
  * either the whole new week is saved, or the old one stays exactly as it was. The week has
  * already been checked, overlaps included.

@@ -10,7 +10,11 @@ import { prisma } from "../src/lib/prisma.ts";
 import { ACCESS_COOKIE } from "../src/modules/auth/auth.cookies.ts";
 import { signAccessToken } from "../src/modules/auth/token.service.ts";
 import type { SessionUser } from "../src/modules/auth/token.service.ts";
-import { replaceWeek, toOpeningHours } from "../src/modules/opening-hours/opening-hours.service.ts";
+import {
+  getWeek,
+  replaceWeek,
+  toOpeningHours,
+} from "../src/modules/opening-hours/opening-hours.service.ts";
 import { ownedRow } from "./fixtures/restaurants.ts";
 import { ani, davit, sessionUser } from "./fixtures/users.ts";
 
@@ -24,6 +28,7 @@ vi.mock("../src/modules/opening-hours/opening-hours.service.ts", async (importOr
     typeof import("../src/modules/opening-hours/opening-hours.service.ts")
   >()),
   replaceWeek: vi.fn(),
+  getWeek: vi.fn(),
 }));
 
 const ANIS = ownedRow().id;
@@ -177,5 +182,33 @@ describe("PUT /api/owner/restaurants/:restaurantId/opening-hours", () => {
     expect(signedOut.status).toBe(401);
     expect(customer.status).toBe(403);
     expect(replaceWeek).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/owner/restaurants/:restaurantId/opening-hours", () => {
+  async function get(path: string, user?: SessionUser): Promise<Response> {
+    const call = request(app).get(path);
+    return user ? call.set("Cookie", `${ACCESS_COOKIE}=${await signAccessToken(user)}`) : call;
+  }
+
+  test("an owner reads the week as saved, in the same shape a save answers with", async () => {
+    const saved = week.map(toOpeningHours);
+    vi.mocked(getWeek).mockResolvedValue(saved);
+
+    const reply = await get(anis, ani);
+
+    expect(reply.status).toBe(200);
+    expect(reply.body).toEqual({ openingHours: saved });
+    expect(getWeek).toHaveBeenCalledWith(ANIS);
+  });
+
+  test("someone else's restaurant is a 404, and only owners read it", async () => {
+    const someoneElses = await get(`/api/owner/restaurants/${DAVITS}/opening-hours`, ani);
+
+    expect(someoneElses.status).toBe(404);
+    expect(someoneElses.body.error.code).toBe("RESTAURANT_NOT_FOUND");
+    expect((await get(anis)).status).toBe(401);
+    expect((await get(anis, sessionUser)).status).toBe(403);
+    expect(getWeek).not.toHaveBeenCalled();
   });
 });

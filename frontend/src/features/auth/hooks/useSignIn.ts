@@ -4,7 +4,7 @@ import type { UseMutationResult } from "@tanstack/react-query";
 import type { SignInRequest } from "@/features/auth/schemas";
 import { apiPost } from "@/lib/api";
 import type { ApiError } from "@/lib/api";
-import { ME_QUERY_KEY } from "@/lib/queryClient";
+import { ME_QUERY_KEY, forgetPrivateData } from "@/lib/queryClient";
 import type { AuthResponse, AuthUser } from "@/types/api";
 
 /**
@@ -18,6 +18,8 @@ export function useSignIn(): UseMutationResult<AuthUser, ApiError, SignInRequest
   return useMutation({
     mutationFn: async (request) => (await apiPost<AuthResponse>("/api/auth/login", request)).user,
     onSuccess: (user) => {
+      // A session that ended without Sign out can leave its owner's data behind. It isn't theirs.
+      forgetPrivateData(queryClient);
       queryClient.setQueryData(ME_QUERY_KEY, user);
     },
   });

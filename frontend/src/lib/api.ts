@@ -38,9 +38,9 @@ function isApiErrorResponse(body: unknown): body is ApiErrorResponse {
   );
 }
 
-type Method = "GET" | "POST" | "PATCH" | "DELETE";
+type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-// Every request to our API goes through one of these four. They send the session cookies, send a
+// Every request to our API goes through one of these five. They send the session cookies, send a
 // body as JSON, and turn any failure into an ApiError. An expired session is renewed on the way.
 export function apiGet<T>(path: string): Promise<T> {
   return request<T>("GET", path);
@@ -48,6 +48,11 @@ export function apiGet<T>(path: string): Promise<T> {
 
 export function apiPost<T>(path: string, body?: unknown): Promise<T> {
   return request<T>("POST", path, body);
+}
+
+/** Replaces something whole, such as a restaurant's week of opening hours. */
+export function apiPut<T>(path: string, body?: unknown): Promise<T> {
+  return request<T>("PUT", path, body);
 }
 
 export function apiPatch<T>(path: string, body?: unknown): Promise<T> {

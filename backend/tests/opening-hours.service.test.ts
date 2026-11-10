@@ -5,12 +5,12 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 import { NotFoundError } from "../src/lib/errors.ts";
 import { prisma } from "../src/lib/prisma.ts";
-import { replaceWeek } from "../src/modules/opening-hours/opening-hours.service.ts";
+import { getWeek, replaceWeek } from "../src/modules/opening-hours/opening-hours.service.ts";
 import { ownedRow } from "./fixtures/restaurants.ts";
 import { ani } from "./fixtures/users.ts";
 
 vi.mock("../src/lib/prisma.ts", () => ({
-  prisma: { $transaction: vi.fn() },
+  prisma: { $transaction: vi.fn(), openingHour: { findMany: vi.fn() } },
   isDatabaseReachable: vi.fn(),
 }));
 
@@ -93,4 +93,18 @@ test("a failure part-way leaves the transaction with the error, so nothing is ke
   tx.openingHour.createMany.mockRejectedValue(new Error("The database went away"));
 
   await expect(replaceWeek(ani.id, RESTAURANT, week)).rejects.toThrow("The database went away");
+});
+
+test("reads the week as saved, in the same order and shape a save answers with", async () => {
+  vi.mocked(prisma.openingHour.findMany).mockResolvedValue(week as never);
+
+  await expect(getWeek(RESTAURANT)).resolves.toEqual([
+    { dayOfWeek: 1, opensAt: 720, closesAt: 900, opens: "12:00", closes: "15:00" },
+    { dayOfWeek: 5, opensAt: 1080, closesAt: 1560, opens: "18:00", closes: "02:00" },
+  ]);
+  expect(prisma.openingHour.findMany).toHaveBeenCalledWith({
+    where: { restaurantId: RESTAURANT },
+    orderBy: [{ dayOfWeek: "asc" }, { opensAt: "asc" }],
+    select: { dayOfWeek: true, opensAt: true, closesAt: true },
+  });
 });

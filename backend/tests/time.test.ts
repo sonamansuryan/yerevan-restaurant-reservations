@@ -1,6 +1,14 @@
 import { describe, expect, test } from "vitest";
 
-import { addDays, dayOfWeek, localDate, localTimeToUtc, minutesToTime } from "../src/lib/time.ts";
+import {
+  addDays,
+  dayOfWeek,
+  localClockTime,
+  localDate,
+  localDayRange,
+  localTimeToUtc,
+  minutesToTime,
+} from "../src/lib/time.ts";
 
 describe("localTimeToUtc", () => {
   test("converts Yerevan time, as in PROJECT_PLAN.md §5.6", () => {
@@ -82,5 +90,38 @@ describe("minutesToTime", () => {
     [1560, "02:00"],
   ])("%i minutes is %s", (minutes, time) => {
     expect(minutesToTime(minutes)).toBe(time);
+  });
+});
+
+describe("localDayRange", () => {
+  test("a Yerevan day runs from 20:00 UTC the evening before to 20:00 UTC", () => {
+    const { start, end } = localDayRange("2026-11-14", "Asia/Yerevan");
+
+    expect(start.toISOString()).toBe("2026-11-13T20:00:00.000Z");
+    expect(end.toISOString()).toBe("2026-11-14T20:00:00.000Z");
+  });
+
+  test("a day when the clocks change is 23 or 25 hours long, not 24", () => {
+    const hours = (date: string): number => {
+      const { start, end } = localDayRange(date, "America/New_York");
+      return (end.getTime() - start.getTime()) / 3_600_000;
+    };
+
+    expect(hours("2026-03-08")).toBe(23);
+    expect(hours("2026-11-01")).toBe(25);
+    expect(hours("2026-07-01")).toBe(24);
+  });
+});
+
+describe("localClockTime", () => {
+  test("shows a moment on the restaurant's clock", () => {
+    expect(localClockTime(new Date("2026-11-13T14:00:00.000Z"), "Asia/Yerevan")).toBe("18:00");
+    // After midnight: the next morning's clock time.
+    expect(localClockTime(new Date("2026-11-13T21:30:00.000Z"), "Asia/Yerevan")).toBe("01:30");
+  });
+
+  test("follows the clocks when they change, so nothing assumes a fixed offset", () => {
+    expect(localClockTime(new Date("2026-07-01T16:00:00.000Z"), "America/New_York")).toBe("12:00");
+    expect(localClockTime(new Date("2026-12-01T17:00:00.000Z"), "America/New_York")).toBe("12:00");
   });
 });

@@ -1,6 +1,14 @@
 // Sample data for /design, shaped exactly like the API's answers. The six named ones are the demo
 // restaurants, with their real hours, so /design and the real pages look alike.
-import type { OpeningHours, RestaurantDetail, RestaurantSummary } from "@/types/api";
+import type {
+  OpeningHours,
+  OwnerPhoto,
+  OwnerReservation,
+  OwnerRestaurant,
+  ReservationStatus,
+  RestaurantDetail,
+  RestaurantSummary,
+} from "@/types/api";
 
 const restaurant = (
   fields: Pick<RestaurantSummary, "slug" | "name" | "cuisines" | "district" | "priceLevel"> &
@@ -151,6 +159,12 @@ export const loriPage = page(
   },
 );
 
+/** Lunch and dinner at the weekend, dinner only on weekdays, and closed on Monday. */
+export const splitWeek: OpeningHours[] = [
+  ...hours([5, 6, 0], 720, 900),
+  ...hours([2, 3, 4, 5, 6, 0], 1080, 1380),
+];
+
 export const armenianPage = page(armenianName, {
   phone: "+37400000108",
   website: "https://www.example.com/sardarapat",
@@ -163,3 +177,164 @@ export const reviewedPage = page(nurr, {
   phone: "+37400000101",
   openingHours: hours(EVERY_DAY, 720, 1380),
 });
+
+// The dashboard's samples: an owner's restaurants, one day in the book, and photos.
+
+const owned = (
+  summary: RestaurantSummary,
+  extra: Pick<OwnerRestaurant, "id"> & Partial<OwnerRestaurant>,
+): OwnerRestaurant => ({
+  slug: summary.slug,
+  name: summary.name,
+  description: summary.description,
+  cuisines: summary.cuisines,
+  district: summary.district,
+  address: summary.address,
+  phone: null,
+  website: null,
+  priceLevel: summary.priceLevel,
+  slotIntervalMin: 30,
+  reservationDurationMin: 120,
+  isPublished: true,
+  ...extra,
+});
+
+export const ownedLori = owned(loriSmokehouse, {
+  id: "4f1e2d3c-5b6a-4789-8a0b-1c2d3e4f5a6b",
+  phone: "+374 10 000103",
+});
+
+/** A new restaurant, not published yet, with a long Armenian name. */
+export const ownedDraft = owned(armenianName, {
+  id: "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d",
+  isPublished: false,
+});
+
+/** By name, as the API lists them: Latin letters sort before Armenian ones. */
+export const ownedRestaurants: OwnerRestaurant[] = [
+  ownedLori,
+  owned(tsiranWineRoom, {
+    id: "2c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e6f",
+    reservationDurationMin: 150,
+  }),
+  ownedDraft,
+];
+
+const T1 = { id: "table-t1", label: "T1", zone: "INDOOR" } as const;
+const T2 = { id: "table-t2", label: "T2", zone: "INDOOR" } as const;
+const T3 = { id: "table-t3", label: "T3", zone: "INDOOR" } as const;
+const T4 = { id: "table-t4", label: "T4", zone: "TERRACE" } as const;
+const T5 = { id: "table-t5", label: "T5", zone: "INDOOR" } as const;
+
+/** One booking on Friday 13 November 2026. Yerevan is 4 hours ahead of UTC. */
+function booking(
+  id: string,
+  [startsAt, starts]: [string, string],
+  [endsAt, ends]: [string, string],
+  guest: string,
+  table: OwnerReservation["table"],
+  partySize: number,
+  status: ReservationStatus,
+  extra: Partial<OwnerReservation> = {},
+): OwnerReservation {
+  return {
+    id,
+    status,
+    partySize,
+    startsAt,
+    endsAt,
+    starts,
+    ends,
+    table,
+    guest: { name: guest },
+    specialRequests: null,
+    cancellation: null,
+    ...extra,
+  };
+}
+
+/** A full Friday: every status, notes, a cancellation with a reason, and a booking past midnight. */
+export const fridayBookings: OwnerReservation[] = [
+  booking(
+    "booking-1",
+    ["2026-11-13T08:30:00.000Z", "12:30"],
+    ["2026-11-13T10:30:00.000Z", "14:30"],
+    "Lilit Harutyunyan",
+    T1,
+    2,
+    "ARRIVED",
+  ),
+  booking(
+    "booking-2",
+    ["2026-11-13T09:00:00.000Z", "13:00"],
+    ["2026-11-13T11:00:00.000Z", "15:00"],
+    "Davit Grigoryan",
+    T4,
+    4,
+    "NO_SHOW",
+  ),
+  booking(
+    "booking-3",
+    ["2026-11-13T15:00:00.000Z", "19:00"],
+    ["2026-11-13T17:00:00.000Z", "21:00"],
+    "Anahit Petrosyan",
+    T3,
+    4,
+    "CONFIRMED",
+    { specialRequests: "Birthday dinner" },
+  ),
+  booking(
+    "booking-4",
+    ["2026-11-13T15:30:00.000Z", "19:30"],
+    ["2026-11-13T17:30:00.000Z", "21:30"],
+    "Aram Khachatryan",
+    T5,
+    6,
+    "PENDING",
+    { specialRequests: "A table by the window, if possible" },
+  ),
+  booking(
+    "booking-5",
+    ["2026-11-13T16:00:00.000Z", "20:00"],
+    ["2026-11-13T18:00:00.000Z", "22:00"],
+    "Mariam Sargsyan",
+    T2,
+    2,
+    "CANCELLED",
+    { cancellation: { by: "RESTAURANT", reason: "We have a private event that evening." } },
+  ),
+  booking(
+    "booking-6",
+    ["2026-11-13T18:30:00.000Z", "22:30"],
+    ["2026-11-13T20:30:00.000Z", "00:30"],
+    "Գոհար Մկրտչյան",
+    T1,
+    2,
+    "CONFIRMED",
+  ),
+];
+
+// index.css's photo tones, --color-tone-1 to --color-tone-6, written out because an <img> can't
+// read CSS. Squares in these tones stand in for photos, so /design needs no network. A real photo
+// is a Cloudinary address, which photoUrl() sizes; these pass through it unchanged.
+const PHOTO_TONES = ["#5a2e24", "#4b2b33", "#3a3027", "#26363b", "#6b5a45", "#2a2622"];
+
+function samplePhoto(index: number): OwnerPhoto {
+  const from = PHOTO_TONES[index % PHOTO_TONES.length] ?? "#3a3027";
+  const to = PHOTO_TONES[(index + 3) % PHOTO_TONES.length] ?? "#2a2622";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><defs><linearGradient id="g" x2="1" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs><rect width="4" height="4" fill="url(#g)"/></svg>`;
+  return {
+    id: `sample-photo-${index + 1}`,
+    url: `data:image/svg+xml,${encodeURIComponent(svg)}`,
+    isCover: index === 0,
+    sortOrder: index,
+  };
+}
+
+/** A cover and four more. */
+export const samplePhotos: OwnerPhoto[] = Array.from({ length: 5 }, (_, index) =>
+  samplePhoto(index),
+);
+
+/** As many as a restaurant can have. */
+export const tenPhotos: OwnerPhoto[] = Array.from({ length: 10 }, (_, index) => samplePhoto(index));

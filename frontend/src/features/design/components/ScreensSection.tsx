@@ -12,6 +12,7 @@ import { SignInForm } from "@/features/auth/components/SignInForm";
 import { SignUpForm } from "@/features/auth/components/SignUpForm";
 import { googleClientId } from "@/features/auth/google";
 import { BrowseScreens } from "@/features/design/components/BrowseScreens";
+import { DashboardScreens } from "@/features/design/components/DashboardScreens";
 import { HomeScreens } from "@/features/design/components/HomeScreens";
 import { RestaurantPageScreens } from "@/features/design/components/RestaurantPageScreens";
 import { Group, Section, Specimens } from "@/features/design/components/parts";
@@ -199,6 +200,7 @@ export function ScreensSection(): ReactElement {
       <HomeScreens />
       <BrowseScreens />
       <RestaurantPageScreens />
+      <DashboardScreens />
     </>
   );
 

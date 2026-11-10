@@ -94,7 +94,8 @@ export interface RestaurantResponse {
 }
 
 /**
- * One of the signed-in owner's restaurants, published or not, inside { restaurant }:
+ * One of the signed-in owner's restaurants, published or not. GET /api/owner/restaurants answers a
+ * ListResponse of them, by name. One restaurant comes inside { restaurant }:
  * - GET /api/owner/restaurants/:restaurantId
  * - POST /api/owner/restaurants (201), which always creates it unpublished
  * - PATCH /api/owner/restaurants/:restaurantId
@@ -124,8 +125,9 @@ export interface OwnerRestaurantResponse {
 }
 
 /**
- * PUT /api/owner/restaurants/:restaurantId/opening-hours: the week as saved, which replaced the old
- * one, in order from Sunday (0) and by opening time. A day with no opening is closed. A week that
+ * GET /api/owner/restaurants/:restaurantId/opening-hours: the week as saved. PUT to the same address
+ * answers the same way, with the week that replaced the old one, in order from Sunday (0) and by
+ * opening time. A day with no opening is closed. A week that
  * breaks a rule, such as two openings that overlap, answers 400 with a message on each opening:
  * `details.fields["hours.1"]` is "Overlaps Monday 12:00–15:00." for the second one sent.
  */
@@ -143,7 +145,8 @@ export interface OwnerPhoto {
 }
 
 /**
- * The restaurant's photos after a change, the cover first, then in the order they were added:
+ * The restaurant's photos, the cover first, then in the order they were added:
+ * - GET /api/owner/restaurants/:restaurantId/photos, as saved
  * - POST /api/owner/restaurants/:restaurantId/photos (201), saving an upload
  * - PATCH /api/owner/restaurants/:restaurantId/photos/:photoId, choosing the cover
  * - DELETE /api/owner/restaurants/:restaurantId/photos/:photoId
@@ -164,6 +167,34 @@ export interface PhotoUploadResponse {
 
 /** What a restaurant still needs before guests can see it. */
 export type PublishBlocker = "TABLE" | "OPENING_HOURS";
+
+/** PENDING, CONFIRMED and ARRIVED hold the table. CANCELLED and NO_SHOW free it. */
+export type ReservationStatus = "PENDING" | "CONFIRMED" | "ARRIVED" | "NO_SHOW" | "CANCELLED";
+export type TableZone = "INDOOR" | "TERRACE" | "VIP" | "BAR_COUNTER";
+
+/**
+ * One booking in a restaurant's book for the day. GET
+ * /api/owner/restaurants/:restaurantId/reservations?date=YYYY-MM-DD answers a ListResponse of
+ * these: every status, by time and then table. A booking belongs to the date it starts on, on the
+ * restaurant's clock.
+ */
+export interface OwnerReservation {
+  id: string;
+  status: ReservationStatus;
+  partySize: number;
+  /** The exact moments, in UTC. */
+  startsAt: string;
+  endsAt: string;
+  /** The same two moments on the restaurant's clock, ready to show, such as "19:00" and "01:30". */
+  starts: string;
+  ends: string;
+  table: { id: string; label: string; zone: TableZone };
+  /** The guest's name only. */
+  guest: { name: string };
+  specialRequests: string | null;
+  /** Who cancelled, and why, for a cancelled booking. Otherwise null. */
+  cancellation: { by: "CUSTOMER" | "RESTAURANT" | null; reason: string | null } | null;
+}
 
 /**
  * The `details` of 409 NOT_READY_TO_PUBLISH, when a PATCH tries to publish too early. The message

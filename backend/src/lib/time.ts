@@ -46,6 +46,24 @@ export function localTimeToUtc(date: string, minutes: number, timeZone: string):
 }
 
 /**
+ * The two moments a restaurant's calendar day starts and ends: its local midnight, and the next.
+ * Usually 24 hours apart, but 23 or 25 on a day when the clocks change.
+ */
+export function localDayRange(date: string, timeZone: string): { start: Date; end: Date } {
+  return {
+    start: localTimeToUtc(date, 0, timeZone),
+    end: localTimeToUtc(addDays(date, 1), 0, timeZone),
+  };
+}
+
+/** A moment as a restaurant-local clock time to show, such as "19:30". */
+export function localClockTime(moment: Date, timeZone: string): string {
+  const local = new TZDate(moment.getTime(), timeZone);
+  const hour = String(local.getHours()).padStart(2, "0");
+  return `${hour}:${String(local.getMinutes()).padStart(2, "0")}`;
+}
+
+/**
  * A number of minutes after the service day's midnight, as a clock time to show. Closing times
  * can pass midnight, so 1560 is "02:00", the next morning.
  */

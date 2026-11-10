@@ -13,9 +13,9 @@ import { signUp } from "./fixtures/sessions.ts";
 
 vi.mock("../src/lib/prisma.ts", () => import("./fake-prisma.ts"));
 
-// An owner address that isn't a route yet: the list of an owner's restaurants comes later. So
-// getting past the role check ends in a 404. owner-restaurants.test.ts covers the routes that exist.
-const OWNER_ROUTE = "/api/owner/restaurants";
+// An owner address that will never be a route, so getting past the role check ends in a 404. The
+// owner routes themselves are tested in owner-restaurants.test.ts and beside each part of a restaurant.
+const OWNER_ROUTE = "/api/owner/no-such-page";
 
 function callOwnerRoute(access?: string): Test {
   const call = request(app).get(OWNER_ROUTE);
@@ -53,7 +53,7 @@ describe("the owner area", () => {
 
     const reply = await callOwnerRoute(access);
 
-    // 404, not 403: the role check let them in, and this address isn't a route yet.
+    // 404, not 403: the role check let them in, and this address isn't a route.
     expect(reply.status).toBe(404);
     expect(reply.body.error.code).toBe("ROUTE_NOT_FOUND");
   });

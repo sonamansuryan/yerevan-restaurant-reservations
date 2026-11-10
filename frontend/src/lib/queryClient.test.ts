@@ -2,7 +2,7 @@ import { MutationObserver, QueryClient } from "@tanstack/react-query";
 import { afterEach, expect, test } from "vitest";
 
 import { ApiError } from "@/lib/api";
-import { ME_QUERY_KEY, queryClient } from "@/lib/queryClient";
+import { ME_QUERY_KEY, forgetPrivateData, queryClient } from "@/lib/queryClient";
 import type { AuthUser } from "@/types/api";
 
 const lilit: AuthUser = {
@@ -41,6 +41,22 @@ test("so does a 401 that reaches a mutation", async () => {
     .catch(() => {});
 
   expect(queryClient.getQueryData(ME_QUERY_KEY)).toBeNull();
+});
+
+test("forgetting private data drops an owner's, and keeps what anyone can see", () => {
+  const day = ["owner", "reservations", "r-1", "2026-11-13", 1];
+  queryClient.setQueryData(["owner", "restaurants"], { data: [] });
+  queryClient.setQueryData(day, { data: [] });
+  queryClient.setQueryData(["restaurants", { page: 1 }], { data: [] });
+  queryClient.setQueryData(ME_QUERY_KEY, lilit);
+
+  forgetPrivateData(queryClient);
+
+  expect(queryClient.getQueryData(["owner", "restaurants"])).toBeUndefined();
+  expect(queryClient.getQueryData(day)).toBeUndefined();
+  expect(queryClient.getQueryData(["restaurants", { page: 1 }])).toEqual({ data: [] });
+  // Who's signed in is set by whoever knows, not forgotten here.
+  expect(queryClient.getQueryData(ME_QUERY_KEY)).toEqual(lilit);
 });
 
 test("any other failure leaves the session alone", async () => {

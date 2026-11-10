@@ -13,6 +13,7 @@ import { signAccessToken } from "../src/modules/auth/token.service.ts";
 import type { SessionUser } from "../src/modules/auth/token.service.ts";
 import {
   deletePhoto,
+  getPhotos,
   makeCover,
   permitUpload,
   savePhoto,
@@ -26,6 +27,7 @@ vi.mock("../src/lib/prisma.ts", () => ({
   isDatabaseReachable: vi.fn(),
 }));
 vi.mock("../src/modules/photos/photos.service.ts", () => ({
+  getPhotos: vi.fn(),
   permitUpload: vi.fn(),
   savePhoto: vi.fn(),
   makeCover: vi.fn(),
@@ -65,7 +67,7 @@ afterEach(() => {
 });
 
 async function call(
-  method: "post" | "patch" | "delete",
+  method: "get" | "post" | "patch" | "delete",
   path: string,
   body?: object,
   user?: SessionUser,
@@ -76,6 +78,18 @@ async function call(
 }
 
 const UPLOAD_AGAIN = "Upload the photo again.";
+
+describe("GET /photos", () => {
+  test("an owner reads the photos as saved, in the same shape every change answers with", async () => {
+    vi.mocked(getPhotos).mockResolvedValue(saved);
+
+    const reply = await call("get", photos(ANIS), undefined, ani);
+
+    expect(reply.status).toBe(200);
+    expect(reply.body).toEqual({ photos: saved });
+    expect(getPhotos).toHaveBeenCalledWith(ANIS);
+  });
+});
 
 describe("POST /photos/signature", () => {
   test("an owner gets permission for one upload straight to Cloudinary", async () => {
@@ -177,6 +191,7 @@ describe("DELETE /photos/:photoId", () => {
 
 describe("only the owner's own restaurant", () => {
   const routes = [
+    ["get", "", undefined],
     ["post", "/signature", undefined],
     ["post", "", upload],
     ["patch", `/${PHOTO}`, { isCover: true }],
@@ -190,6 +205,7 @@ describe("only the owner's own restaurant", () => {
       expect(reply.status).toBe(404);
       expect(reply.body.error.code).toBe("RESTAURANT_NOT_FOUND");
     }
+    expect(getPhotos).not.toHaveBeenCalled();
     expect(permitUpload).not.toHaveBeenCalled();
     expect(savePhoto).not.toHaveBeenCalled();
     expect(makeCover).not.toHaveBeenCalled();

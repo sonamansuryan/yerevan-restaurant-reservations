@@ -1,12 +1,26 @@
 import type { RequestHandler } from "express";
 
 import type { SessionUser } from "../auth/token.service.ts";
-import { createRestaurant, getOwnedRestaurant, updateRestaurant } from "./owner.service.ts";
-import type { CreateRestaurantInput, UpdateRestaurantInput } from "./restaurants.schemas.ts";
+import {
+  createRestaurant,
+  getOwnedRestaurant,
+  listOwnedRestaurants,
+  updateRestaurant,
+} from "./owner.service.ts";
+import type {
+  CreateRestaurantInput,
+  OwnerRestaurantListQuery,
+  UpdateRestaurantInput,
+} from "./restaurants.schemas.ts";
 
 // The router runs requireAuth first, so req.user is set, and `validate` has checked the body.
 // Routes under a restaurant also run requireRestaurantOwner, so res.locals.restaurantId is a
 // restaurant this owner owns.
+
+export const list: RequestHandler = async (req, res) => {
+  const { id: ownerId } = req.user as SessionUser;
+  res.json(await listOwnedRestaurants(ownerId, res.locals["query"] as OwnerRestaurantListQuery));
+};
 
 export const create: RequestHandler = async (req, res) => {
   const { id: ownerId } = req.user as SessionUser;

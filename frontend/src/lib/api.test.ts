@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { ApiError, apiDelete, apiGet, apiPatch, apiPost, apiPut } from "@/lib/api";
 
 const friendlyMessage = "We can't reach the server right now. Please try again.";
 
@@ -75,7 +75,7 @@ describe("apiGet", () => {
   });
 });
 
-describe("apiPost, apiPatch and apiDelete", () => {
+describe("apiPost, apiPut, apiPatch and apiDelete", () => {
   test("apiPost sends its body as JSON, with the session cookies", async () => {
     const fetch = fakeFetch(jsonReply({ id: "reservation-1" }, 201));
 
@@ -100,6 +100,19 @@ describe("apiPost, apiPatch and apiDelete", () => {
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: '{"name":"Nurr"}',
+    });
+  });
+
+  test("apiPut sends its body as JSON too, to replace something whole", async () => {
+    const fetch = fakeFetch(jsonReply({ openingHours: [] }));
+
+    await apiPut("/api/owner/restaurants/r-1/opening-hours", { hours: [] });
+
+    expect(fetch).toHaveBeenCalledWith("/api/owner/restaurants/r-1/opening-hours", {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: '{"hours":[]}',
     });
   });
 

@@ -205,6 +205,12 @@ describe("in a production build", () => {
       "register",
       "reservations",
       "dashboard",
+      "dashboard/new",
+      // One restaurant's dashboard: its parts sit inside dashboard/:restaurantId, Bookings first.
+      undefined,
+      "information",
+      "hours",
+      "photos",
       "*",
     ]);
   });

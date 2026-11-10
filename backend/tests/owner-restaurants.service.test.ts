@@ -5,16 +5,22 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { Prisma } from "../src/generated/prisma/client.ts";
 import { ConflictError, NotFoundError } from "../src/lib/errors.ts";
 import { prisma } from "../src/lib/prisma.ts";
-import { createRestaurant, updateRestaurant } from "../src/modules/restaurants/owner.service.ts";
+import {
+  createRestaurant,
+  listOwnedRestaurants,
+  toOwnerRestaurant,
+  updateRestaurant,
+} from "../src/modules/restaurants/owner.service.ts";
 import type { CreateRestaurantInput } from "../src/modules/restaurants/restaurants.schemas.ts";
 import { ownedRow } from "./fixtures/restaurants.ts";
 import { ani } from "./fixtures/users.ts";
 
 vi.mock("../src/lib/prisma.ts", () => ({
   prisma: {
-    restaurant: { findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
+    restaurant: { findMany: vi.fn(), count: vi.fn(), create: vi.fn(), update: vi.fn() },
     table: { count: vi.fn() },
     openingHour: { count: vi.fn() },
+    $transaction: vi.fn(),
   },
   isDatabaseReachable: vi.fn(),
 }));
@@ -195,6 +201,33 @@ describe("updateRestaurant", () => {
 
     await expect(updateRestaurant(ani.id, RESTAURANT, { name: "New" })).rejects.toMatchObject({
       code: "P2003",
+    });
+  });
+});
+
+describe("listOwnedRestaurants", () => {
+  test("a page of this owner's restaurants, by name, with the total from the same moment", async () => {
+    vi.mocked(prisma.$transaction).mockImplementation(((reads: Promise<unknown>[]) =>
+      Promise.all(reads)) as never);
+    findMany.mockResolvedValue([ownedRow()] as never);
+    vi.mocked(prisma.restaurant.count).mockResolvedValue(3);
+
+    const list = await listOwnedRestaurants(ani.id, { page: 2, pageSize: 1 });
+
+    expect(findMany).toHaveBeenCalledWith({
+      where: { ownerId: ani.id },
+      select: expect.objectContaining({ isPublished: true, slotIntervalMin: true }),
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      skip: 1,
+      take: 1,
+    });
+    expect(prisma.restaurant.count).toHaveBeenCalledWith({ where: { ownerId: ani.id } });
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Array), {
+      isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+    });
+    expect(list).toEqual({
+      data: [toOwnerRestaurant(ownedRow() as never)],
+      meta: { page: 2, pageSize: 1, total: 3 },
     });
   });
 });

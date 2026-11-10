@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { Button, LinkButton } from "@/components/Button";
 import type { ButtonVariant } from "@/components/Button";
 import { Pagination } from "@/components/Pagination";
+import { SectionNav } from "@/components/SectionNav";
 import { Group, Section, Specimen, SpecimenRow } from "@/features/design/components/parts";
 
 interface ButtonStatesProps {
@@ -48,6 +49,20 @@ function ButtonStates({ variant, onDark = false }: ButtonStatesProps): ReactElem
   );
 }
 
+const PARTS = ["Bookings", "Information", "Opening hours", "Photos"];
+
+/**
+ * The links lead nowhere real, so these are frozen. The open part's link is this page's own
+ * address, which is how a real one is marked: NavLink compares it with the address in the bar.
+ */
+function sectionsWith(open: string): { to: string; label: string; end: boolean }[] {
+  return PARTS.map((label) => ({
+    to: label === open ? "/design" : `/design/${label.toLowerCase().replace(" ", "-")}`,
+    label,
+    end: true,
+  }));
+}
+
 export function ActionSection(): ReactElement {
   return (
     <Section
@@ -91,6 +106,23 @@ export function ActionSection(): ReactElement {
           <LinkButton to="/design" variant="link">
             Back to the home page
           </LinkButton>
+        </div>
+      </Group>
+      <Group
+        title="Section links"
+        note="The parts of one place, such as a restaurant's dashboard, in the header's own style: the open part is in ink with the logo's dot. On a phone the row wraps."
+      >
+        <div className="grid max-w-180 gap-6">
+          <Specimen label="Bookings open" frozen>
+            <SectionNav
+              label="Lori Smokehouse"
+              links={sectionsWith("Bookings")}
+              className="w-full"
+            />
+          </Specimen>
+          <Specimen label="Photos open" frozen>
+            <SectionNav label="Lori Smokehouse" links={sectionsWith("Photos")} className="w-full" />
+          </Specimen>
         </div>
       </Group>
       <Group

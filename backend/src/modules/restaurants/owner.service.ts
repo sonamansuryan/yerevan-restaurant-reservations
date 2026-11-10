@@ -2,13 +2,17 @@
 // owner, so one that exists but belongs to someone else looks exactly like one that doesn't exist.
 // Two queries don't need it: the address check looks across all restaurants, because addresses are
 // unique on Seghan, and the counts before publishing use the id that requireRestaurantOwner checked.
-import type { Prisma } from "../../generated/prisma/client.ts";
+import { Prisma } from "../../generated/prisma/client.ts";
 import type { Cuisine, District } from "../../generated/prisma/enums.ts";
 import { isRecordMissing, isUniqueViolation } from "../../lib/db-errors.ts";
 import { ConflictError, NotFoundError } from "../../lib/errors.ts";
 import { prisma } from "../../lib/prisma.ts";
 import { freeSlug, notReadyMessage, publishBlockers, slugFromName } from "./owner.rules.ts";
-import type { CreateRestaurantInput, UpdateRestaurantInput } from "./restaurants.schemas.ts";
+import type {
+  CreateRestaurantInput,
+  OwnerRestaurantListQuery,
+  UpdateRestaurantInput,
+} from "./restaurants.schemas.ts";
 
 /** A restaurant as its owner sees it in the dashboard, unpublished or not. */
 export interface OwnerRestaurant {
@@ -47,6 +51,31 @@ const ownerFields = {
 } satisfies Prisma.RestaurantSelect;
 
 type OwnerRow = Prisma.RestaurantGetPayload<{ select: typeof ownerFields }>;
+
+/** A page of this owner's restaurants, published or not, by name. */
+export async function listOwnedRestaurants(
+  ownerId: string,
+  { page, pageSize }: OwnerRestaurantListQuery,
+): Promise<{ data: OwnerRestaurant[]; meta: { page: number; pageSize: number; total: number } }> {
+  const where = { ownerId } satisfies Prisma.RestaurantWhereInput;
+  // Both reads in one transaction at REPEATABLE READ, so the page and the total come from the same
+  // moment, as on Browse.
+  const [rows, total] = await prisma.$transaction(
+    [
+      prisma.restaurant.findMany({
+        where,
+        select: ownerFields,
+        // The id breaks ties between equal names, so no restaurant shows on two pages.
+        orderBy: [{ name: "asc" }, { id: "asc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.restaurant.count({ where }),
+    ],
+    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+  );
+  return { data: rows.map(toOwnerRestaurant), meta: { page, pageSize, total } };
+}
 
 /**
  * Whether this restaurant is this owner's. The owner is part of the query itself, rather than

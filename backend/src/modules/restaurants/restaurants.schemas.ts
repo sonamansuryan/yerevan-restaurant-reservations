@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { Cuisine, District } from "../../generated/prisma/enums.ts";
+import { pagingFields } from "../../lib/paging.ts";
 
 /** Restaurants per page, unless the request asks for another number. */
 export const PAGE_SIZE = 12;
@@ -175,7 +176,14 @@ export const updateRestaurantSchema = z
     "Change at least one detail.",
   );
 
+/**
+ * GET /api/owner/restaurants: the signed-in owner's own restaurants, published or not. One page
+ * holds them all, unless an owner has more than 48 (MAX_PAGE_SIZE).
+ */
+export const ownerRestaurantListSchema = z.object(pagingFields(MAX_PAGE_SIZE, MAX_PAGE_SIZE));
+
 export type RestaurantListQuery = z.infer<typeof restaurantListSchema>;
+export type OwnerRestaurantListQuery = z.infer<typeof ownerRestaurantListSchema>;
 export type RestaurantSlugParams = z.infer<typeof restaurantSlugSchema>;
 export type RestaurantIdParams = z.infer<typeof restaurantIdSchema>;
 export type CreateRestaurantInput = z.infer<typeof createRestaurantSchema>;

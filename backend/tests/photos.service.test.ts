@@ -13,6 +13,7 @@ import { logger } from "../src/lib/logger.ts";
 import { prisma } from "../src/lib/prisma.ts";
 import {
   deletePhoto,
+  getPhotos,
   makeCover,
   permitUpload,
   savePhoto,
@@ -21,7 +22,7 @@ import { ownedRow } from "./fixtures/restaurants.ts";
 import { ani } from "./fixtures/users.ts";
 
 vi.mock("../src/lib/prisma.ts", () => ({
-  prisma: { $transaction: vi.fn(), restaurantPhoto: { count: vi.fn() } },
+  prisma: { $transaction: vi.fn(), restaurantPhoto: { count: vi.fn(), findMany: vi.fn() } },
   isDatabaseReachable: vi.fn(),
 }));
 vi.mock("../src/integrations/cloudinary/photos.ts", async (importOriginal) => ({
@@ -308,5 +309,21 @@ describe("deletePhoto", () => {
     });
     expect(tx.restaurantPhoto.delete).not.toHaveBeenCalled();
     expect(deleteUpload).not.toHaveBeenCalled();
+  });
+});
+
+describe("getPhotos", () => {
+  test("reads the photos as saved, the cover first, in the shape every change answers with", async () => {
+    const photos = [
+      { id: PHOTO, url: "https://res.cloudinary.com/x", isCover: true, sortOrder: 0 },
+    ];
+    vi.mocked(prisma.restaurantPhoto.findMany).mockResolvedValue(photos as never);
+
+    await expect(getPhotos(RESTAURANT)).resolves.toEqual(photos);
+    expect(prisma.restaurantPhoto.findMany).toHaveBeenCalledWith({
+      where: { restaurantId: RESTAURANT },
+      orderBy: [{ isCover: "desc" }, { sortOrder: "asc" }],
+      select: { id: true, url: true, isCover: true, sortOrder: true },
+    });
   });
 });

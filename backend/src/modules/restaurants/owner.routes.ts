@@ -4,9 +4,11 @@ import { requireRestaurantOwner } from "../../middleware/requireRestaurantOwner.
 import { validate } from "../../middleware/validate.ts";
 import { openingHoursRouter } from "../opening-hours/opening-hours.routes.ts";
 import { photosRouter } from "../photos/photos.routes.ts";
-import { create, detail, update } from "./owner.controller.ts";
+import { ownerReservationsRouter } from "../reservations/owner.routes.ts";
+import { create, detail, list, update } from "./owner.controller.ts";
 import {
   createRestaurantSchema,
+  ownerRestaurantListSchema,
   restaurantIdSchema,
   updateRestaurantSchema,
 } from "./restaurants.schemas.ts";
@@ -15,6 +17,8 @@ import {
 // far (401 or 403 otherwise).
 export const ownerRestaurantsRouter = Router();
 
+// The owner's own restaurants: the list goes by the owner in the session, so it needs no check.
+ownerRestaurantsRouter.get("/", validate(ownerRestaurantListSchema, "query"), list);
 ownerRestaurantsRouter.post("/", validate(createRestaurantSchema), create);
 
 // Everything about one restaurant lives under /:restaurantId. This one line checks that it's the
@@ -33,3 +37,4 @@ ownerRestaurantsRouter.patch("/:restaurantId", validate(updateRestaurantSchema),
 // Each part of a restaurant lives below it, behind the same check.
 ownerRestaurantsRouter.use("/:restaurantId/opening-hours", openingHoursRouter);
 ownerRestaurantsRouter.use("/:restaurantId/photos", photosRouter);
+ownerRestaurantsRouter.use("/:restaurantId/reservations", ownerReservationsRouter);

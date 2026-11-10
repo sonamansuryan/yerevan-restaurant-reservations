@@ -5,10 +5,16 @@ import { AppLayout } from "@/components/AppLayout";
 import { Spinner } from "@/components/Spinner";
 import { RequireAuth } from "@/features/auth/components/RequireAuth";
 import { SignedOutOnly } from "@/features/auth/components/SignedOutOnly";
+import { DashboardBookingsPage } from "@/pages/DashboardBookingsPage";
+import { DashboardHoursPage } from "@/pages/DashboardHoursPage";
+import { DashboardInformationPage } from "@/pages/DashboardInformationPage";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { DashboardPhotosPage } from "@/pages/DashboardPhotosPage";
+import { DashboardRestaurantPage } from "@/pages/DashboardRestaurantPage";
 import { DevErrorPage } from "@/pages/DevErrorPage";
 import { ErrorPage } from "@/pages/ErrorPage";
 import { HomePage } from "@/pages/HomePage";
+import { NewRestaurantPage } from "@/pages/NewRestaurantPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { ReservationsPage } from "@/pages/ReservationsPage";
 import { RestaurantPage } from "@/pages/RestaurantPage";
@@ -72,7 +78,22 @@ export const routes: RouteObject[] = [
             element: (
               <RequireAuth roles={["OWNER"]} notAllowedTitle="This page is for restaurants" />
             ),
-            children: [{ path: "dashboard", element: <DashboardPage /> }],
+            children: [
+              { path: "dashboard", element: <DashboardPage /> },
+              { path: "dashboard/new", element: <NewRestaurantPage /> },
+              {
+                // One restaurant: its header and parts, with the open part inside. Bookings
+                // live at the restaurant's own address, so they're what opens first.
+                path: "dashboard/:restaurantId",
+                element: <DashboardRestaurantPage />,
+                children: [
+                  { index: true, element: <DashboardBookingsPage /> },
+                  { path: "information", element: <DashboardInformationPage /> },
+                  { path: "hours", element: <DashboardHoursPage /> },
+                  { path: "photos", element: <DashboardPhotosPage /> },
+                ],
+              },
+            ],
           },
           ...devRoutes,
           { path: "*", element: <NotFoundPage /> },

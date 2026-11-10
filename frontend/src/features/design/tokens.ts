@@ -207,6 +207,7 @@ export const shownComponents: ShownComponent[] = [
   { name: "ChoiceLines", file: "ChoiceLines", section: "forms" },
   { name: "OrDivider", file: "OrDivider", section: "forms" },
   { name: "Pagination", file: "Pagination", section: "actions" },
+  { name: "SectionNav", file: "SectionNav", section: "actions" },
   { name: "Badge", file: "Badge", section: "feedback" },
   { name: "FormNotice", file: "FormNotice", section: "feedback" },
   { name: "Spinner", file: "Spinner", section: "feedback" },
@@ -275,6 +276,26 @@ export const screenStates = {
     "Loading",
     "Couldn’t load",
   ],
+  dashboardList: ["Your restaurants", "No restaurants yet", "Loading", "Couldn’t load"],
+  dashboardHeader: ["Published", "A draft, with a long Armenian name"],
+  dayBookings: [
+    "Today, a full book (live)",
+    "Another day, no bookings",
+    "Loading",
+    "Couldn’t load",
+  ],
+  publishPanel: ["Just added", "A draft", "Published", "Publishing", "Not ready to publish"],
+  restaurantForm: ["A new restaurant (live)", "Field errors", "Sending", "Saved", "No connection"],
+  openingHours: [
+    "Split shifts (live)",
+    "Late nights and a closed day",
+    "No hours yet",
+    "An overlap",
+    "An empty week",
+    "Sending",
+    "Saved",
+  ],
+  photos: ["A cover and photos (live)", "No photos yet", "Uploading", "The limit", "Upload failed"],
 } as const;
 
 function componentsIn(section: string): number {

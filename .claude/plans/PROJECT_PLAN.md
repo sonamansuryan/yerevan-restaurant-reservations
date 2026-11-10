@@ -32,15 +32,15 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | 🟡 The database refuses overlaps |
 | View and cancel their reservations | 8 | ⬜ |
 | **Restaurants** | | |
-| A private dashboard to manage restaurant information | 4 | 🟡 The API creates, edits and publishes a restaurant (4.2); the pages come in 4.6 |
-| Set opening hours | 4 | 🟡 The API saves the whole week, refusing overlaps (4.3); the form comes in 4.6 |
+| A private dashboard to manage restaurant information | 4 | ✅ Owners add, edit and publish their restaurants on their dashboard (4.2, 4.6) |
+| Set opening hours | 4 | ✅ The whole week, saved at once and refusing overlaps (4.3), on the dashboard (4.6) |
 | Add and manage tables and their capacity | 5 | ⬜ |
 | Block tables or dates | 5 | ⬜ |
-| View, confirm and cancel reservations; mark guests arrived or no-show | 4, 8 | ⬜ |
+| View, confirm and cancel reservations; mark guests arrived or no-show | 4, 8 | 🟡 Owners see a day's bookings on their dashboard (4.5, 4.6); the actions come in Step 8 |
 | **Restaurant data** | | |
 | A few restaurants added by hand | 3 | ✅ 7 demo restaurants |
 | Import real Yerevan restaurants with Google Places ("later") | 9 | ⬜ Deferred until after Step 8 (task 9.7) |
-| Restaurant images with Cloudinary | 4 | 🟡 Photos are stored at Cloudinary and shown on the pages (4.4); the upload form comes in 4.6 |
+| Restaurant images with Cloudinary | 4 | ✅ Owners upload photos and choose the cover on their dashboard (4.4, 4.6), and the pages show them |
 | **Final features, after the core works** | | |
 | Reviews: leave them, and see them on the restaurant page | 9 | ⬜ |
 | Favorites | 9 | ⬜ |
@@ -62,7 +62,7 @@ Everything marked ✅ is already built, and stays as it is.
 - ✅ **Safety basics:** Zod checks every input, all errors share one JSON format, secrets live only in `backend/.env`, and logs never contain secrets. Sign-in and sign-up allow 10 tries per minute per address.
 - ✅ **Data:** times are stored in UTC. Nothing important is deleted: restaurants are unpublished, tables deactivated and bookings cancelled instead.
 - 🟡 **Double booking:** the database constraint ✅, plus a transaction that locks the table's row ⬜ (§5).
-- ✅ **UI/UX:** the Seghan design, 24 shared components, and the protected `EmptyState` and `ErrorState`. 🟡 `/design` keeps growing (§6).
+- ✅ **UI/UX:** the Seghan design, 25 shared components, and the protected `EmptyState` and `ErrorState`. 🟡 `/design` keeps growing (§6).
 - 🟡 **Tests:** unit, API and real-PostgreSQL tests.
 
 ### 2.3 Optional improvements (postponed)
@@ -79,14 +79,14 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 - reminders and auto-cancel
 - Playwright end-to-end tests
 - importing opening hours from Places
-- bookings that start after midnight
+- bookings that start after midnight. With them comes a question from the review of 4.5: which day the owner's day view puts them on. Today a booking belongs to the date it starts on, so Tsiran's 00:00 demo booking shows on Saturday the 14th, not on Friday night. The alternative is a working day that runs until about 06:00.
 - Seghan's signature design ideas
 
 **Out of scope:** payments, combining tables, waitlists, SMS, more languages, staff accounts, floor plans, "near me" search, walk-ins.
 
 ## 3. Current state (10 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 1236 tests ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 1354 tests ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
@@ -97,13 +97,16 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - owners create and edit their restaurants, including the slot interval and booking length; a new one starts unpublished, and publishing needs an active table and opening hours
   - owners save their whole week of opening hours at once: overlaps are refused, including past midnight and from Saturday into Sunday, and two saves take turns
   - photos: owners upload them straight to Cloudinary with a permission our server signs, then save them, choose the cover and delete them. The restaurant page and Browse cards show them
+  - owners read their restaurant's bookings for any date: every status, with times on the restaurant's clock and only the guest's name
+  - owners list their own restaurants, and read their saved opening hours and photos
+  - the owner's dashboard: their restaurants, adding one, and each restaurant's bookings for a day, information and publishing, opening hours and photos, with their states in `/design`
   - the Home page, the Browse page and each restaurant's page, with their states in `/design`
-  - `lib/api.ts`: GET, POST, PATCH and DELETE, renewing an expired session once
+  - `lib/api.ts`: GET, POST, PUT, PATCH and DELETE, renewing an expired session once
   - route guards: signed-out visitors go to Sign in and come back afterwards, and owner pages are for owners only
   - the Seghan foundation and `/design`
 - **Partly built:**
   - the time helpers
-  - placeholder pages: My reservations (task 8.3) and the dashboard (Step 4)
+  - a placeholder page: My reservations (task 8.3)
 - **Still missing:**
   - no test proves the double-booking guarantee on real PostgreSQL yet (from task 6.4)
 
@@ -187,7 +190,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 |---|---|---|
 | Foundations | Color, type, space, shape, motion | ✅ |
 | Components | Actions, forms, feedback, brand and shell, protected designs, responsive | ✅ |
-| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, Sign in with Google, the route guard's states, Home, Browse, and the restaurant page |
+| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, Sign in with Google, the route guard's states, Home, Browse, the restaurant page, and the owner's dashboard |
 | Flows | "Book a table" (the assignment's final result) and "Handle a reservation" | ⬜ |
 
 **Key states:** loading, empty, error with a retry, field errors, sending, success, not allowed, and each feature's own errors. A step is done only when its screens are in `/design`. `EmptyState` and `ErrorState` keep their approved look.
@@ -254,16 +257,16 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
 
   **Deferred design polish:** the hero animation works and stays as it is for now, but its visual design will be revisited later (§6).
 
-### Step 4: Restaurant dashboard 🟡
+### Step 4: Restaurant dashboard ✅
 
 - [x] **4.1 `requireRestaurantOwner`.** *Check:* owner A gets `404` on owner B's restaurant.
 - [x] **4.2 Create and edit a restaurant,** including the slot interval and booking length. It can only be published once it has a table and opening hours. *Check:* API tests.
 - [x] **4.3 Opening hours:** save the whole week at once, refusing overlaps. *Check:* unit tests.
 - [x] **4.4 Photos with Cloudinary** (free account): signed upload, save, cover, delete. *Check:* a photo shows on the restaurant page.
-- [ ] **4.5 Reservations for a chosen date,** view only. *Check:* the seeded bookings show up.
-- [ ] **4.6 Dashboard pages,** with their states in `/design`. *Check:* in the browser and in `/design`.
+- [x] **4.5 Reservations for a chosen date,** view only. *Check:* the seeded bookings show up.
+- [x] **4.6 Dashboard pages,** with their states in `/design`. *Check:* in the browser and in `/design`.
 
-  **To decide here (from the reviews of 4.3 and 4.4):** the dashboard needs a way to load what's already saved, the opening hours and the photos. Either each gets its own address (`GET …/opening-hours`, `GET …/photos`), or they come inside the owner's restaurant reply.
+  **Decided here (from the reviews of 4.3 and 4.4):** what's already saved loads from its own address, `GET …/opening-hours` and `GET …/photos`, in the same shape as the replies to saving it. The list of an owner's restaurants is `GET /api/owner/restaurants`.
 
 ### Step 5: Tables ⬜
 

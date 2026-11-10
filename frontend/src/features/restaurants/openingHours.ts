@@ -1,10 +1,18 @@
 import type { OpeningHours } from "@/types/api";
 
-const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+export const DAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 // Calendars in Armenia start the week on Monday. The API numbers days from Sunday, 0, so Sunday
 // moves to the end.
-const WEEK = [1, 2, 3, 4, 5, 6, 0];
+export const WEEK = [1, 2, 3, 4, 5, 6, 0];
 
 export interface DayHours {
   /** 0 = Sunday … 6 = Saturday, as the API counts. */

@@ -22,7 +22,11 @@ import { ani, davit, sessionUser } from "./fixtures/users.ts";
 // fake-prisma.ts covers only signing in, so Prisma is replaced here by a small table of
 // restaurants. Signing in needs no database: an access token alone says who someone is.
 vi.mock("../src/lib/prisma.ts", () => ({
-  prisma: { restaurant: { findUnique: vi.fn() } },
+  prisma: {
+    restaurant: { findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn() },
+    // The owner's list reads its page and its total in one transaction, which here simply runs them.
+    $transaction: vi.fn((reads: Promise<unknown>[]) => Promise.all(reads)),
+  },
   isDatabaseReachable: vi.fn(),
 }));
 
@@ -57,16 +61,45 @@ const findUnique = vi.mocked(prisma.restaurant.findUnique);
  * in `select`, or null.
  */
 function lookup({ where, select }: { where: object; select?: object }): Promise<object | null> {
-  const row = [anisRestaurant, anisDraft, davitsRestaurant].find((candidate) =>
+  const row = matching(where)[0];
+  return Promise.resolve(row ? pick(row, select) : null);
+}
+
+/** Answers findMany like the database: matching rows by name, then id, one page of them. */
+function listMatching({
+  where,
+  select,
+  skip = 0,
+  take = Number.POSITIVE_INFINITY,
+}: {
+  where: object;
+  select?: object;
+  skip?: number;
+  take?: number;
+}): Promise<object[]> {
+  const rows = matching(where).sort(
+    (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+  );
+  return Promise.resolve(rows.slice(skip, skip + take).map((row) => pick(row, select)));
+}
+
+function matching(where: object): OwnedRow[] {
+  return [anisRestaurant, anisDraft, davitsRestaurant].filter((candidate) =>
     Object.entries(where).every(([field, value]) => candidate[field as keyof OwnedRow] === value),
   );
-  if (!row || !select) return Promise.resolve(row ?? null);
+}
+
+function pick(row: OwnedRow, select?: object): object {
+  if (!select) return row;
   const fields = Object.keys(select) as (keyof OwnedRow)[];
-  return Promise.resolve(Object.fromEntries(fields.map((field) => [field, row[field]])));
+  return Object.fromEntries(fields.map((field) => [field, row[field]]));
 }
 
 beforeEach(() => {
   findUnique.mockImplementation(lookup as never);
+  vi.mocked(prisma.restaurant.findMany).mockImplementation(listMatching as never);
+  vi.mocked(prisma.restaurant.count).mockImplementation((({ where }: { where: object }) =>
+    Promise.resolve(matching(where).length)) as never);
 });
 
 afterEach(() => {
@@ -196,8 +229,9 @@ describe("GET /api/owner/restaurants/:restaurantId", () => {
 describe("everything under a restaurant passes the same check", () => {
   test("someone else's restaurant is a 404 even at addresses later tasks will add", async () => {
     // No route exists below a restaurant yet, but the check already runs first for all of them.
-    const davits = await get(`/api/owner/restaurants/${davitsRestaurant.id}/opening-hours`, ani);
-    const anis = await get(`/api/owner/restaurants/${anisRestaurant.id}/opening-hours`, ani);
+    // Tables arrive in Step 5, so this address doesn't exist yet.
+    const davits = await get(`/api/owner/restaurants/${davitsRestaurant.id}/tables`, ani);
+    const anis = await get(`/api/owner/restaurants/${anisRestaurant.id}/tables`, ani);
 
     expect(davits.status).toBe(404);
     expect(davits.body).toEqual(NOT_FOUND);
@@ -454,5 +488,45 @@ describe("PATCH /api/owner/restaurants/:restaurantId", () => {
     expect(signedOut.status).toBe(401);
     expect(customer.status).toBe(403);
     expect(updateRestaurant).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/owner/restaurants", () => {
+  test("an owner's list holds their own restaurants only, drafts included, by name", async () => {
+    const reply = await get("/api/owner/restaurants", ani);
+
+    expect(reply.status).toBe(200);
+    expect(reply.body.data.map((restaurant: { name: string }) => restaurant.name)).toEqual([
+      "Ani's New Place",
+      "Tsiran Wine Room",
+    ]);
+    expect(reply.body.data[0]).toEqual(toOwnerRestaurant(anisDraft as never));
+    expect(reply.body.meta).toEqual({ page: 1, pageSize: 48, total: 2 });
+  });
+
+  test("pages, and the owner always comes from the session, whatever the address says", async () => {
+    const reply = await get(`/api/owner/restaurants?page=2&pageSize=1&ownerId=${davit.id}`, ani);
+
+    expect(reply.body.data.map((restaurant: { name: string }) => restaurant.name)).toEqual([
+      "Tsiran Wine Room",
+    ]);
+    expect(reply.body.meta).toEqual({ page: 2, pageSize: 1, total: 2 });
+    expect(vi.mocked(prisma.restaurant.findMany).mock.calls[0]?.[0]).toMatchObject({
+      where: { ownerId: ani.id },
+    });
+  });
+
+  test("a page size beyond the limit is refused (400)", async () => {
+    const reply = await get("/api/owner/restaurants?pageSize=500", ani);
+
+    expect(reply.status).toBe(400);
+    expect(reply.body.error.details).toEqual({
+      fields: { pageSize: "Choose a page size from 1 to 48." },
+    });
+  });
+
+  test("only owners have a list: signed out gets 401 and a customer 403", async () => {
+    expect((await get("/api/owner/restaurants")).status).toBe(401);
+    expect((await get("/api/owner/restaurants", sessionUser)).status).toBe(403);
   });
 });

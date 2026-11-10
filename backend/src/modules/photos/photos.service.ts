@@ -68,6 +68,14 @@ async function findPhoto(
   return photo;
 }
 
+/**
+ * One restaurant's photos, in the same order and shape every change answers with. The restaurant
+ * is the one requireRestaurantOwner checked, so its id is enough here.
+ */
+export function getPhotos(restaurantId: string): Promise<OwnerPhoto[]> {
+  return listPhotos(prisma, restaurantId);
+}
+
 /** Permission for the browser to upload one photo of this restaurant straight to Cloudinary. */
 export async function permitUpload(restaurantId: string): Promise<UploadPermission> {
   // Checked here as well as when saving, so nobody uploads a photo that can't be saved.

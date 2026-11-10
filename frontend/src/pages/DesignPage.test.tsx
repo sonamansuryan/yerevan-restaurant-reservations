@@ -2,7 +2,7 @@
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
 import {
   animationToken,
@@ -181,11 +181,19 @@ describe("every listed token reaches the page", () => {
     ...[...displaySizes, ...uiSizes].map((size) => size.name),
   ];
 
-  test.each([...prefixed, ...plain])("%s", (name) => {
+  // The page is drawn once and read for every token. Drawing it again for each of them ran out
+  // of memory once the dashboard's screens arrived (task 4.6). Each token is still its own test.
+  let shown: (string | null)[] = [];
+  beforeAll(() => {
+    vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
+    vi.stubGlobal("ResizeObserver", FakeResizeObserver);
     renderPage();
+    shown = [...document.querySelectorAll("code")].map((code) => code.textContent);
+    cleanup();
+    vi.unstubAllGlobals();
+  });
 
-    const shown = [...document.querySelectorAll("code")].map((code) => code.textContent);
-
+  test.each([...prefixed, ...plain])("%s", (name) => {
     expect(shown).toContain(name);
   });
 });

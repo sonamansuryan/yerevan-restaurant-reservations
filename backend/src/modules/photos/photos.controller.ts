@@ -2,10 +2,15 @@ import type { RequestHandler } from "express";
 
 import type { SessionUser } from "../auth/token.service.ts";
 import type { PhotoIdParams, SavePhotoInput } from "./photos.schemas.ts";
-import { deletePhoto, makeCover, permitUpload, savePhoto } from "./photos.service.ts";
+import { deletePhoto, getPhotos, makeCover, permitUpload, savePhoto } from "./photos.service.ts";
 
 // The router runs requireAuth and requireRestaurantOwner first, and `validate` has checked the
 // rest. So req.user is set, and res.locals.restaurantId is a restaurant this owner owns.
+
+export const list: RequestHandler = async (_req, res) => {
+  const restaurantId = res.locals["restaurantId"] as string;
+  res.json({ photos: await getPhotos(restaurantId) });
+};
 
 export const uploadPermission: RequestHandler = async (_req, res) => {
   const restaurantId = res.locals["restaurantId"] as string;

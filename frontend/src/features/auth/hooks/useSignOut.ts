@@ -3,7 +3,7 @@ import type { UseMutationResult } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 
 import { apiPost } from "@/lib/api";
-import { ME_QUERY_KEY } from "@/lib/queryClient";
+import { ME_QUERY_KEY, forgetPrivateData } from "@/lib/queryClient";
 
 /**
  * Signs out. Only the server can end the session, because the cookies are httpOnly. So if the
@@ -22,8 +22,9 @@ export function useSignOut(): UseMutationResult<void, Error, void> {
       // on screen before navigate() finishes, instead of a moment later.
       await navigate("/", { flushSync: true });
       // Nobody is signed in now, and the server has just said so, so no need to ask it again.
-      // Anything else private in the cache must go too; today ["me"] is the only such query.
+      // Anything else private in the cache goes too, such as an owner's restaurants.
       queryClient.setQueryData(ME_QUERY_KEY, null);
+      forgetPrivateData(queryClient);
     },
   });
 }

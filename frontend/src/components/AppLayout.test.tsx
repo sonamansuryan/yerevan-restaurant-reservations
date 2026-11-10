@@ -37,7 +37,7 @@ afterEach(() => {
 });
 
 // StrictMode runs effects twice in development, as main.tsx does, so the tests do too.
-function renderApp(path = "/"): TestRouter {
+function renderApp(path = "/", client = new QueryClient()): TestRouter {
   const router = createMemoryRouter(
     [
       {
@@ -52,7 +52,7 @@ function renderApp(path = "/"): TestRouter {
   );
   render(
     <StrictMode>
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={client}>
         <RouterProvider router={router} />
       </QueryClientProvider>
     </StrictMode>,
@@ -209,6 +209,18 @@ describe("who's signed in", () => {
       method: "POST",
       credentials: "include",
     });
+  });
+
+  test("Sign out forgets an owner's restaurants too, so the next person never sees them", async () => {
+    fakeApi(lilit);
+    const client = new QueryClient();
+    client.setQueryData(["owner", "restaurants"], { data: [] });
+    renderApp("/another", client);
+
+    await userEvent.click(await header().findByRole("button", { name: "Sign out" }));
+    await header().findByRole("link", { name: "Sign in" });
+
+    expect(client.getQueryData(["owner", "restaurants"])).toBeUndefined();
   });
 
   test("if Sign out can't reach the server, the person stays signed in, and is told", async () => {
