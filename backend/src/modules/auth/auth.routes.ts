@@ -4,8 +4,8 @@ import type { RequestHandler } from "express";
 import { signInLimiter } from "../../middleware/rateLimit.ts";
 import { requireAuth } from "../../middleware/requireAuth.ts";
 import { validate } from "../../middleware/validate.ts";
-import { login, logout, me, refresh, register } from "./auth.controller.ts";
-import { loginSchema, registerSchema } from "./auth.schemas.ts";
+import { google, login, logout, me, refresh, register } from "./auth.controller.ts";
+import { googleSchema, loginSchema, registerSchema } from "./auth.schemas.ts";
 
 // These replies hold personal data or set session cookies, so nothing should keep a copy of them.
 const noStore: RequestHandler = (_req, res, next) => {
@@ -20,6 +20,8 @@ authRouter.use(noStore);
 // Refresh and logout aren't limited, because browsers call them by themselves.
 authRouter.post("/register", signInLimiter, validate(registerSchema), register);
 authRouter.post("/login", signInLimiter, validate(loginSchema), login);
+// Shares the same tries: like sign-up, each one can create an account.
+authRouter.post("/google", signInLimiter, validate(googleSchema), google);
 authRouter.post("/refresh", refresh);
 authRouter.post("/logout", logout);
 

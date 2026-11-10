@@ -7,7 +7,7 @@ const FAKE_ENV = {
   APP_URL: "http://localhost:5173",
   DATABASE_URL: "postgresql://test:not_a_real_password@localhost:5432/not_a_real_database",
   JWT_ACCESS_SECRET: "test-only-secret-that-is-long-enough-to-pass",
-  GOOGLE_CLIENT_ID: "test",
+  GOOGLE_CLIENT_ID: "000000000000-testonlynotarealclient.apps.googleusercontent.com",
   GOOGLE_PLACES_API_KEY: "test",
   CLOUDINARY_CLOUD_NAME: "test",
   CLOUDINARY_API_KEY: "test",

@@ -12,7 +12,14 @@ const envSchema = z.object({
   JWT_ACCESS_SECRET: z
     .string()
     .min(32, "must be at least 32 characters. Generate one with: openssl rand -base64 32"),
-  GOOGLE_CLIENT_ID: z.string().min(1),
+  // The Client ID of our Google Cloud web client. Every Google sign-in token must be made for it.
+  // Checking its shape catches a placeholder left in .env, or the Client Secret pasted by mistake.
+  GOOGLE_CLIENT_ID: z
+    .string()
+    .regex(
+      /^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/,
+      "must be the Client ID from Google Cloud, ending in .apps.googleusercontent.com",
+    ),
   // Sign-in and sign-up tries per IP address per minute (src/middleware/rateLimit.ts). Tests raise
   // it in vitest.config.ts, because they sign in far more often than a person does.
   SIGN_IN_ATTEMPTS_PER_MINUTE: z.coerce.number().int().min(1).default(10),

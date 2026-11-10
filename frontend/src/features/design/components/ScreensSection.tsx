@@ -1,6 +1,8 @@
-import type { ReactElement } from "react";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import type { ReactElement, ReactNode } from "react";
 
 import { GuestBookLines, RestaurantLines } from "@/features/auth/components/BookExtras";
+import { GoogleBlock } from "@/features/auth/components/GoogleSignIn";
 import {
   AccountCheckFailed,
   CheckingAccount,
@@ -8,9 +10,11 @@ import {
 } from "@/features/auth/components/GuardStates";
 import { SignInForm } from "@/features/auth/components/SignInForm";
 import { SignUpForm } from "@/features/auth/components/SignUpForm";
+import { googleClientId } from "@/features/auth/google";
 import { Group, Section } from "@/features/design/components/parts";
 import { screenStates } from "@/features/design/tokens";
 import { ApiError } from "@/lib/api";
+import { cx } from "@/lib/cx";
 
 type StateOf<K extends keyof typeof screenStates> = (typeof screenStates)[K][number];
 
@@ -33,12 +37,28 @@ const noConnection = new ApiError(
   "We can't reach the server right now. Please try again.",
 );
 const emailTaken = new ApiError(409, "EMAIL_TAKEN", "There’s already an account with this email.");
+const googleEmailTaken = new ApiError(
+  409,
+  "GOOGLE_EMAIL_TAKEN",
+  "There’s already an account with this email. Sign in with your password instead.",
+);
+const googleEmailUnverified = new ApiError(
+  403,
+  "GOOGLE_EMAIL_UNVERIFIED",
+  "Google hasn’t verified this email address yet. Please verify it with Google first.",
+);
+const googleTokenInvalid = new ApiError(
+  401,
+  "GOOGLE_TOKEN_INVALID",
+  "We couldn’t sign you in with Google. Please try again.",
+);
 
 const typed = { email: "lilit@example.com", password: "a long password" };
 
-// One specimen per state in tokens.ts. A missing one is a type error.
-const signIn: Record<StateOf<"signIn">, ReactElement> = {
-  "Ready (live)": <SignInForm onSubmit={ignore} />,
+// One specimen per state in tokens.ts. A missing one is a type error. The live one shows the
+// whole right page, with Google's button when there's a Client ID.
+const signIn = (google?: ReactNode): Record<StateOf<"signIn">, ReactElement> => ({
+  "Ready (live)": <SignInForm onSubmit={ignore} google={google} />,
   "Field errors": (
     <SignInForm onSubmit={ignore} defaultValues={{ email: "lilit@" }} validateOnMount />
   ),
@@ -48,12 +68,12 @@ const signIn: Record<StateOf<"signIn">, ReactElement> = {
   ),
   "Too many tries": <SignInForm onSubmit={ignore} defaultValues={typed} error={tooManyTries} />,
   "No connection": <SignInForm onSubmit={ignore} defaultValues={typed} error={noConnection} />,
-};
+});
 
 const filledIn = { name: "Ani Sargsyan", ...typed };
 
-const signUp: Record<StateOf<"signUp">, ReactElement> = {
-  "A guest (live)": <SignUpForm defaultRole="CUSTOMER" onSubmit={ignore} />,
+const signUp = (google?: ReactNode): Record<StateOf<"signUp">, ReactElement> => ({
+  "A guest (live)": <SignUpForm defaultRole="CUSTOMER" onSubmit={ignore} google={google} />,
   "A restaurant": <SignUpForm defaultRole="OWNER" onSubmit={ignore} />,
   "Field errors": (
     <SignUpForm
@@ -72,13 +92,43 @@ const signUp: Record<StateOf<"signUp">, ReactElement> = {
       error={emailTaken}
     />
   ),
-};
+});
 
 const leftPage: Record<StateOf<"leftPage">, ReactElement> = {
   "A guest, before typing": <GuestBookLines name="" />,
   "A guest, with a name": <GuestBookLines name="Lilit Harutyunyan" />,
   "A long name": <GuestBookLines name="Հովհաննեսյանց Մկրտչյան-Շահումյան" />,
   "A restaurant": <RestaurantLines />,
+};
+
+// Google's part of the page, on Sign in. Google draws the button itself, so these need its script,
+// which the GoogleOAuthProvider below loads once for the whole section.
+const google: Record<StateOf<"google">, ReactElement> = {
+  "Ready (live)": <GoogleBlock status="ready" text="signin_with" onCredential={ignore} />,
+  Loading: <GoogleBlock status="loading" text="signin_with" onCredential={ignore} />,
+  Sending: <GoogleBlock status="ready" text="signin_with" onCredential={ignore} pending />,
+  "Email taken": (
+    <GoogleBlock status="ready" text="signin_with" onCredential={ignore} error={googleEmailTaken} />
+  ),
+  "Email not verified": (
+    <GoogleBlock
+      status="ready"
+      text="signin_with"
+      onCredential={ignore}
+      error={googleEmailUnverified}
+    />
+  ),
+  "Couldn’t sign in": (
+    <GoogleBlock
+      status="ready"
+      text="signin_with"
+      onCredential={ignore}
+      error={googleTokenInvalid}
+    />
+  ),
+  "Google can’t load": (
+    <GoogleBlock status="unavailable" text="signin_with" onCredential={ignore} />
+  ),
 };
 
 // What a guarded page shows instead of itself. Each sits in a column, as on the page.
@@ -97,11 +147,21 @@ const guard: Record<StateOf<"guard">, ReactElement> = {
   "Couldn’t check": <AccountCheckFailed onRetry={ignore} retrying={false} />,
 };
 
-function Specimens({ specimens }: { specimens: Record<string, ReactElement> }): ReactElement {
+function Specimens({
+  specimens,
+  rightPage = false,
+}: {
+  specimens: Record<string, ReactElement>;
+  /** From the right page of /login and /register: 400px, as there, and as wide as Google's button. */
+  rightPage?: boolean;
+}): ReactElement {
   return (
     <div className="grid gap-x-16 gap-y-12 xl:grid-cols-2">
       {Object.entries(specimens).map(([label, specimen]) => (
-        <div key={label} className="flex max-w-105 flex-col gap-4">
+        <div
+          key={label}
+          className={cx("flex flex-col gap-4", rightPage ? "max-w-100" : "max-w-105")}
+        >
           <p className="text-caption text-ink-muted">{label}</p>
           {/* A state that isn't live stands for one moment, so it can't be clicked or reached
               with Tab. */}
@@ -113,20 +173,27 @@ function Specimens({ specimens }: { specimens: Record<string, ReactElement> }): 
 }
 
 export function ScreensSection(): ReactElement {
-  return (
-    <Section
-      id="screens"
-      title="Screens"
-      intro="Each feature's screens in their key states, with sample data. The live ones check what you type, and send nothing. To see a whole page at any width, choose it under Responsive."
-    >
-      <Group title="Sign in" note="The right page of /login.">
-        <Specimens specimens={signIn} />
+  const clientId = googleClientId();
+  const googleButton = clientId ? (
+    <GoogleBlock status="ready" text="signin_with" onCredential={ignore} />
+  ) : undefined;
+  const googleSignUp = clientId ? (
+    <GoogleBlock status="ready" text="signup_with" onCredential={ignore} />
+  ) : undefined;
+
+  const groups = (
+    <>
+      <Group
+        title="Sign in"
+        note="The right page of /login. The live one includes Google's button, and its states are under Sign in with Google."
+      >
+        <Specimens specimens={signIn(googleButton)} rightPage />
       </Group>
       <Group
         title="Create an account"
         note="The right page of /register. Switching between guest and restaurant keeps what's typed."
       >
-        <Specimens specimens={signUp} />
+        <Specimens specimens={signUp(googleSignUp)} rightPage />
       </Group>
       <Group
         title="Create an account, the left page"
@@ -135,11 +202,40 @@ export function ScreensSection(): ReactElement {
         <Specimens specimens={leftPage} />
       </Group>
       <Group
+        title="Sign in with Google"
+        note="Under the main button on both pages. On Create an account it says Sign up with Google. Google draws the button itself, so only the space and words around it are ours. The live one opens Google's window, and sends nothing."
+      >
+        {clientId ? (
+          <Specimens specimens={google} rightPage />
+        ) : (
+          <p className="text-ui text-ink-secondary">
+            Google's button needs VITE_GOOGLE_CLIENT_ID in frontend/.env.
+          </p>
+        )}
+      </Group>
+      <Group
         title="Pages that need an account"
         note="What My reservations and the dashboard show instead of themselves. Someone signed out never sees these: they're sent to Sign in, and brought back afterwards."
       >
         <Specimens specimens={guard} />
       </Group>
+    </>
+  );
+
+  return (
+    <Section
+      id="screens"
+      title="Screens"
+      intro="Each feature's screens in their key states, with sample data. The live ones check what you type, and send nothing. To see a whole page at any width, choose it under Responsive."
+    >
+      {clientId ? (
+        // One script for the whole section, however many of Google's buttons it shows.
+        <GoogleOAuthProvider clientId={clientId} locale="en">
+          {groups}
+        </GoogleOAuthProvider>
+      ) : (
+        groups
+      )}
     </Section>
   );
 }

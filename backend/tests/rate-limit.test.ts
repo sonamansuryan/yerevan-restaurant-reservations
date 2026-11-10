@@ -3,17 +3,28 @@
 import argon2 from "argon2";
 import { afterAll, afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
+import { verifyGoogleIdToken } from "../src/integrations/google/id-token.ts";
 import { hashPassword } from "../src/lib/password.ts";
 import { prisma } from "../src/lib/prisma.ts";
 import { newAccount, newEmail, PASSWORD } from "./fixtures/accounts.ts";
+import { GOOGLE_CREDENTIAL } from "./fixtures/google.ts";
 import { signUp } from "./fixtures/sessions.ts";
-import { cookieValue, login, logoutWith, refreshWith, register } from "./helpers/requests.ts";
+import {
+  cookieValue,
+  googleSignIn,
+  login,
+  logoutWith,
+  refreshWith,
+  register,
+} from "./helpers/requests.ts";
 
 // vi.hoisted runs before the imports above, so env.ts reads the real limit when the app loads.
 vi.hoisted(() => {
   vi.stubEnv("SIGN_IN_ATTEMPTS_PER_MINUTE", "10");
 });
 vi.mock("../src/lib/prisma.ts", () => import("./fake-prisma.ts"));
+// So no try here can reach Google.
+vi.mock("../src/integrations/google/id-token.ts", () => ({ verifyGoogleIdToken: vi.fn() }));
 
 const LIMIT = 10;
 
@@ -76,6 +87,16 @@ describe("sign-in limit", () => {
 
     expect((await register(newAccount())).status).toBe(429);
     expect((await login({ email: newEmail(), password: PASSWORD })).status).toBe(429);
+  });
+
+  test("Google sign-in shares the same 10 tries, and a refused try never reaches Google", async () => {
+    for (let attempt = 1; attempt <= LIMIT; attempt += 1) {
+      expect((await googleSignIn({ credential: "not-a-token" })).status).toBe(400);
+    }
+
+    expect((await googleSignIn({ credential: GOOGLE_CREDENTIAL })).status).toBe(429);
+    expect((await login({ email: newEmail(), password: PASSWORD })).status).toBe(429);
+    expect(verifyGoogleIdToken).not.toHaveBeenCalled();
   });
 
   test("refresh and logout aren't limited, so a signed-in person keeps their session", async () => {

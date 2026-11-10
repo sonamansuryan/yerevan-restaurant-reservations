@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation } from "react-router";
 
@@ -23,6 +23,8 @@ interface SignInFormProps {
   /** For /design: values to start with, and showing their problems at once. */
   defaultValues?: Partial<SignInFields>;
   validateOnMount?: boolean;
+  /** Another way in, shown under the button: the "or" divider and Google's button. */
+  google?: ReactNode;
 }
 
 /**
@@ -36,6 +38,7 @@ export function SignInForm({
   error = null,
   defaultValues,
   validateOnMount = false,
+  google,
 }: SignInFormProps): ReactElement {
   const {
     register,
@@ -58,32 +61,36 @@ export function SignInForm({
   const { state: returnState } = useLocation();
 
   return (
-    // noValidate: the browser's own bubbles would come before these messages, in its own words.
-    <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-      <ServerNotice error={error} />
-      <Input
-        label="Email"
-        type="email"
-        autoComplete="email"
-        inputMode="email"
-        error={errors.email?.message}
-        {...register("email")}
-      />
-      <PasswordField
-        label="Password"
-        autoComplete="current-password"
-        error={errors.password?.message}
-        {...register("password")}
-      />
-      <Button type="submit" loading={pending} className="mt-2 w-full">
-        Sign in
-      </Button>
+    // Google's part sits outside the <form>, because it isn't part of what the form sends.
+    <div className="flex flex-col gap-6">
+      {/* noValidate: the browser's own bubbles would come before these messages, in its own words. */}
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+        <ServerNotice error={error} />
+        <Input
+          label="Email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          error={errors.email?.message}
+          {...register("email")}
+        />
+        <PasswordField
+          label="Password"
+          autoComplete="current-password"
+          error={errors.password?.message}
+          {...register("password")}
+        />
+        <Button type="submit" loading={pending} className="mt-2 w-full">
+          Sign in
+        </Button>
+      </form>
+      {google}
       <p className="text-ui text-ink-secondary">
         New to Seghan?{" "}
         <LinkButton variant="link" to="/register" state={returnState}>
           Create an account
         </LinkButton>
       </p>
-    </form>
+    </div>
   );
 }

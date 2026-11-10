@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useLocation } from "react-router";
 
@@ -38,6 +38,8 @@ interface SignUpFormProps {
   /** For /design: values to start with, and showing their problems at once. */
   defaultValues?: Partial<SignUpFields>;
   validateOnMount?: boolean;
+  /** Another way in, shown under the button: the "or" divider and Google's button. */
+  google?: ReactNode;
 }
 
 /**
@@ -52,6 +54,7 @@ export function SignUpForm({
   onDraftChange,
   defaultValues,
   validateOnMount = false,
+  google,
 }: SignUpFormProps): ReactElement {
   const {
     register,
@@ -79,49 +82,55 @@ export function SignUpForm({
   }, [validateOnMount, trigger]);
 
   return (
-    // noValidate: the browser's own bubbles would come before these messages, in its own words.
-    <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-      <ServerNotice error={error} />
-      <ChoiceLines
-        legend="I’m joining as"
-        options={roles}
-        error={errors.role?.message}
-        {...register("role")}
-      />
-      <Input
-        label="Your name"
-        autoComplete="name"
-        // Only a guest's name goes on a booking. A problem takes the hint's place.
-        hint={
-          role === "CUSTOMER" && !errors.name ? "Restaurants see this on your booking." : undefined
-        }
-        error={errors.name?.message}
-        {...register("name")}
-      />
-      <Input
-        label="Email"
-        type="email"
-        autoComplete="email"
-        inputMode="email"
-        error={errors.email?.message}
-        {...register("email")}
-      />
-      <PasswordField
-        label="Password"
-        autoComplete="new-password"
-        hint={errors.password ? undefined : "At least 8 characters."}
-        error={errors.password?.message}
-        {...register("password")}
-      />
-      <Button type="submit" loading={pending} className="mt-2 w-full">
-        Create account
-      </Button>
+    // Google's part sits outside the <form>, because it isn't part of what the form sends.
+    <div className="flex flex-col gap-6">
+      {/* noValidate: the browser's own bubbles would come before these messages, in its own words. */}
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+        <ServerNotice error={error} />
+        <ChoiceLines
+          legend="I’m joining as"
+          options={roles}
+          error={errors.role?.message}
+          {...register("role")}
+        />
+        <Input
+          label="Your name"
+          autoComplete="name"
+          // Only a guest's name goes on a booking. A problem takes the hint's place.
+          hint={
+            role === "CUSTOMER" && !errors.name
+              ? "Restaurants see this on your booking."
+              : undefined
+          }
+          error={errors.name?.message}
+          {...register("name")}
+        />
+        <Input
+          label="Email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          error={errors.email?.message}
+          {...register("email")}
+        />
+        <PasswordField
+          label="Password"
+          autoComplete="new-password"
+          hint={errors.password ? undefined : "At least 8 characters."}
+          error={errors.password?.message}
+          {...register("password")}
+        />
+        <Button type="submit" loading={pending} className="mt-2 w-full">
+          Create account
+        </Button>
+      </form>
+      {google}
       <p className="text-ui text-ink-secondary">
         Already have an account?{" "}
         <LinkButton variant="link" to="/login" state={returnState}>
           Sign in
         </LinkButton>
       </p>
-    </form>
+    </div>
   );
 }

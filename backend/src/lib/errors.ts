@@ -6,6 +6,12 @@ const MESSAGES: Record<string, string> = {
   EMAIL_TAKEN: "There’s already an account with this email.",
   INVALID_CREDENTIALS: "Incorrect email or password. Please try again.",
   SESSION_EXPIRED: "Your session has ended. Please sign in again.",
+  GOOGLE_TOKEN_INVALID: "We couldn’t sign you in with Google. Please try again.",
+  GOOGLE_EMAIL_UNVERIFIED:
+    "Google hasn’t verified this email address yet. Please verify it with Google first.",
+  GOOGLE_EMAIL_TAKEN:
+    "There’s already an account with this email. Sign in with your password instead.",
+  GOOGLE_UNAVAILABLE: "Google sign-in isn’t available right now. Please try again.",
 };
 
 /** An error we expected and can explain to the client. Anything else is treated as a bug. */

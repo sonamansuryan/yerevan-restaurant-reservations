@@ -25,7 +25,7 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | Feature | Step | Status |
 |---|---|---|
 | **Customers** | | |
-| Register and log in, by email or Google | 2 | 🟡 Email works, with Sign in and Sign up pages; Google is task 2.8 |
+| Register and log in, by email or Google | 2 | ✅ Email and Google, on the Sign in and Sign up pages |
 | Browse, search and filter restaurants | 3 | ⬜ |
 | Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | ⬜ |
 | Choose a date, time and number of guests; see available tables | 6 | ⬜ |
@@ -84,14 +84,14 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 **Out of scope:** payments, combining tables, waitlists, SMS, more languages, staff accounts, floor plans, "near me" search, walk-ins.
 
-## 3. Current state (9 November 2026)
+## 3. Current state (10 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 920 tests ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 992 tests ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
   - demo data, with demo accounts that sign in with `DEMO_PASSWORD`
-  - register, log in, refresh, log out and "who am I"
+  - register, log in, Google sign-in, refresh, log out and "who am I"
   - `lib/api.ts`: GET, POST, PATCH and DELETE, renewing an expired session once
   - route guards: signed-out visitors go to Sign in and come back afterwards, and owner pages are for owners only
   - the Seghan foundation and `/design`
@@ -182,7 +182,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 |---|---|---|
 | Foundations | Color, type, space, shape, motion | ✅ |
 | Components | Actions, forms, feedback, brand and shell, protected designs, responsive | ✅ |
-| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, and the route guard's states |
+| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, Sign in with Google, and the route guard's states |
 | Flows | "Book a table" (the assignment's final result) and "Handle a reservation" | ⬜ |
 
 **Key states:** loading, empty, error with a retry, field errors, sending, success, not allowed, and each feature's own errors. A step is done only when its screens are in `/design`. `EmptyState` and `ErrorState` keep their approved look.
@@ -205,7 +205,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - `npm run dev` serves the homepage, which reads "API: ok", and `/design` opens
   - typecheck, lint and tests pass
 
-### Step 2: Authentication 🟡
+### Step 2: Authentication ✅
 
 ✅ Already built: register, log in, log out, "who am I", and sessions.
 
@@ -216,7 +216,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 - [x] **2.5 Signed-in header and mobile menu,** showing the person's name and Sign out. *Check:* sign in and out in the browser.
 - [x] **2.6 Sign in and Sign up pages** in the agreed design, with their new components and states in `/design`. *Check:* component tests for the form errors, and a review in `/design`.
 - [x] **2.7 Route guard:** signed-out visitors go to Sign in and come back afterwards; guests are kept out of owner pages. *Check:* in the browser.
-- [ ] **2.8 Google OAuth:**
+- [x] **2.8 Google OAuth:**
   - Create a Google client ID.
   - `POST /api/auth/google` checks Google's token on the server.
   - Add the button to both pages.

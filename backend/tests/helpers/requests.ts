@@ -6,6 +6,8 @@ import { app } from "../../src/app.ts";
 
 export const register = (body: object): Test => request(app).post("/api/auth/register").send(body);
 export const login = (body: object): Test => request(app).post("/api/auth/login").send(body);
+export const googleSignIn = (body: object): Test =>
+  request(app).post("/api/auth/google").send(body);
 
 export const me = (access: string): Test =>
   request(app).get("/api/me").set("Cookie", `access_token=${access}`);

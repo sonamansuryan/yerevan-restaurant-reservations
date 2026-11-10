@@ -16,6 +16,11 @@ const newPassword = z
   .min(8, "Use at least 8 characters.")
   .max(128, "Use 128 characters or fewer.");
 
+// For a new account, by email or Google. ADMIN is left out on purpose: nobody can sign up as one.
+const role = z
+  .enum(["CUSTOMER", "OWNER"], { error: "Choose a guest or restaurant account." })
+  .default("CUSTOMER");
+
 export const registerSchema = z.object({
   name: z
     .string({ error: "Enter your name." })
@@ -26,10 +31,7 @@ export const registerSchema = z.object({
     .refine((value) => !value.includes("\0"), "Enter your name."),
   email,
   password: newPassword,
-  // ADMIN is left out on purpose: nobody can sign up as one.
-  role: z
-    .enum(["CUSTOMER", "OWNER"], { error: "Choose a guest or restaurant account." })
-    .default("CUSTOMER"),
+  role,
 });
 
 export const loginSchema = z.object({
@@ -41,5 +43,20 @@ export const loginSchema = z.object({
     .max(128, "Use 128 characters or fewer."),
 });
 
+// There's no field to show this under, so it's what the page shows if Google's token is unusable.
+const googleTokenProblem = "We couldn’t sign you in with Google. Please try again.";
+
+export const googleSchema = z.object({
+  // Google's ID token, as its button hands it over: three base64url parts, about 1 KB. Checking
+  // the shape first means junk never reaches Google's library.
+  credential: z
+    .string({ error: googleTokenProblem })
+    .max(4096, googleTokenProblem)
+    .regex(/^[\w-]+\.[\w-]+\.[\w-]+$/, googleTokenProblem),
+  // Only used when this sign-in creates the account. Someone who has one keeps their role.
+  role,
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type GoogleInput = z.infer<typeof googleSchema>;

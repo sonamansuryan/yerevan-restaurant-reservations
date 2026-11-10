@@ -1,19 +1,37 @@
 import type { ReactElement } from "react";
 
+import { GoogleSignIn } from "@/features/auth/components/GoogleSignIn";
 import { OpenBook } from "@/features/auth/components/OpenBook";
 import { SignInForm } from "@/features/auth/components/SignInForm";
+import { useGoogleSignIn } from "@/features/auth/hooks/useGoogleSignIn";
 import { useSignIn } from "@/features/auth/hooks/useSignIn";
 
 export function SignInPage(): ReactElement {
   const signIn = useSignIn();
+  const google = useGoogleSignIn();
 
+  // One message at a time: starting one way of signing in clears the other way's old message.
   return (
     <OpenBook heading="Sign in" description="See your reservations or manage your restaurant.">
       <title>Sign in · Seghan</title>
       <SignInForm
-        onSubmit={(request) => signIn.mutate(request)}
+        onSubmit={(request) => {
+          google.reset();
+          signIn.mutate(request);
+        }}
         pending={signIn.isPending}
         error={signIn.error}
+        google={
+          <GoogleSignIn
+            text="signin_with"
+            onCredential={(credential) => {
+              signIn.reset();
+              google.mutate({ credential });
+            }}
+            pending={google.isPending}
+            error={google.error}
+          />
+        }
       />
     </OpenBook>
   );

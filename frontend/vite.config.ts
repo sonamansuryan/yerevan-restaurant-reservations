@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
@@ -14,5 +15,10 @@ export default defineConfig({
     proxy: {
       "/api": "http://localhost:4000",
     },
+  },
+  test: {
+    // Tests ignore the Client ID in your frontend/.env, so they behave the same on every machine.
+    // The tests of Google's button set a fake one, and never load Google's script.
+    env: { VITE_GOOGLE_CLIENT_ID: "" },
   },
 });

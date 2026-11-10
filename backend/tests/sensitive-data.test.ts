@@ -2,6 +2,7 @@
 // app with the real log serializers, writing to memory instead of the screen. Prisma is faked only
 // to make it fail on demand. The auth logic itself is tested in auth.test.ts and sessions.test.ts.
 import argon2 from "argon2";
+import { OAuth2Client } from "google-auth-library";
 import request from "supertest";
 import type { Response } from "supertest";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -14,6 +15,7 @@ import {
   newRefreshToken,
   signAccessToken,
 } from "../src/modules/auth/token.service.ts";
+import { forgedKey, GOOGLE_EMAIL, googleKeyList, googleToken } from "./fixtures/google.ts";
 import { replayedRefreshToken, storedRefreshToken } from "./fixtures/refresh-tokens.ts";
 import {
   SECRET_HASH as HASH,
@@ -526,6 +528,80 @@ describe("session tokens", () => {
     expect(reply.body).toEqual(safeReply);
     expect(reply.headers["set-cookie"]).toBeUndefined();
     await expectHidden(reply, [PASSWORD]);
+  });
+});
+
+describe("Google sign-in tokens", () => {
+  // The real Google check runs, and only Google's key list is replaced (tests/fixtures/google.ts).
+  beforeEach(() => {
+    vi.spyOn(OAuth2Client.prototype, "getFederatedSignonCertsAsync").mockResolvedValue(
+      googleKeyList,
+    );
+  });
+
+  /** Waits for the request's log line, then searches the reply and everything logged. */
+  async function expectHidden(reply: Response, secrets: string[]): Promise<void> {
+    await vi.waitFor(() => expect(lines.length).toBeGreaterThan(0));
+
+    for (const secret of secrets) {
+      expect(secret.length).toBeGreaterThan(0);
+      for (const text of [reply.text, JSON.stringify(reply.headers), ...lines]) {
+        expect(text).not.toContain(secret);
+      }
+    }
+  }
+
+  const tokenParts = (token: string): string[] => [token, ...token.split(".").slice(1)];
+
+  test.each<[string, () => Promise<string>]>([
+    // Google's library refuses these with messages that quote the token, or everything in it.
+    ["a forged token", () => googleToken({}, { key: forgedKey })],
+    ["an expired token", () => googleToken({ iat: 1_700_000_000, exp: 1_700_003_600 })],
+  ])("%s is neither repeated nor logged, and isn't logged as a bug", async (_case, makeToken) => {
+    const token = await makeToken();
+
+    const reply = await request(app).post("/api/auth/google").send({ credential: token });
+
+    expect(reply.status).toBe(401);
+    expect(reply.body.error.code).toBe("GOOGLE_TOKEN_INVALID");
+    await expectHidden(reply, [...tokenParts(token), GOOGLE_EMAIL]);
+    expect(loggedError()).toBeUndefined();
+  });
+
+  test("signing in logs neither Google's token nor ours", async () => {
+    const token = await googleToken();
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(storedUser() as never);
+
+    const reply = await request(app).post("/api/auth/google").send({ credential: token });
+
+    expect(reply.status).toBe(200);
+    await expectHidden(reply, tokenParts(token));
+    // Our own tokens belong in Set-Cookie, and nowhere else.
+    const ours = (reply.headers["set-cookie"] as unknown as string[]).map(
+      (line) => line.split(";")[0]?.split("=")[1] ?? "",
+    );
+    expect(ours).toHaveLength(2);
+    for (const secret of ours) {
+      expect(secret.length).toBeGreaterThan(0);
+      for (const text of [reply.text, ...lines]) expect(text).not.toContain(secret);
+    }
+  });
+
+  test("a failure while saving a Google account gives a generic reply and logs no token", async () => {
+    const token = await googleToken();
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(null);
+    // Like a real Prisma error, this repeats what it was given, here the token itself.
+    vi.mocked(prisma.user.create).mockRejectedValueOnce(
+      Object.assign(new Error(`Invalid call: ${token}`), { meta: { token }, cause: token }),
+    );
+
+    const reply = await request(app).post("/api/auth/google").send({ credential: token });
+
+    expect(reply.status).toBe(500);
+    expect(reply.body.error.code).toBe("INTERNAL_ERROR");
+    expect(reply.headers["set-cookie"]).toBeUndefined();
+    await expectHidden(reply, tokenParts(token));
+    expect(loggedError()).toMatchObject({ type: "Error" });
   });
 });
 

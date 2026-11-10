@@ -237,6 +237,15 @@ export const screenStates = {
   ],
   signUp: ["A guest (live)", "A restaurant", "Field errors", "Sending", "Email taken"],
   leftPage: ["A guest, before typing", "A guest, with a name", "A long name", "A restaurant"],
+  google: [
+    "Ready (live)",
+    "Loading",
+    "Sending",
+    "Email taken",
+    "Email not verified",
+    "Couldn’t sign in",
+    "Google can’t load",
+  ],
   guard: ["Checking your account", "Not for this account", "Couldn’t check"],
 } as const;
 
