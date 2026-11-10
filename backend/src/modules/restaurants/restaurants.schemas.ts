@@ -71,5 +71,112 @@ export const restaurantSlugSchema = z.object({
     .max(100, "Choose a restaurant."),
 });
 
+/**
+ * /api/owner/restaurants/:restaurantId and everything under it. Owner addresses use the
+ * restaurant's id, which never changes, rather than its public slug. Ids are UUIDs, so anything
+ * else is refused before the database is asked.
+ */
+export const restaurantIdSchema = z.object({
+  restaurantId: z.uuid({ error: "Choose a restaurant." }),
+});
+
+// An optional detail left empty, or only spaces, means "none". In an edit, that clears it.
+const blankIsNull = (value: unknown): unknown =>
+  typeof value === "string" ? value.trim() || null : value;
+
+const PHONE = "Enter a phone number, such as +374 10 123456.";
+const WEBSITE = "Enter a website address, such as https://example.am.";
+const PRICE = "Choose a price from ֏ to ֏֏֏֏.";
+const SLOT_INTERVAL = "Choose start times every 15 or 30 minutes.";
+const BOOKING_LENGTH =
+  "Choose a booking length from 30 minutes to 6 hours, in steps of 15 minutes.";
+
+/**
+ * The details an owner gives their restaurant. The database refuses a price outside 1–4, a slot
+ * interval other than 15 or 30 and a length of 0, so these rules match it, with messages people
+ * can act on. The owner, the address on Seghan (slug), ratings and the time zone aren't here:
+ * owners never send those.
+ */
+const restaurantFields = {
+  name: z
+    .string({ error: "Enter the restaurant's name." })
+    .trim()
+    .min(1, "Enter the restaurant's name.")
+    .max(80, "Use 80 characters or fewer."),
+  description: z.preprocess(
+    blankIsNull,
+    z
+      .string({ error: "Enter a description." })
+      .max(1000, "Use 1,000 characters or fewer.")
+      .nullable()
+      .optional(),
+  ),
+  cuisines: z
+    .array(z.enum(Cuisine, { error: "Choose a cuisine from the list." }), {
+      error: "Choose at least one cuisine.",
+    })
+    .min(1, "Choose at least one cuisine.")
+    .max(3, "Choose up to 3 cuisines.")
+    .refine((cuisines) => new Set(cuisines).size === cuisines.length, "Choose each cuisine once."),
+  district: z.enum(District, { error: "Choose a district from the list." }),
+  address: z
+    .string({ error: "Enter the address." })
+    .trim()
+    .min(1, "Enter the address.")
+    .max(200, "Use 200 characters or fewer."),
+  phone: z.preprocess(
+    blankIsNull,
+    z
+      .string({ error: PHONE })
+      .regex(/^\+?[\d ()-]{6,20}$/, PHONE)
+      .nullable()
+      .optional(),
+  ),
+  website: z.preprocess(
+    blankIsNull,
+    // Only http and https, on a real domain: never javascript: or a bare name.
+    z
+      .url({ protocol: /^https?$/, hostname: z.regexes.domain, error: WEBSITE })
+      .max(200, "Use 200 characters or fewer.")
+      .nullable()
+      .optional(),
+  ),
+  priceLevel: z.number({ error: PRICE }).int(PRICE).min(1, PRICE).max(4, PRICE),
+  // How often start times are offered (§5.2).
+  slotIntervalMin: z.union([z.literal(15), z.literal(30)], { error: SLOT_INTERVAL }),
+  // How long one booking holds its table.
+  reservationDurationMin: z
+    .number({ error: BOOKING_LENGTH })
+    .int(BOOKING_LENGTH)
+    .min(30, BOOKING_LENGTH)
+    .max(360, BOOKING_LENGTH)
+    .multipleOf(15, BOOKING_LENGTH),
+};
+
+/**
+ * POST /api/owner/restaurants. A new restaurant always starts unpublished, so isPublished isn't
+ * accepted here. Without a slot interval or booking length, the database's 30 and 120 apply.
+ */
+export const createRestaurantSchema = z.object({
+  ...restaurantFields,
+  slotIntervalMin: restaurantFields.slotIntervalMin.optional(),
+  reservationDurationMin: restaurantFields.reservationDurationMin.optional(),
+});
+
+/** PATCH /api/owner/restaurants/:restaurantId. Any of the details, and whether guests can see it. */
+export const updateRestaurantSchema = z
+  .object({
+    ...restaurantFields,
+    isPublished: z.boolean({ error: "Choose whether guests can see the restaurant." }),
+  })
+  .partial()
+  .refine(
+    (changes) => Object.values(changes).some((value) => value !== undefined),
+    "Change at least one detail.",
+  );
+
 export type RestaurantListQuery = z.infer<typeof restaurantListSchema>;
 export type RestaurantSlugParams = z.infer<typeof restaurantSlugSchema>;
+export type RestaurantIdParams = z.infer<typeof restaurantIdSchema>;
+export type CreateRestaurantInput = z.infer<typeof createRestaurantSchema>;
+export type UpdateRestaurantInput = z.infer<typeof updateRestaurantSchema>;

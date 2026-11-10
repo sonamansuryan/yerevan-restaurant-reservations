@@ -1,4 +1,5 @@
 // Restaurants as the database hands them over, and as the API returns them.
+import { ani } from "./users.ts";
 import type {
   RestaurantDetail,
   RestaurantList,
@@ -86,3 +87,49 @@ export const detailReply: RestaurantDetail = {
   mapsUrl:
     "https://www.google.com/maps/search/?api=1&query=Tsiran+Wine+Room%2C+31+Saryan+Street%2C+Yerevan",
 };
+
+/** A whole Restaurant row with its owner, as owner queries find it. */
+export interface OwnedRow {
+  id: string;
+  ownerId: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  cuisines: string[];
+  district: string;
+  address: string;
+  phone: string | null;
+  website: string | null;
+  priceLevel: number;
+  slotIntervalMin: number;
+  reservationDurationMin: number;
+  isPublished: boolean;
+  googlePlaceId: string | null;
+  avgRating: number;
+  reviewCount: number;
+}
+
+/** One of Ani's restaurants, unless `extra` says otherwise. */
+export function ownedRow(extra: Partial<OwnedRow> = {}): OwnedRow {
+  return {
+    id: "c3f6e5a4-7d8b-4c9f-a01a-2b3c4d5e6f70",
+    ownerId: ani.id,
+    slug: "tsiran-wine-room",
+    name: "Tsiran Wine Room",
+    description: "Armenian wines by the glass.",
+    cuisines: ["ARMENIAN", "EUROPEAN"],
+    district: "KENTRON",
+    address: "31 Saryan Street, Yerevan",
+    phone: "+37400000102",
+    website: null,
+    priceLevel: 2,
+    slotIntervalMin: 30,
+    reservationDurationMin: 120,
+    isPublished: true,
+    // Set, so a reply that leaked it would show it.
+    googlePlaceId: "ChIJ-tsiran-wine-room",
+    avgRating: 4.5,
+    reviewCount: 12,
+    ...extra,
+  };
+}

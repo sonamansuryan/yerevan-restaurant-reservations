@@ -23,3 +23,7 @@ export function storedUser(extra: Partial<StoredUser> = {}): StoredUser {
     ...extra,
   };
 }
+
+/** Two owners, so a test can be one of them asking for the other's restaurant. */
+export const ani = { id: "a1d4c3e2-5b6f-4a7d-8c9e-0f1a2b3c4d5e", role: "OWNER" } as const;
+export const davit = { id: "b2e5d4f3-6c7a-4b8e-9d0f-1a2b3c4d5e6f", role: "OWNER" } as const;

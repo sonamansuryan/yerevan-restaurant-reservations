@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 
 import { Prisma } from "../src/generated/prisma/client.ts";
-import { isExclusionViolation, isUniqueViolation } from "../src/lib/db-errors.ts";
+import { isExclusionViolation, isRecordMissing, isUniqueViolation } from "../src/lib/db-errors.ts";
 
 // Builds the error Prisma throws, with the fields measured from real constraint violations.
 function prismaError(code: string, sqlState: string): Prisma.PrismaClientKnownRequestError {
@@ -53,4 +53,22 @@ test("a unique violation has to be a Prisma error", () => {
   expect(isUniqueViolation(new Error("P2002"))).toBe(false);
   expect(isUniqueViolation("P2002")).toBe(false);
   expect(isUniqueViolation(null)).toBe(false);
+});
+
+// P2025 is what an update with an owner in its `where` gives for someone else's row, measured on
+// the real database for task 4.2.
+test("recognises an update that found no row to change", () => {
+  const error = new Prisma.PrismaClientKnownRequestError("No record was found for an update.", {
+    code: "P2025",
+    clientVersion: "test",
+  });
+
+  expect(isRecordMissing(error)).toBe(true);
+});
+
+test("a missing row isn't a unique, exclusion or other violation, nor any other error", () => {
+  expect(isRecordMissing(prismaError("P2002", "23505"))).toBe(false);
+  expect(isRecordMissing(prismaError("P2039", "23P01"))).toBe(false);
+  expect(isRecordMissing(new Error("P2025"))).toBe(false);
+  expect(isRecordMissing(null)).toBe(false);
 });

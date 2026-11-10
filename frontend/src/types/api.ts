@@ -92,3 +92,44 @@ export interface RestaurantDetail extends RestaurantSummary {
 export interface RestaurantResponse {
   restaurant: RestaurantDetail;
 }
+
+/**
+ * One of the signed-in owner's restaurants, published or not, inside { restaurant }:
+ * - GET /api/owner/restaurants/:restaurantId
+ * - POST /api/owner/restaurants (201), which always creates it unpublished
+ * - PATCH /api/owner/restaurants/:restaurantId
+ *
+ * Anyone else's restaurant answers 404 RESTAURANT_NOT_FOUND.
+ */
+export interface OwnerRestaurant {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  cuisines: Cuisine[];
+  district: District;
+  address: string;
+  phone: string | null;
+  website: string | null;
+  priceLevel: number;
+  /** Minutes between the start times guests can choose. */
+  slotIntervalMin: number;
+  /** How long one booking holds its table, in minutes. */
+  reservationDurationMin: number;
+  isPublished: boolean;
+}
+
+export interface OwnerRestaurantResponse {
+  restaurant: OwnerRestaurant;
+}
+
+/** What a restaurant still needs before guests can see it. */
+export type PublishBlocker = "TABLE" | "OPENING_HOURS";
+
+/**
+ * The `details` of 409 NOT_READY_TO_PUBLISH, when a PATCH tries to publish too early. The message
+ * already says what to add, such as "Add your opening hours before you publish."
+ */
+export interface NotReadyToPublishDetails {
+  missing: PublishBlocker[];
+}

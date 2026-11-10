@@ -32,7 +32,7 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | 🟡 The database refuses overlaps |
 | View and cancel their reservations | 8 | ⬜ |
 | **Restaurants** | | |
-| A private dashboard to manage restaurant information | 4 | ⬜ |
+| A private dashboard to manage restaurant information | 4 | 🟡 The API creates, edits and publishes a restaurant (4.2); the pages come in 4.6 |
 | Set opening hours | 4 | ⬜ |
 | Add and manage tables and their capacity | 5 | ⬜ |
 | Block tables or dates | 5 | ⬜ |
@@ -58,7 +58,7 @@ Everything marked ✅ is already built, and stays as it is.
 - ✅ **Stack:** React, TypeScript, React Router and Tailwind; Node.js, Express and REST; PostgreSQL and Prisma, run locally in Docker.
 - ✅ **One address for the browser:** Vite forwards `/api` to Express now, and Vercel will in Step 10.
 - ✅ **Sign-in:** passwords hashed with argon2. Sessions use `httpOnly` cookies with a rotating refresh token, which is more than required but works.
-- 🟡 **Roles:** guest, restaurant and admin, checked by `requireRole` on the server ✅ and by the route guard in the browser ✅. Asking for someone else's restaurant returns `404` ⬜ (task 4.1).
+- ✅ **Roles:** guest, restaurant and admin, checked by `requireRole` on the server ✅ and by the route guard in the browser ✅. Asking for someone else's restaurant returns `404` ✅ (task 4.1).
 - ✅ **Safety basics:** Zod checks every input, all errors share one JSON format, secrets live only in `backend/.env`, and logs never contain secrets. Sign-in and sign-up allow 10 tries per minute per address.
 - ✅ **Data:** times are stored in UTC. Nothing important is deleted: restaurants are unpublished, tables deactivated and bookings cancelled instead.
 - 🟡 **Double booking:** the database constraint ✅, plus a transaction that locks the table's row ⬜ (§5).
@@ -86,19 +86,20 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (10 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 1128 tests ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 1178 tests ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
   - demo data, with demo accounts that sign in with `DEMO_PASSWORD`
   - register, log in, Google sign-in, refresh, log out and "who am I"
   - the public restaurant list, with search, filters and pages, and each restaurant's details
+  - the owner area's ownership check: an owner opens only their own restaurants, drafts included, and anyone else's answers `404` (`requireRestaurantOwner`)
+  - owners create and edit their restaurants, including the slot interval and booking length; a new one starts unpublished, and publishing needs an active table and opening hours
   - the Home page, the Browse page and each restaurant's page, with their states in `/design`
   - `lib/api.ts`: GET, POST, PATCH and DELETE, renewing an expired session once
   - route guards: signed-out visitors go to Sign in and come back afterwards, and owner pages are for owners only
   - the Seghan foundation and `/design`
 - **Partly built:**
-  - `requireAuth` and `requireRole` exist, but there are no ownership checks yet (task 4.1)
   - the time helpers
   - placeholder pages: My reservations (task 8.3) and the dashboard (Step 4)
 - **Still missing:**
@@ -251,10 +252,10 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
 
   **Deferred design polish:** the hero animation works and stays as it is for now, but its visual design will be revisited later (§6).
 
-### Step 4: Restaurant dashboard ⬜
+### Step 4: Restaurant dashboard 🟡
 
-- [ ] **4.1 `requireRestaurantOwner`.** *Check:* owner A gets `404` on owner B's restaurant.
-- [ ] **4.2 Create and edit a restaurant,** including the slot interval and booking length. It can only be published once it has a table and opening hours. *Check:* API tests.
+- [x] **4.1 `requireRestaurantOwner`.** *Check:* owner A gets `404` on owner B's restaurant.
+- [x] **4.2 Create and edit a restaurant,** including the slot interval and booking length. It can only be published once it has a table and opening hours. *Check:* API tests.
 - [ ] **4.3 Opening hours:** save the whole week at once, refusing overlaps. *Check:* unit tests.
 - [ ] **4.4 Photos with Cloudinary** (free account): signed upload, save, cover, delete. *Check:* a photo shows on the restaurant page.
 - [ ] **4.5 Reservations for a chosen date,** view only. *Check:* the seeded bookings show up.
