@@ -15,6 +15,10 @@ const widths = [
 const pages = [
   { value: "/design", label: "This page" },
   { value: "/", label: "Home" },
+  { value: "/restaurants", label: "Restaurants" },
+  { value: "/restaurants/tsiran-wine-room", label: "A restaurant: Tsiran Wine Room" },
+  { value: "/restaurants/lori-smokehouse", label: "A restaurant with split shifts" },
+  { value: "/restaurants/no-such-restaurant", label: "A restaurant that doesn’t exist" },
   { value: "/login", label: "Sign in" },
   { value: "/register", label: "Create an account" },
   { value: "/register?role=owner", label: "Create an account, as a restaurant" },

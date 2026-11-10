@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 
 import { Button, LinkButton } from "@/components/Button";
 import type { ButtonVariant } from "@/components/Button";
+import { Pagination } from "@/components/Pagination";
 import { Group, Section, Specimen, SpecimenRow } from "@/features/design/components/parts";
 
 interface ButtonStatesProps {
@@ -90,6 +91,27 @@ export function ActionSection(): ReactElement {
           <LinkButton to="/design" variant="link">
             Back to the home page
           </LinkButton>
+        </div>
+      </Group>
+      <Group
+        title="Pagination"
+        note="At the foot of a long list. Pages are links, so one can open in a new tab. Nothing shows when everything fits on one page."
+      >
+        <div className="grid max-w-180 gap-6">
+          {[1, 2, 4].map((page) => (
+            <Specimen
+              key={page}
+              label={page === 1 ? "First page" : page === 4 ? "Last page" : "A page between"}
+              frozen
+            >
+              <Pagination
+                page={page}
+                pageCount={4}
+                hrefFor={() => ({ hash: "#actions" })}
+                className="w-full"
+              />
+            </Specimen>
+          ))}
         </div>
       </Group>
     </Section>

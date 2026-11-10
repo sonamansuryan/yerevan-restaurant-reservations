@@ -28,7 +28,7 @@ const accountStates = [
 ];
 
 const shell = [
-  { name: "SiteHeader, MastheadRow", where: "The top of this page" },
+  { name: "SiteHeader, MastheadRow, MastheadStart", where: "The top of this page" },
   { name: "SiteFooter", where: "The foot of this page" },
   { name: "PageContainer", where: "Around everything here, setting the width and margins" },
   { name: "AppLayout", where: "Around every page: the skip link, header, main area and footer" },

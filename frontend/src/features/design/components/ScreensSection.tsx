@@ -11,10 +11,12 @@ import {
 import { SignInForm } from "@/features/auth/components/SignInForm";
 import { SignUpForm } from "@/features/auth/components/SignUpForm";
 import { googleClientId } from "@/features/auth/google";
-import { Group, Section } from "@/features/design/components/parts";
+import { BrowseScreens } from "@/features/design/components/BrowseScreens";
+import { HomeScreens } from "@/features/design/components/HomeScreens";
+import { RestaurantPageScreens } from "@/features/design/components/RestaurantPageScreens";
+import { Group, Section, Specimens } from "@/features/design/components/parts";
 import { screenStates } from "@/features/design/tokens";
 import { ApiError } from "@/lib/api";
-import { cx } from "@/lib/cx";
 
 type StateOf<K extends keyof typeof screenStates> = (typeof screenStates)[K][number];
 
@@ -147,31 +149,6 @@ const guard: Record<StateOf<"guard">, ReactElement> = {
   "Couldn’t check": <AccountCheckFailed onRetry={ignore} retrying={false} />,
 };
 
-function Specimens({
-  specimens,
-  rightPage = false,
-}: {
-  specimens: Record<string, ReactElement>;
-  /** From the right page of /login and /register: 400px, as there, and as wide as Google's button. */
-  rightPage?: boolean;
-}): ReactElement {
-  return (
-    <div className="grid gap-x-16 gap-y-12 xl:grid-cols-2">
-      {Object.entries(specimens).map(([label, specimen]) => (
-        <div
-          key={label}
-          className={cx("flex flex-col gap-4", rightPage ? "max-w-100" : "max-w-105")}
-        >
-          <p className="text-caption text-ink-muted">{label}</p>
-          {/* A state that isn't live stands for one moment, so it can't be clicked or reached
-              with Tab. */}
-          <div inert={!label.endsWith("(live)")}>{specimen}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export function ScreensSection(): ReactElement {
   const clientId = googleClientId();
   const googleButton = clientId ? (
@@ -219,6 +196,9 @@ export function ScreensSection(): ReactElement {
       >
         <Specimens specimens={guard} />
       </Group>
+      <HomeScreens />
+      <BrowseScreens />
+      <RestaurantPageScreens />
     </>
   );
 

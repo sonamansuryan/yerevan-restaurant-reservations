@@ -271,3 +271,13 @@ describe("the account line", () => {
     expect(screen.queryByText("Lilit Harutyunyan")).toBeNull();
   });
 });
+
+test("its top row repeats the header's left side, so Close lands where Menu was", () => {
+  renderMenu();
+
+  const dialog = screen.getByRole("dialog", { name: "Menu" });
+  const firstTwo = [...dialog.querySelectorAll("a, button")]
+    .slice(0, 2)
+    .map((item) => item.getAttribute("aria-label") ?? item.textContent);
+  expect(firstTwo).toEqual(["Seghan, home", "Close"]);
+});

@@ -48,12 +48,12 @@ function ShellCrash(): never {
   throw new Error("The shell broke");
 }
 
-test("the home page says Seghan, in the shell", async () => {
+test("the home page leads with Choose your Seghan., in the shell", async () => {
   renderRoutes("/");
 
   const heading = await screen.findByRole("heading", { level: 1 });
 
-  expect(heading.textContent).toBe("Seghan");
+  expect(heading.textContent).toBe("Choose your Seghan.");
   expect(screen.getByRole("banner")).toBeDefined();
   expect(screen.getByRole("contentinfo")).toBeDefined();
 });
@@ -107,7 +107,7 @@ test.each(["/reservations", "/dashboard"])(
   },
 );
 
-test.each(["/nowhere", "/restaurants", "/a/deep/path"])(
+test.each(["/nowhere", "/a/deep/path"])(
   "%s shows the not-found page in the shell, until a page exists there",
   async (path) => {
     renderRoutes(path);
@@ -118,6 +118,17 @@ test.each(["/nowhere", "/restaurants", "/a/deep/path"])(
     expect(screen.getByRole("banner")).toBeDefined();
   },
 );
+
+test("/restaurants shows Browse in the shell, for anyone, while the list loads", async () => {
+  renderRoutes("/restaurants");
+
+  const main = await screen.findByRole("main");
+
+  expect(within(main).getByRole("heading", { level: 1 }).textContent).toBe("Restaurants");
+  expect(within(main).getByRole("search", { name: "Restaurants" })).toBeDefined();
+  expect(within(main).getByRole("status", { name: "Loading restaurants" })).toBeDefined();
+  expect(screen.getByRole("banner")).toBeDefined();
+});
 
 describe("when something crashes", () => {
   test("a page's crash keeps the header and footer, so people can move on", async () => {
@@ -188,6 +199,8 @@ describe("in a production build", () => {
 
     expect(paths(production.routes[0]?.children?.[0]?.children)).toEqual([
       undefined,
+      "restaurants",
+      "restaurants/:slug",
       "login",
       "register",
       "reservations",

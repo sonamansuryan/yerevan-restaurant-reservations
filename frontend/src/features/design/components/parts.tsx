@@ -101,3 +101,37 @@ export function TokenLine({ name, role, value, children }: TokenLineProps): Reac
     </div>
   );
 }
+
+interface SpecimensProps {
+  specimens: Record<string, ReactElement>;
+  /** From the right page of /login and /register: 400px, as there, and as wide as Google's button. */
+  rightPage?: boolean;
+  /** One per row at full width, for a whole page's worth, such as a list of restaurants. */
+  wide?: boolean;
+}
+
+/** A screen's states, each under its name. Only the ones named "(live)" can be used. */
+export function Specimens({
+  specimens,
+  rightPage = false,
+  wide = false,
+}: SpecimensProps): ReactElement {
+  return (
+    <div className={cx("grid gap-x-16 gap-y-12", !wide && "xl:grid-cols-2")}>
+      {Object.entries(specimens).map(([label, specimen]) => (
+        <div
+          key={label}
+          className={cx(
+            "flex min-w-0 flex-col gap-4",
+            !wide && (rightPage ? "max-w-100" : "max-w-105"),
+          )}
+        >
+          <p className="text-caption text-ink-muted">{label}</p>
+          {/* A state that isn't live stands for one moment, so it can't be clicked or reached
+              with Tab. */}
+          <div inert={!label.endsWith("(live)")}>{specimen}</div>
+        </div>
+      ))}
+    </div>
+  );
+}

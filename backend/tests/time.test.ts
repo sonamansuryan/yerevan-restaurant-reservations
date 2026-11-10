@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { addDays, dayOfWeek, localDate, localTimeToUtc } from "../src/lib/time.ts";
+import { addDays, dayOfWeek, localDate, localTimeToUtc, minutesToTime } from "../src/lib/time.ts";
 
 describe("localTimeToUtc", () => {
   test("converts Yerevan time, as in PROJECT_PLAN.md §5.6", () => {
@@ -67,5 +67,20 @@ describe("dayOfWeek", () => {
   test("numbers days from Sunday, the same as OpeningHour", () => {
     expect(dayOfWeek("2026-11-22")).toBe(0); // a Sunday
     expect(dayOfWeek("2026-11-20")).toBe(5); // a Friday
+  });
+});
+
+describe("minutesToTime", () => {
+  test.each([
+    [0, "00:00"],
+    [540, "09:00"],
+    [750, "12:30"],
+    [1380, "23:00"],
+    // Past midnight: the next morning, on the clock.
+    [1440, "00:00"],
+    [1470, "00:30"],
+    [1560, "02:00"],
+  ])("%i minutes is %s", (minutes, time) => {
+    expect(minutesToTime(minutes)).toBe(time);
   });
 });

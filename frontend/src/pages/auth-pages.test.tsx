@@ -81,7 +81,6 @@ function fakeApi(outcome: "works" | "refuses"): Mock {
     if (url === "/api/auth/refresh") {
       return Promise.resolve(refusal(401, "SESSION_EXPIRED", "Your session has ended."));
     }
-    if (url === "/api/health") return Promise.resolve(json({ status: "ok" }));
     if (url === "/api/auth/login") {
       if (outcome === "refuses") {
         return Promise.resolve(
@@ -258,7 +257,7 @@ test("signing out on My reservations goes home, not to Sign in", async () => {
   // Someone who chose to sign out isn't sent to Sign in, as if their session had ended.
   expect(router.state.location.pathname).toBe("/");
   expect(router.state.location.state).toBeNull();
-  expect(main().getByRole("heading", { level: 1 }).textContent).toBe("Seghan");
+  expect(main().getByRole("heading", { level: 1 }).textContent).toBe("Choose your Seghan.");
 });
 
 test("a guest who heads for the dashboard signs in, and is told it's for restaurants", async () => {

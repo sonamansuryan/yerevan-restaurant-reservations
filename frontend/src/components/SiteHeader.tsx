@@ -6,7 +6,7 @@ import { firstName } from "@/components/account";
 import type { Account } from "@/components/account";
 import { LinkButton } from "@/components/Button";
 import { CurrentPageDot, Logo } from "@/components/Logo";
-import { MastheadRow, MenuToggle } from "@/components/Masthead";
+import { MastheadRow, MastheadStart, MenuToggle } from "@/components/Masthead";
 import { MobileMenu } from "@/components/MobileMenu";
 import { PageContainer } from "@/components/PageContainer";
 import { discover, forRestaurants, signIn } from "@/components/site-links";
@@ -55,7 +55,7 @@ export function HeaderAccount({ account }: { account: Account }): ReactElement |
           Couldn&rsquo;t sign out
         </span>
       ) : (
-        // A long name is cut short before it can reach the logo: tablets have the least room.
+        // A long name is cut short before it can crowd the links: tablets have the least room.
         <span
           aria-hidden="true"
           className={cx(above, "max-w-24 truncate text-ink-muted lg:max-w-48")}
@@ -89,15 +89,17 @@ export function SiteHeader({ account }: SiteHeaderProps): ReactElement {
     <header>
       <PageContainer>
         <MastheadRow>
-          <nav aria-label="Main" className="flex items-center gap-8 max-md:hidden">
-            <MastheadLink link={discover} />
-            <MastheadLink link={forRestaurants} />
-          </nav>
-          <MenuToggle aria-haspopup="dialog" onClick={() => setMenuOpen(true)}>
-            Menu
-          </MenuToggle>
-
-          <Logo className="text-logo text-ink md:text-masthead" />
+          {/* The logo and the way around the site, together on the left. */}
+          <MastheadStart>
+            <Logo className="text-logo text-ink md:text-masthead" />
+            <nav aria-label="Main" className="flex items-baseline gap-8 max-md:hidden">
+              <MastheadLink link={discover} />
+              <MastheadLink link={forRestaurants} />
+            </nav>
+            <MenuToggle aria-haspopup="dialog" onClick={() => setMenuOpen(true)}>
+              Menu
+            </MenuToggle>
+          </MastheadStart>
 
           <div className="flex items-center justify-end gap-6">
             <span className="max-md:hidden">

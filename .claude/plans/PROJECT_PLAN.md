@@ -26,8 +26,8 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 |---|---|---|
 | **Customers** | | |
 | Register and log in, by email or Google | 2 | ✅ Email and Google, on the Sign in and Sign up pages |
-| Browse, search and filter restaurants | 3 | ⬜ |
-| Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | ⬜ |
+| Browse, search and filter restaurants | 3 | ✅ The API and the Browse page |
+| Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | 🟡 The page works, with a color block until photos (4.4) and space for reviews (9.1) |
 | Choose a date, time and number of guests; see available tables | 6 | ⬜ |
 | Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | 🟡 The database refuses overlaps |
 | View and cancel their reservations | 8 | ⬜ |
@@ -39,7 +39,7 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | View, confirm and cancel reservations; mark guests arrived or no-show | 4, 8 | ⬜ |
 | **Restaurant data** | | |
 | A few restaurants added by hand | 3 | ✅ 7 demo restaurants |
-| Import real Yerevan restaurants with Google Places ("later") | 3 | ⬜ |
+| Import real Yerevan restaurants with Google Places ("later") | 9 | ⬜ Deferred until after Step 8 (task 9.7) |
 | Restaurant images with Cloudinary | 4 | ⬜ |
 | **Final features, after the core works** | | |
 | Reviews: leave them, and see them on the restaurant page | 9 | ⬜ |
@@ -86,19 +86,21 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (10 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 992 tests ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 1128 tests ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
   - demo data, with demo accounts that sign in with `DEMO_PASSWORD`
   - register, log in, Google sign-in, refresh, log out and "who am I"
+  - the public restaurant list, with search, filters and pages, and each restaurant's details
+  - the Home page, the Browse page and each restaurant's page, with their states in `/design`
   - `lib/api.ts`: GET, POST, PATCH and DELETE, renewing an expired session once
   - route guards: signed-out visitors go to Sign in and come back afterwards, and owner pages are for owners only
   - the Seghan foundation and `/design`
 - **Partly built:**
   - `requireAuth` and `requireRole` exist, but there are no ownership checks yet (task 4.1)
   - the time helpers
-  - placeholder pages: the homepage, My reservations (task 8.3) and the dashboard (Step 4)
+  - placeholder pages: My reservations (task 8.3) and the dashboard (Step 4)
 - **Still missing:**
   - no test proves the double-booking guarantee on real PostgreSQL yet (from task 6.4)
 
@@ -182,10 +184,14 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 |---|---|---|
 | Foundations | Color, type, space, shape, motion | ✅ |
 | Components | Actions, forms, feedback, brand and shell, protected designs, responsive | ✅ |
-| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, Sign in with Google, and the route guard's states |
+| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, Sign in with Google, the route guard's states, Home, Browse, and the restaurant page |
 | Flows | "Book a table" (the assignment's final result) and "Handle a reservation" | ⬜ |
 
 **Key states:** loading, empty, error with a retry, field errors, sending, success, not allowed, and each feature's own errors. A step is done only when its screens are in `/design`. `EmptyState` and `ErrorState` keep their approved look.
+
+**Deferred design polish.** These work and are approved as working, but their look will be revisited. They are kept here so they aren't forgotten. They aren't roadmap tasks, so they never become the current task.
+
+- [ ] **Home hero animation** ("Evening over Yerevan", `features/home/components/EveningOverYerevan.tsx`, from task 3.5). Approved as functionally complete on 10 November 2026, but the user isn't fully satisfied with its visual design. Keep the current version until it is revisited, and agree the new direction before rebuilding it.
 
 **The agreed sign-in design ("the open book"):**
 
@@ -202,7 +208,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 - [x] **1.1 Confirm the setup works.** *Check:*
   - the database starts in Docker, and its migrations are up to date
   - the demo data is there (7 restaurants)
-  - `npm run dev` serves the homepage, which reads "API: ok", and `/design` opens
+  - `npm run dev` serves the homepage, which read "API: ok" until the real Home page replaced it in 3.5, and `/design` opens
   - typecheck, lint and tests pass
 
 ### Step 2: Authentication ✅
@@ -224,14 +230,16 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
   *Check:* tests with Google mocked, and you sign in with your own Google account.
 
-### Step 3: Restaurants 🟡
+### Step 3: Restaurants ✅
 
 ✅ Already built: the model, and 7 restaurants added by hand.
 
-- [ ] **3.1 `GET /api/restaurants`:** published restaurants only, with search, filters (cuisine, district, price) and pages. *Check:* API tests.
-- [ ] **3.2 `GET /api/restaurants/:slug`.** *Check:* API tests for a restaurant that exists and one that doesn't.
-- [ ] **3.3 Browse page,** with its states in `/design`. *Check:* in the browser and in `/design`.
-- [ ] **3.4 Restaurant page:**
+The Google Places import, which the assignment leaves for "later", is task 9.7. It was 3.6, and it waits until after Step 8.
+
+- [x] **3.1 `GET /api/restaurants`:** published restaurants only, with search, filters (cuisine, district, price) and pages. *Check:* API tests.
+- [x] **3.2 `GET /api/restaurants/:slug`.** *Check:* API tests for a restaurant that exists and one that doesn't.
+- [x] **3.3 Browse page,** with its states in `/design`. *Check:* in the browser and in `/design`.
+- [x] **3.4 Restaurant page:**
   - information, with photos or a color block
   - the address, with an "Open in Google Maps" link
   - opening hours
@@ -239,8 +247,9 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - its states in `/design`
 
   *Check:* in the browser and in `/design`.
-- [ ] **3.5 Home:** "Choose your *Seghan.*", search, and a few restaurants. *Check:* in the browser.
-- [ ] **3.6 Google Places import (after Step 8):** imports into an owner's form, and the key stays on the backend. *Check:* tests with Google mocked, plus one real import.
+- [x] **3.5 Home:** "Choose your *Seghan.*", search, and a few restaurants. *Check:* in the browser.
+
+  **Deferred design polish:** the hero animation works and stays as it is for now, but its visual design will be revisited later (§6).
 
 ### Step 4: Restaurant dashboard ⬜
 
@@ -293,9 +302,9 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 - [ ] **8.4 Dashboard reservations with actions,** refreshing every 30 seconds, and the "Handle a reservation" flow in `/design`. *Check:* in the browser.
 - [ ] **Core complete:** the assignment's final result works from start to finish.
 
-### Step 9: Final features ⬜
+### Step 9: Final features, post-MVP ⬜
 
-After the core works; each one gets its screens in `/design`.
+Start only after Step 8, once the core reservation system works, as the assignment says. Each one gets its screens in `/design`.
 
 - [ ] **9.1 Reviews:** one per visit marked arrived, from the guest who made it. The average updates in the same transaction, and Browse can sort by rating. *Check:* tests, then leave a review.
 - [ ] **9.2 Favorites:** the `Favorite` migration, save and unsave, and "My favorites". *Check:* API tests and the browser.
@@ -303,6 +312,7 @@ After the core works; each one gets its screens in `/design`.
 - [ ] **9.4 Google Maps** on the restaurant page, with a key restricted to our address. *Check:* the map shows, and the page still works without it.
 - [ ] **9.5 Admin panel:** users, restaurants and reservations; hiding a restaurant. *Check:* a non-admin gets `403`.
 - [ ] **9.6 Basic analytics:** bookings, guests, cancellations, no-shows and ratings, shown as numbers and simple bars. *Check:* unit tests for the counting.
+- [ ] **9.7 Google Places import (deferred until after Step 8; it was 3.6):** imports into an owner's form, and the key stays on the backend. Who imports is open question 1 (§8). *Check:* tests with Google mocked, plus one real import.
 
 ### Step 10: Deployment ⬜
 
@@ -313,7 +323,7 @@ After the core works; each one gets its screens in `/design`.
 
 ## 8. Open Questions
 
-1. **Places import:** does each owner import their own restaurant, or is it one bulk import? *Default: each owner.*
+1. **Places import (task 9.7):** does each owner import their own restaurant, or is it one bulk import? *Default: each owner.*
 2. **Admin panel:** what can the admin do? *Default: see lists, and hide a restaurant.*
 3. **Analytics:** for restaurants, the admin, or both? *Default: both.*
 4. **Live deployment at the final review?** *Default: yes.*

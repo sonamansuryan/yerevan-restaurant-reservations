@@ -174,3 +174,17 @@ describe("the account corner", () => {
     expect(screen.getByRole("button", { name: "Sign out" })).toBeDefined();
   });
 });
+
+test("the logo leads the left side, with the way around the site, and the actions sit on the right", () => {
+  renderAt();
+
+  const row = screen.getByRole("banner").firstElementChild?.firstElementChild;
+  const [start, end] = [...(row?.children ?? [])];
+  const names = (side?: Element): (string | undefined)[] =>
+    [...(side?.querySelectorAll("a, button") ?? [])].map(
+      (item) => item.getAttribute("aria-label") ?? item.textContent?.trim(),
+    );
+
+  expect(names(start)).toEqual(["Seghan, home", "Discover", "For restaurants", "Menu"]);
+  expect(names(end)).toEqual(["Sign in", "Reserve a table"]);
+});

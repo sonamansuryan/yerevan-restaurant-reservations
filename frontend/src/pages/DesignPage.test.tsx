@@ -29,17 +29,34 @@ vi.mock("@/features/design/tools", async (importOriginal) => ({
   forceStates: vi.fn(),
 }));
 
-type Report = (entries: { isIntersecting: boolean; target: Element | null }[]) => void;
+type Entry = { isIntersecting: boolean; target: Element | null };
+type Report = (entries: Entry[]) => void;
 
-// jsdom has no IntersectionObserver. This one lets a test say which section is in view.
-let reportSections: Report = () => {};
+// jsdom has no IntersectionObserver. This one lets a test say which section is in view. As in a
+// browser, each observer hears only about what it observes: the page has more than one, such as
+// the home page's evening scene under Screens.
+const observers = new Set<FakeIntersectionObserver>();
+
+function reportSections(entries: Entry[]): void {
+  for (const observer of observers) {
+    const theirs = entries.filter((entry) => entry.target && observer.targets.has(entry.target));
+    if (theirs.length > 0) observer.report(theirs);
+  }
+}
 
 class FakeIntersectionObserver {
+  readonly targets = new Set<Element>();
+  readonly report: Report;
   constructor(callback: Report) {
-    reportSections = callback;
+    this.report = callback;
+    observers.add(this);
   }
-  observe(): void {}
-  disconnect(): void {}
+  observe(target: Element): void {
+    this.targets.add(target);
+  }
+  disconnect(): void {
+    observers.delete(this);
+  }
 }
 
 class FakeResizeObserver {
@@ -48,6 +65,7 @@ class FakeResizeObserver {
 }
 
 beforeEach(() => {
+  observers.clear();
   vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
   vi.stubGlobal("ResizeObserver", FakeResizeObserver);
   HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {

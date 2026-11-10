@@ -44,3 +44,13 @@ export function localTimeToUtc(date: string, minutes: number, timeZone: string):
   const local = new TZDate(year, month - 1, day + dayOffset, hour, minuteOfDay % 60, 0, timeZone);
   return new Date(local.getTime());
 }
+
+/**
+ * A number of minutes after the service day's midnight, as a clock time to show. Closing times
+ * can pass midnight, so 1560 is "02:00", the next morning.
+ */
+export function minutesToTime(minutes: number): string {
+  const minuteOfDay = minutes % MINUTES_PER_DAY;
+  const hour = String(Math.floor(minuteOfDay / 60)).padStart(2, "0");
+  return `${hour}:${String(minuteOfDay % 60).padStart(2, "0")}`;
+}

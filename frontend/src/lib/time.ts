@@ -11,3 +11,14 @@ const bookDate = new Intl.DateTimeFormat("en-GB", {
 export function formatBookDate(date: Date): string {
   return bookDate.format(date);
 }
+
+const weekdayName = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
+  timeZone: "Asia/Yerevan",
+});
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** The day of the week in Yerevan at that moment: 0 = Sunday … 6 = Saturday, as the API counts. */
+export function yerevanWeekday(date: Date): number {
+  return WEEKDAYS.indexOf(weekdayName.format(date));
+}

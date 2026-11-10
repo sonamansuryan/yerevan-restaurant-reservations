@@ -12,6 +12,7 @@ const MESSAGES: Record<string, string> = {
   GOOGLE_EMAIL_TAKEN:
     "There’s already an account with this email. Sign in with your password instead.",
   GOOGLE_UNAVAILABLE: "Google sign-in isn’t available right now. Please try again.",
+  RESTAURANT_NOT_FOUND: "We couldn’t find this restaurant.",
 };
 
 /** An error we expected and can explain to the client. Anything else is treated as a bug. */

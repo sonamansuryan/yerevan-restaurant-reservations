@@ -5,7 +5,7 @@ import { Link, NavLink } from "react-router";
 import type { Account } from "@/components/account";
 import { LinkButton } from "@/components/Button";
 import { CurrentPageDot, Logo } from "@/components/Logo";
-import { MastheadRow, MenuToggle } from "@/components/Masthead";
+import { MastheadRow, MastheadStart, MenuToggle } from "@/components/Masthead";
 import { PageContainer } from "@/components/PageContainer";
 import { discover, districts, forRestaurants, signIn } from "@/components/site-links";
 import type { SiteLink } from "@/components/site-links";
@@ -126,9 +126,12 @@ export function MobileMenu({ open, onClose, account }: MobileMenuProps): ReactEl
     >
       <div className="flex min-h-full flex-col">
         <PageContainer>
+          {/* The same left side as the header, so Close lands exactly where Menu was. */}
           <MastheadRow>
-            <MenuToggle onClick={onClose}>Close</MenuToggle>
-            <Logo className="text-logo" onClick={onClose} />
+            <MastheadStart>
+              <Logo className="text-logo" onClick={onClose} />
+              <MenuToggle onClick={onClose}>Close</MenuToggle>
+            </MastheadStart>
           </MastheadRow>
         </PageContainer>
 

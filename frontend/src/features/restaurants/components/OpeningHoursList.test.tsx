@@ -1,0 +1,68 @@
+// @vitest-environment jsdom
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, expect, test } from "vitest";
+
+import { OpeningHoursList } from "@/features/restaurants/components/OpeningHoursList";
+import type { OpeningHours } from "@/types/api";
+
+afterEach(cleanup);
+
+const hours = (dayOfWeek: number, opensAt: number, closesAt: number): OpeningHours => {
+  const time = (minutes: number): string =>
+    `${String(Math.floor((minutes % 1440) / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+  return { dayOfWeek, opensAt, closesAt, opens: time(opensAt), closes: time(closesAt) };
+};
+
+// Tsiran Wine Room: closed on Monday, late on Friday.
+const tsiran = [hours(0, 1080, 1380), hours(2, 1080, 1380), hours(5, 1080, 1560)];
+
+/** Each line of the list, as it reads, day first. */
+function lines(): string[] {
+  return screen
+    .getAllByRole("term")
+    .map((term) => `${term.textContent} ${term.nextElementSibling?.textContent}`);
+}
+
+test("lists the whole week, Monday first, with closed days and a late night as they are", () => {
+  render(<OpeningHoursList hours={tsiran} />);
+
+  expect(lines()).toEqual([
+    "Monday Closed",
+    "Tuesday 18:00–23:0018:00 to 23:00",
+    "Wednesday Closed",
+    "Thursday Closed",
+    "Friday 18:00–02:0018:00 to 02:00",
+    "Saturday Closed",
+    "Sunday 18:00–23:0018:00 to 23:00",
+  ]);
+});
+
+test("screen readers hear 'to' between the times, not a dash", () => {
+  render(<OpeningHoursList hours={tsiran} />);
+
+  expect(screen.getByText("18:00 to 02:00").className).toContain("sr-only");
+  expect(screen.getByText("18:00–02:00").getAttribute("aria-hidden")).toBe("true");
+});
+
+test("a split shift shows both times on that day's line", () => {
+  render(<OpeningHoursList hours={[hours(1, 720, 900), hours(1, 1080, 1380)]} />);
+
+  expect(screen.getAllByRole("definition")[0]?.textContent).toBe(
+    "12:00–15:0012:00 to 15:0018:00–23:0018:00 to 23:00",
+  );
+});
+
+test("today's line is marked, and only today's", () => {
+  render(<OpeningHoursList hours={tsiran} today={5} />);
+
+  const today = screen.getByText("Today");
+  expect(today.closest("dt")?.textContent).toBe("FridayToday");
+  expect(screen.getAllByText("Today")).toHaveLength(1);
+});
+
+test("a restaurant with no hours yet says so instead of a week of Closed", () => {
+  render(<OpeningHoursList hours={[]} />);
+
+  expect(screen.getByText("Opening hours aren’t listed yet.")).toBeDefined();
+  expect(screen.queryByRole("term")).toBeNull();
+});

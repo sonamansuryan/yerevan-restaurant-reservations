@@ -11,6 +11,8 @@ import { ErrorPage } from "@/pages/ErrorPage";
 import { HomePage } from "@/pages/HomePage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { ReservationsPage } from "@/pages/ReservationsPage";
+import { RestaurantPage } from "@/pages/RestaurantPage";
+import { RestaurantsPage } from "@/pages/RestaurantsPage";
 import { SignInPage } from "@/pages/SignInPage";
 import { SignUpPage } from "@/pages/SignUpPage";
 
@@ -47,6 +49,9 @@ export const routes: RouteObject[] = [
         errorElement: <ErrorPage />,
         children: [
           { index: true, element: <HomePage /> },
+          // Public: anyone can browse, signed in or not.
+          { path: "restaurants", element: <RestaurantsPage /> },
+          { path: "restaurants/:slug", element: <RestaurantPage /> },
           // A guard is a layout route without a path: it decides, then shows the page inside it
           // through <Outlet />. The API checks every request too, which is the real protection.
           {

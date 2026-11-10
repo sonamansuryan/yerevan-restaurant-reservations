@@ -206,6 +206,7 @@ export const shownComponents: ShownComponent[] = [
   { name: "PasswordField", file: "PasswordField", section: "forms" },
   { name: "ChoiceLines", file: "ChoiceLines", section: "forms" },
   { name: "OrDivider", file: "OrDivider", section: "forms" },
+  { name: "Pagination", file: "Pagination", section: "actions" },
   { name: "Badge", file: "Badge", section: "feedback" },
   { name: "FormNotice", file: "FormNotice", section: "feedback" },
   { name: "Spinner", file: "Spinner", section: "feedback" },
@@ -247,6 +248,33 @@ export const screenStates = {
     "Google can’t load",
   ],
   guard: ["Checking your account", "Not for this account", "Couldn’t check"],
+  browseFilters: ["Nothing chosen (live)", "Search and filters chosen"],
+  browseResults: [
+    "Loading",
+    "A page of restaurants",
+    "Loading the next list",
+    "No matches",
+    "Nothing yet",
+    "Couldn’t load",
+    "Past the last page",
+  ],
+  restaurantCard: ["Menu cover", "A long Armenian name", "Several cuisines", "No description"],
+  home: [
+    "Evening over Yerevan, beside the headline",
+    "The search",
+    "A few places to start",
+    "Loading",
+    "Nothing yet",
+    "Couldn’t load",
+  ],
+  restaurantPage: [
+    "Late nights and a closed day",
+    "Split shifts, no description",
+    "A long Armenian name, with a website",
+    "With reviews",
+    "Loading",
+    "Couldn’t load",
+  ],
 } as const;
 
 function componentsIn(section: string): number {
