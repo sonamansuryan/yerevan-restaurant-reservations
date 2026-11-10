@@ -1,6 +1,6 @@
 import { TZDate } from "@date-fns/tz";
 
-const MINUTES_PER_DAY = 1440;
+export const MINUTES_PER_DAY = 1440;
 
 // Calendar dates are split by hand because new Date("2026-11-20") means midnight UTC, which can
 // be a different day in the restaurant's time zone.

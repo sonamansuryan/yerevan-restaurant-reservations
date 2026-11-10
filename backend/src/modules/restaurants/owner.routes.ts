@@ -2,6 +2,8 @@ import { Router } from "express";
 
 import { requireRestaurantOwner } from "../../middleware/requireRestaurantOwner.ts";
 import { validate } from "../../middleware/validate.ts";
+import { openingHoursRouter } from "../opening-hours/opening-hours.routes.ts";
+import { photosRouter } from "../photos/photos.routes.ts";
 import { create, detail, update } from "./owner.controller.ts";
 import {
   createRestaurantSchema,
@@ -27,3 +29,7 @@ ownerRestaurantsRouter.use(
 
 ownerRestaurantsRouter.get("/:restaurantId", detail);
 ownerRestaurantsRouter.patch("/:restaurantId", validate(updateRestaurantSchema), update);
+
+// Each part of a restaurant lives below it, behind the same check.
+ownerRestaurantsRouter.use("/:restaurantId/opening-hours", openingHoursRouter);
+ownerRestaurantsRouter.use("/:restaurantId/photos", photosRouter);

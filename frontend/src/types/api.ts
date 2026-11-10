@@ -123,6 +123,45 @@ export interface OwnerRestaurantResponse {
   restaurant: OwnerRestaurant;
 }
 
+/**
+ * PUT /api/owner/restaurants/:restaurantId/opening-hours: the week as saved, which replaced the old
+ * one, in order from Sunday (0) and by opening time. A day with no opening is closed. A week that
+ * breaks a rule, such as two openings that overlap, answers 400 with a message on each opening:
+ * `details.fields["hours.1"]` is "Overlaps Monday 12:00–15:00." for the second one sent.
+ */
+export interface OpeningHoursResponse {
+  openingHours: OpeningHours[];
+}
+
+/** One photo of one of the owner's restaurants. Its address is ready for photoUrl(). */
+export interface OwnerPhoto {
+  id: string;
+  url: string;
+  /** Exactly one photo is the cover, shown first on the restaurant's page and card. */
+  isCover: boolean;
+  sortOrder: number;
+}
+
+/**
+ * The restaurant's photos after a change, the cover first, then in the order they were added:
+ * - POST /api/owner/restaurants/:restaurantId/photos (201), saving an upload
+ * - PATCH /api/owner/restaurants/:restaurantId/photos/:photoId, choosing the cover
+ * - DELETE /api/owner/restaurants/:restaurantId/photos/:photoId
+ */
+export interface OwnerPhotosResponse {
+  photos: OwnerPhoto[];
+}
+
+/**
+ * POST /api/owner/restaurants/:restaurantId/photos/signature: permission for one upload straight
+ * from the browser to Cloudinary, valid for an hour. Send `fields` and the file (as "file") in a
+ * multipart form to `url`. Then POST Cloudinary's public_id, version and signature to /photos as
+ * publicId, version and signature. A restaurant with 10 photos answers 409 TOO_MANY_PHOTOS.
+ */
+export interface PhotoUploadResponse {
+  upload: { url: string; fields: Record<string, string> };
+}
+
 /** What a restaurant still needs before guests can see it. */
 export type PublishBlocker = "TABLE" | "OPENING_HOURS";
 

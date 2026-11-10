@@ -9,9 +9,10 @@ const FAKE_ENV = {
   JWT_ACCESS_SECRET: "test-only-secret-that-is-long-enough-to-pass",
   GOOGLE_CLIENT_ID: "000000000000-testonlynotarealclient.apps.googleusercontent.com",
   GOOGLE_PLACES_API_KEY: "test",
-  CLOUDINARY_CLOUD_NAME: "test",
-  CLOUDINARY_API_KEY: "test",
-  CLOUDINARY_API_SECRET: "test",
+  // Three different values, so a test can tell the public API key from the secret.
+  CLOUDINARY_CLOUD_NAME: "test-cloud",
+  CLOUDINARY_API_KEY: "000000000000000",
+  CLOUDINARY_API_SECRET: "test-only-cloudinary-secret",
   RESEND_API_KEY: "test",
   EMAIL_FROM: "Test <test@example.com>",
   DEMO_PASSWORD: "test-only-demo-password",

@@ -27,20 +27,20 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | **Customers** | | |
 | Register and log in, by email or Google | 2 | ✅ Email and Google, on the Sign in and Sign up pages |
 | Browse, search and filter restaurants | 3 | ✅ The API and the Browse page |
-| Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | 🟡 The page works, with a color block until photos (4.4) and space for reviews (9.1) |
+| Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | 🟡 The page works and shows photos (4.4), with space for reviews (9.1) |
 | Choose a date, time and number of guests; see available tables | 6 | ⬜ |
 | Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | 🟡 The database refuses overlaps |
 | View and cancel their reservations | 8 | ⬜ |
 | **Restaurants** | | |
 | A private dashboard to manage restaurant information | 4 | 🟡 The API creates, edits and publishes a restaurant (4.2); the pages come in 4.6 |
-| Set opening hours | 4 | ⬜ |
+| Set opening hours | 4 | 🟡 The API saves the whole week, refusing overlaps (4.3); the form comes in 4.6 |
 | Add and manage tables and their capacity | 5 | ⬜ |
 | Block tables or dates | 5 | ⬜ |
 | View, confirm and cancel reservations; mark guests arrived or no-show | 4, 8 | ⬜ |
 | **Restaurant data** | | |
 | A few restaurants added by hand | 3 | ✅ 7 demo restaurants |
 | Import real Yerevan restaurants with Google Places ("later") | 9 | ⬜ Deferred until after Step 8 (task 9.7) |
-| Restaurant images with Cloudinary | 4 | ⬜ |
+| Restaurant images with Cloudinary | 4 | 🟡 Photos are stored at Cloudinary and shown on the pages (4.4); the upload form comes in 4.6 |
 | **Final features, after the core works** | | |
 | Reviews: leave them, and see them on the restaurant page | 9 | ⬜ |
 | Favorites | 9 | ⬜ |
@@ -86,7 +86,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (10 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 1178 tests ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 1236 tests ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
@@ -95,6 +95,8 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - the public restaurant list, with search, filters and pages, and each restaurant's details
   - the owner area's ownership check: an owner opens only their own restaurants, drafts included, and anyone else's answers `404` (`requireRestaurantOwner`)
   - owners create and edit their restaurants, including the slot interval and booking length; a new one starts unpublished, and publishing needs an active table and opening hours
+  - owners save their whole week of opening hours at once: overlaps are refused, including past midnight and from Saturday into Sunday, and two saves take turns
+  - photos: owners upload them straight to Cloudinary with a permission our server signs, then save them, choose the cover and delete them. The restaurant page and Browse cards show them
   - the Home page, the Browse page and each restaurant's page, with their states in `/design`
   - `lib/api.ts`: GET, POST, PATCH and DELETE, renewing an expired session once
   - route guards: signed-out visitors go to Sign in and come back afterwards, and owner pages are for owners only
@@ -256,10 +258,12 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
 
 - [x] **4.1 `requireRestaurantOwner`.** *Check:* owner A gets `404` on owner B's restaurant.
 - [x] **4.2 Create and edit a restaurant,** including the slot interval and booking length. It can only be published once it has a table and opening hours. *Check:* API tests.
-- [ ] **4.3 Opening hours:** save the whole week at once, refusing overlaps. *Check:* unit tests.
-- [ ] **4.4 Photos with Cloudinary** (free account): signed upload, save, cover, delete. *Check:* a photo shows on the restaurant page.
+- [x] **4.3 Opening hours:** save the whole week at once, refusing overlaps. *Check:* unit tests.
+- [x] **4.4 Photos with Cloudinary** (free account): signed upload, save, cover, delete. *Check:* a photo shows on the restaurant page.
 - [ ] **4.5 Reservations for a chosen date,** view only. *Check:* the seeded bookings show up.
 - [ ] **4.6 Dashboard pages,** with their states in `/design`. *Check:* in the browser and in `/design`.
+
+  **To decide here (from the reviews of 4.3 and 4.4):** the dashboard needs a way to load what's already saved, the opening hours and the photos. Either each gets its own address (`GET …/opening-hours`, `GET …/photos`), or they come inside the owner's restaurant reply.
 
 ### Step 5: Tables ⬜
 
@@ -279,6 +283,8 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
 - [ ] **6.3 `GET /api/restaurants/:slug/availability`.** *Check:* the results match the seeded bookings.
 - [ ] **6.4 Test database:** create `yerevan_test`, add `npm run test:db`, and write database tests 1–3 (§5.4). *Check:* they pass on real PostgreSQL, and `npm test` still runs without Docker.
 - [ ] **6.5 `POST /api/reservations`:** one transaction that locks the table's row, runs the four checks and saves the booking as `PENDING`. A real conflict answers `409 SLOT_TAKEN`; any other database error stays a `500`. *Check:* API tests for each refusal, one test showing an unrelated database error doesn't become a `409`, and database test 4.
+
+  **To decide once bookings exist (from the review of 4.3):** saving opening hours should take upcoming bookings into account. For example, it could refuse new hours that leave a booking outside them, as 5.1 does for tables, or list those bookings for the owner. 4.3 deliberately doesn't check bookings yet.
 - [ ] **6.6 Booking widget:**
   - date, guests, time and table, then confirm, then success
   - the choices are kept in the address

@@ -13,6 +13,9 @@ const MESSAGES: Record<string, string> = {
     "There’s already an account with this email. Sign in with your password instead.",
   GOOGLE_UNAVAILABLE: "Google sign-in isn’t available right now. Please try again.",
   RESTAURANT_NOT_FOUND: "We couldn’t find this restaurant.",
+  PHOTO_NOT_FOUND: "We couldn’t find this photo.",
+  UPLOAD_NOT_VERIFIED: "We couldn’t confirm this upload. Please upload the photo again.",
+  PHOTO_ALREADY_SAVED: "This photo is already saved.",
 };
 
 /** An error we expected and can explain to the client. Anything else is treated as a bug. */

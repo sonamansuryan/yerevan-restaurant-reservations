@@ -75,6 +75,21 @@ export async function getOwnedRestaurant(
   return toOwnerRestaurant(row);
 }
 
+/**
+ * Locks one of this owner's restaurants until the transaction ends, so changes to its parts take
+ * turns: its opening hours, its photos and their cover. The owner is part of the query, so someone
+ * else's restaurant locks nothing and the answer is false.
+ */
+export async function lockOwnedRestaurant(
+  tx: Prisma.TransactionClient,
+  ownerId: string,
+  restaurantId: string,
+): Promise<boolean> {
+  const rows = await tx.$queryRaw<unknown[]>`
+    SELECT 1 FROM "Restaurant" WHERE "id" = ${restaurantId} AND "ownerId" = ${ownerId} FOR UPDATE`;
+  return rows.length > 0;
+}
+
 /** How many times a new restaurant tries for a free address before giving up (a 500). */
 const SLUG_ATTEMPTS = 3;
 
