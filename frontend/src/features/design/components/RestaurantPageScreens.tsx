@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 
+import { atSeven, bookingAt } from "@/features/design/bookingSpecimens";
 import { Group, Specimens } from "@/features/design/components/parts";
 import { armenianPage, loriPage, reviewedPage, tsiranPage } from "@/features/design/samples";
 import { screenStates } from "@/features/design/tokens";
@@ -20,7 +21,12 @@ const states: Record<StateOf<"restaurantPage">, ReactElement> = {
     <RestaurantDetails restaurant={tsiranPage} today={FRIDAY} headingLevel={4} />
   ),
   "Split shifts, no description": (
-    <RestaurantDetails restaurant={loriPage} today={FRIDAY} headingLevel={4} />
+    <RestaurantDetails
+      restaurant={loriPage}
+      today={FRIDAY}
+      headingLevel={4}
+      booking={bookingAt({ choices: atSeven })}
+    />
   ),
   "A long Armenian name, with a website": (
     <RestaurantDetails restaurant={armenianPage} today={FRIDAY} headingLevel={4} />

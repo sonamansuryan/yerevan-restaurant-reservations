@@ -88,7 +88,9 @@ export function tablesSummary(tables: OwnerTable[]): string {
 }
 
 /** The tables by area, in ZONES' order, each in the order it was added. Empty areas are left out. */
-export function tablesByZone(tables: OwnerTable[]): { zone: TableZone; tables: OwnerTable[] }[] {
+export function tablesByZone<Table extends { zone: TableZone }>(
+  tables: readonly Table[],
+): { zone: TableZone; tables: Table[] }[] {
   return ZONES.map((zone) => ({
     zone,
     tables: tables.filter((table) => table.zone === zone),

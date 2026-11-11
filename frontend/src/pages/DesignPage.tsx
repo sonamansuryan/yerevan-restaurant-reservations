@@ -7,6 +7,7 @@ import { BrandSection } from "@/features/design/components/BrandSection";
 import { ColorSection } from "@/features/design/components/ColorSection";
 import { Contents } from "@/features/design/components/Contents";
 import { FeedbackSection } from "@/features/design/components/FeedbackSection";
+import { FlowsSection } from "@/features/design/components/FlowsSection";
 import { FormSection } from "@/features/design/components/FormSection";
 import { MotionSection } from "@/features/design/components/MotionSection";
 import { ProtectedSection } from "@/features/design/components/ProtectedSection";
@@ -48,6 +49,7 @@ export function DesignPage(): ReactElement {
           <ProtectedSection />
           <ResponsiveSection />
           <ScreensSection />
+          <FlowsSection />
         </div>
       </div>
     </PageContainer>

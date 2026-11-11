@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import { LinkButton } from "@/components/Button";
 import { OpeningHoursList } from "@/features/restaurants/components/OpeningHoursList";
@@ -41,6 +41,8 @@ interface RestaurantDetailsProps {
   today?: number;
   /** 1 on the page. /design sets 4, under its own headings. */
   headingLevel?: 1 | 4;
+  /** The booking widget, first among the practical details. */
+  booking?: ReactNode;
   className?: string;
 }
 
@@ -54,6 +56,7 @@ export function RestaurantDetails({
   restaurant,
   today,
   headingLevel = 1,
+  booking,
   className,
 }: RestaurantDetailsProps): ReactElement {
   const [Title, Section] = HEADINGS[headingLevel];
@@ -113,6 +116,13 @@ export function RestaurantDetails({
         )}
 
         <div className="flex flex-col gap-10 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          {booking && (
+            <section>
+              <Section className={sectionTitle}>Book a table</Section>
+              <div className="mt-5">{booking}</div>
+            </section>
+          )}
+
           <section>
             <Section className={sectionTitle}>Address</Section>
             <address className="mt-3 text-body not-italic">{restaurant.address}</address>

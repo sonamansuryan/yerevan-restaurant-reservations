@@ -4,6 +4,8 @@ import { useParams } from "react-router";
 
 import { LinkButton } from "@/components/Button";
 import { PageContainer } from "@/components/PageContainer";
+import { BookingWidget } from "@/features/booking/components/BookingWidget";
+import { useBooking } from "@/features/booking/hooks/useBooking";
 import { RestaurantDetails } from "@/features/restaurants/components/RestaurantDetails";
 import {
   RestaurantLoadFailed,
@@ -53,6 +55,7 @@ export function RestaurantPage(): ReactElement {
 function LoadedRestaurant({ restaurant }: { restaurant: RestaurantDetail }): ReactElement {
   // Read once, when the page opens: a page has to render the same way each time.
   const [today] = useState(() => yerevanWeekday(new Date()));
+  const booking = useBooking(restaurant.slug);
 
   return (
     <PageContainer className="py-section-sm">
@@ -60,7 +63,12 @@ function LoadedRestaurant({ restaurant }: { restaurant: RestaurantDetail }): Rea
       <LinkButton variant="link" to="/restaurants">
         All restaurants
       </LinkButton>
-      <RestaurantDetails restaurant={restaurant} today={today} className="mt-4" />
+      <RestaurantDetails
+        restaurant={restaurant}
+        today={today}
+        booking={<BookingWidget {...booking} />}
+        className="mt-4"
+      />
     </PageContainer>
   );
 }

@@ -208,6 +208,7 @@ export const shownComponents: ShownComponent[] = [
   { name: "OrDivider", file: "OrDivider", section: "forms" },
   { name: "Pagination", file: "Pagination", section: "actions" },
   { name: "SectionNav", file: "SectionNav", section: "actions" },
+  { name: "SlotButton", file: "SlotButton", section: "actions" },
   { name: "Badge", file: "Badge", section: "feedback" },
   { name: "FormNotice", file: "FormNotice", section: "feedback" },
   { name: "Spinner", file: "Spinner", section: "feedback" },
@@ -320,7 +321,27 @@ export const screenStates = {
     "Sending",
     "Bookings inside it",
   ],
+  booking: [
+    "Choosing (live)",
+    "Finding free tables",
+    "Couldn’t load the times",
+    "No times on this day",
+    "Every table taken",
+    "Choosing a table",
+  ],
+  bookingConfirm: [
+    "Ready to book",
+    "Signed out",
+    "An owner’s account",
+    "Booking",
+    "The table was just taken",
+    "Couldn’t book",
+    "Booked",
+  ],
 } as const;
+
+/** The journeys the Flows section shows, one screen after another. */
+export const flows = ["Book a table"] as const;
 
 function componentsIn(section: string): number {
   return shownComponents.filter((component) => component.section === section).length;
@@ -348,4 +369,5 @@ export const contents = [
   { id: "protected", title: "Protected designs", items: componentsIn("protected") },
   { id: "responsive", title: "Responsive", items: "live" },
   { id: "screens", title: "Screens", items: Object.values(screenStates).flat().length },
+  { id: "flows", title: "Flows", items: flows.length },
 ];

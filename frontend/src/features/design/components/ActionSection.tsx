@@ -4,6 +4,7 @@ import { Button, LinkButton } from "@/components/Button";
 import type { ButtonVariant } from "@/components/Button";
 import { Pagination } from "@/components/Pagination";
 import { SectionNav } from "@/components/SectionNav";
+import { SlotButton } from "@/components/SlotButton";
 import { Group, Section, Specimen, SpecimenRow } from "@/features/design/components/parts";
 
 interface ButtonStatesProps {
@@ -124,6 +125,31 @@ export function ActionSection(): ReactElement {
             <SectionNav label="Lori Smokehouse" links={sectionsWith("Photos")} className="w-full" />
           </Specimen>
         </div>
+      </Group>
+      <Group
+        title="Times"
+        note="A time to book, in a hairline outline that fills with ink once chosen. A time with no free table keeps its place, struck through."
+      >
+        <SpecimenRow>
+          <Specimen label="Default">
+            <SlotButton>19:00</SlotButton>
+          </Specimen>
+          <Specimen label="Hover" frozen>
+            <SlotButton data-force="hover">19:00</SlotButton>
+          </Specimen>
+          <Specimen label="Focus" frozen>
+            <SlotButton data-force="focus">19:00</SlotButton>
+          </Specimen>
+          <Specimen label="Pressed" frozen>
+            <SlotButton data-force="hover active">19:00</SlotButton>
+          </Specimen>
+          <Specimen label="Chosen">
+            <SlotButton selected>19:00</SlotButton>
+          </Specimen>
+          <Specimen label="No table free">
+            <SlotButton disabled>19:00</SlotButton>
+          </Specimen>
+        </SpecimenRow>
       </Group>
       <Group
         title="Pagination"

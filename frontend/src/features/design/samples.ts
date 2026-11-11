@@ -1,6 +1,10 @@
 // Sample data for /design, shaped exactly like the API's answers. The six named ones are the demo
 // restaurants, with their real hours, so /design and the real pages look alike.
 import type {
+  Availability,
+  AvailabilitySlot,
+  AvailableTable,
+  GuestReservation,
   OpeningHours,
   OwnerBlock,
   OwnerPhoto,
@@ -33,7 +37,7 @@ const kondHouse = restaurant({
   priceLevel: 2,
 });
 
-const loriSmokehouse = restaurant({
+export const loriSmokehouse = restaurant({
   slug: "lori-smokehouse",
   name: "Lori Smokehouse",
   description: "Khorovats and slow-smoked meats, cooked over an open grill.",
@@ -413,3 +417,60 @@ export const sampleBlocks: OwnerBlock[] = [
     "Holiday week",
   ),
 ];
+
+/** The tables free for two at Lori Smokehouse, as the availability lists them. */
+const loriFree = {
+  t1: { id: "table-t1", label: "T1", zone: "INDOOR", capacity: 4 },
+  t2: { id: "table-t2", label: "T2", zone: "INDOOR", capacity: 2 },
+  t3: { id: "table-t3", label: "T3", zone: "INDOOR", capacity: 4 },
+  p1: { id: "table-p1", label: "P1", zone: "TERRACE", capacity: 4 },
+} satisfies Record<string, AvailableTable>;
+
+/** A two-hour booking from this time on Saturday 14 November, in Yerevan, 4 hours ahead of UTC. */
+function saturdayAt(starts: string, tables: AvailableTable[]): AvailabilitySlot {
+  const [hour = 0, minute = 0] = starts.split(":").map(Number);
+  const startsAt = Date.UTC(2026, 10, 14, hour - 4, minute);
+  return {
+    startsAt: new Date(startsAt).toISOString(),
+    endsAt: new Date(startsAt + 2 * 3_600_000).toISOString(),
+    starts,
+    ends: `${String(hour + 2).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+    tables,
+  };
+}
+
+const withoutT1 = [loriFree.t2, loriFree.t3, loriFree.p1];
+
+/**
+ * Lori Smokehouse on the demo Saturday, for two. T1 is booked for lunch at 12:30 and dinner at
+ * 19:00, so it's free only at 21:00, and every table is taken at 13:00.
+ */
+export const loriSaturday: Availability = {
+  date: "2026-11-14",
+  partySize: 2,
+  bookingWindow: { first: "2026-11-13", last: "2027-01-12" },
+  slots: [
+    saturdayAt("12:00", withoutT1),
+    saturdayAt("12:30", withoutT1),
+    saturdayAt("13:00", []),
+    ...["18:00", "18:30", "19:00", "19:30", "20:00", "20:30"].map((time) =>
+      saturdayAt(time, withoutT1),
+    ),
+    saturdayAt("21:00", [loriFree.t1, ...withoutT1]),
+  ],
+};
+
+/** Lilit's booking for two at T2 on the demo Saturday, as the API answers it once made. */
+export const sampleBooked: GuestReservation = {
+  id: "booking-new",
+  status: "PENDING",
+  partySize: 2,
+  date: "2026-11-14",
+  startsAt: "2026-11-14T15:00:00.000Z",
+  endsAt: "2026-11-14T17:00:00.000Z",
+  starts: "19:00",
+  ends: "21:00",
+  restaurant: { slug: "lori-smokehouse", name: "Lori Smokehouse" },
+  table: { label: "T2", zone: "INDOOR" },
+  specialRequests: null,
+};

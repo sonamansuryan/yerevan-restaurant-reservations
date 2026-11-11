@@ -45,23 +45,14 @@ export function ChoiceLines({
           key={option.value}
           className="flex min-h-touch cursor-pointer items-baseline gap-3 border-b border-line py-3"
         >
-          <span className="relative size-4 flex-none self-center">
-            <input
-              {...rest}
-              type="radio"
-              value={option.value}
-              defaultChecked={
-                defaultChoice === undefined ? undefined : option.value === defaultChoice
-              }
-              aria-invalid={error ? true : undefined}
-              className="peer absolute inset-0 cursor-pointer appearance-none rounded-pill border border-line-control transition-[border-color] duration-150 checked:border-accent hover:border-ink checked:hover:border-accent-hover"
-            />
-            {/* The logo's dot, inside the ring of the chosen line. */}
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-1 rounded-pill bg-accent opacity-0 peer-checked:opacity-100"
-            />
-          </span>
+          <ChoiceRadio
+            {...rest}
+            value={option.value}
+            defaultChecked={
+              defaultChoice === undefined ? undefined : option.value === defaultChoice
+            }
+            aria-invalid={error ? true : undefined}
+          />
           <span className="font-display text-title-xs text-ink">{option.label}</span>{" "}
           <span aria-hidden="true" className="menu-leader max-sm:hidden" />
           <span className="text-meta text-ink-muted max-sm:ml-auto">{option.note}</span>
@@ -69,5 +60,22 @@ export function ChoiceLines({
       ))}
       {error && <FieldError id={errorId}>{error}</FieldError>}
     </fieldset>
+  );
+}
+
+/** One radio of a line: a ring, with the logo's dot inside once it's chosen. */
+export function ChoiceRadio(props: Omit<ComponentProps<"input">, "type">): ReactElement {
+  return (
+    <span className="relative size-4 flex-none self-center">
+      <input
+        {...props}
+        type="radio"
+        className="peer absolute inset-0 cursor-pointer appearance-none rounded-pill border border-line-control transition-[border-color] duration-150 checked:border-accent hover:border-ink checked:hover:border-accent-hover"
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-1 rounded-pill bg-accent opacity-0 peer-checked:opacity-100"
+      />
+    </span>
   );
 }

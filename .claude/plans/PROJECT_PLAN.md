@@ -28,8 +28,8 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | Register and log in, by email or Google | 2 | ✅ Email and Google, on the Sign in and Sign up pages |
 | Browse, search and filter restaurants | 3 | ✅ The API and the Browse page |
 | Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | 🟡 The page works and shows photos (4.4), with space for reviews (9.1) |
-| Choose a date, time and number of guests; see available tables | 6 | 🟡 The API answers which times and tables are free for a party on a date (6.1–6.3); the booking widget comes in 6.6 |
-| Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | 🟡 Guests book through the API, in one transaction that locks the table, runs the four checks and saves the booking as pending (6.5). The race test is 7.1, and the booking widget 6.6 |
+| Choose a date, time and number of guests; see available tables | 6 | ✅ Guests choose them on each restaurant's page, and see the free tables (6.1–6.6) |
+| Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | 🟡 Guests book on the restaurant's page, in one transaction that locks the table, runs the four checks and saves the booking as pending (6.5, 6.6). The race test is 7.1 |
 | View and cancel their reservations | 8 | ⬜ |
 | **Restaurants** | | |
 | A private dashboard to manage restaurant information | 4 | ✅ Owners add, edit and publish their restaurants on their dashboard (4.2, 4.6) |
@@ -86,7 +86,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (11 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 1578 tests ✅, and 16 database tests on real PostgreSQL ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 1608 tests ✅, and 16 database tests on real PostgreSQL ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
@@ -107,6 +107,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - `GET /api/restaurants/:slug/availability`: anyone can see a published restaurant's times on a date, each with the tables free for the party
   - the test database: `npm run test:db -w backend` creates and migrates `yerevan_test` beside `yerevan_dev`, then runs the database tests there. `npm test` still needs no database
   - `POST /api/reservations`: a signed-in guest books a table, in one transaction that locks the table's row, then its restaurant's, runs the four checks and saves the booking as pending
+  - the booking widget on each restaurant's page, with its states and the "Book a table" flow in `/design`
   - the owner's dashboard: their restaurants, adding one, and each restaurant's bookings for a day, information and publishing, opening hours and photos, with their states in `/design`
   - the Home page, the Browse page and each restaurant's page, with their states in `/design`
   - `lib/api.ts`: GET, POST, PUT, PATCH and DELETE, renewing an expired session once
@@ -181,7 +182,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 - ⬜ A status change applies only if the status is still the expected one.
 - ✅ **Lock order, the same everywhere:** table rows first, in ascending `id` order, then the restaurant's row. Whatever holds a restaurant's row (publishing, opening hours, photos, adding a table) never then waits for a table's, so no two changes can wait on each other forever. Switching a table off takes both, table first, so it can't cross publishing (5.1). A whole-restaurant block takes every table, then the restaurant (5.2).
 - ✅ **What a booking must lock (from 5.2):** its table's row, then a shared lock (`FOR KEY SHARE`) on its restaurant's row, before it checks for blocks. The second lock is what keeps a whole-restaurant block from missing a table added at that very moment.
-- ⬜ The page says the table was just booked, and shows the free tables again.
+- ✅ The page says the table was just booked, and shows the free tables again.
 
 **What the real-PostgreSQL tests must prove.** Each test is written in the task shown. Add another whenever a task needs real PostgreSQL to prove it.
 
@@ -202,8 +203,8 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 |---|---|---|
 | Foundations | Color, type, space, shape, motion | ✅ |
 | Components | Actions, forms, feedback, brand and shell, protected designs, responsive | ✅ |
-| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, Sign in with Google, the route guard's states, Home, Browse, the restaurant page, and the owner's dashboard, tables and blocked times included |
-| Flows | "Book a table" (the assignment's final result) and "Handle a reservation" | ⬜ |
+| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, Sign in with Google, the route guard's states, Home, Browse, the restaurant page, and the owner's dashboard, tables and blocked times included, and the booking widget |
+| Flows | "Book a table" (the assignment's final result) and "Handle a reservation" | 🟡 "Book a table" is built; "Handle a reservation" comes in Step 8 |
 
 **Key states:** loading, empty, error with a retry, field errors, sending, success, not allowed, and each feature's own errors. A step is done only when its screens are in `/design`. `EmptyState` and `ErrorState` keep their approved look.
 
@@ -297,7 +298,7 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
 
   **Decided (5.3):** the two parts are called Tables and Blocked times, after Opening hours. Adding or editing a table, and blocking a time, open in the Modal, which rises from the bottom on a phone. Switching a table off or back on is a link on its line, with no question, because it can be undone; removing a block asks first, because guests can book that time again at once. A refusal lists the bookings in the way, under the table's line or at the top of the form. Table names are set in sans, because the serif 1 reads like an l (T1). A name that already says "Table", such as "Table 1", is never shown as "Table Table 1".
 
-### Step 6: Reservations 🟡
+### Step 6: Reservations ✅
 
 - [x] **6.1 `generateSlots()`.** *Check:* unit tests for a closed day, two shifts, a late closing, the 1-hour minimum and the 60-day limit.
 
@@ -333,7 +334,7 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
   - **`ACTIVE_STATUSES`** moved to a pure `reservations.rules.ts`, so the availability rules don't depend on this service.
 
   **To decide once bookings exist (from the review of 4.3):** saving opening hours should take upcoming bookings into account. For example, it could refuse new hours that leave a booking outside them, as 5.1 does for tables, or list those bookings for the owner. 4.3 deliberately doesn't check bookings yet.
-- [ ] **6.6 Booking widget:**
+- [x] **6.6 Booking widget:**
   - date, guests, time and table, then confirm, then success
   - the choices are kept in the address
   - its states, and the "Book a table" flow, in `/design`

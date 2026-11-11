@@ -1,28 +1,45 @@
 // @vitest-environment jsdom
 // A restaurant's page, through the real routes, shell and hooks, with a fake API.
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Mock } from "vitest";
 
-import { tsiranPage } from "@/features/design/samples";
+import { loriPage, loriSaturday, sampleBooked, tsiranPage } from "@/features/design/samples";
 import { routes } from "@/router";
+import type { AuthUser } from "@/types/api";
 
 type TestRouter = ReturnType<typeof createMemoryRouter>;
 
 const json = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), { status });
 
+interface FakeOptions {
+  /** How many requests for a restaurant's page fail first, as with no connection. */
+  failures?: number;
+  /** Who's signed in: nobody, unless this says. */
+  user?: AuthUser | null;
+  /** What booking answers, if not a success. */
+  booking?: Response;
+}
+
 /**
- * Answers like the API, with Tsiran Wine Room as the only restaurant. `failures` makes that many
- * requests for its page fail first, as with no connection.
+ * Answers like the API, with Tsiran Wine Room and Lori Smokehouse as the only restaurants. Every
+ * date has Lori's demo Saturday's times and free tables.
  */
-function fakeApi(failures = 0): Mock {
+function fakeApi({ failures = 0, user = null, booking }: FakeOptions = {}): Mock {
   let failuresLeft = failures;
-  const fetch = vi.fn((url: string) => {
+  const fetch = vi.fn((url: string, init?: RequestInit) => {
+    if (url.includes("/availability?")) {
+      const date = new URLSearchParams(url.split("?")[1]).get("date");
+      return Promise.resolve(json({ ...loriSaturday, date }));
+    }
+    if (url === "/api/reservations" && init?.method === "POST") {
+      return Promise.resolve(booking ?? json({ reservation: sampleBooked }, 201));
+    }
     if (url === "/api/restaurants") {
       return Promise.resolve(
         json({ data: [tsiranPage], meta: { page: 1, pageSize: 12, total: 1 } }),
@@ -36,6 +53,9 @@ function fakeApi(failures = 0): Mock {
       if (url === "/api/restaurants/tsiran-wine-room") {
         return Promise.resolve(json({ restaurant: tsiranPage }));
       }
+      if (url === "/api/restaurants/lori-smokehouse") {
+        return Promise.resolve(json({ restaurant: loriPage }));
+      }
       return Promise.resolve(
         json(
           {
@@ -45,6 +65,7 @@ function fakeApi(failures = 0): Mock {
         ),
       );
     }
+    if (url === "/api/me" && user) return Promise.resolve(json({ user }));
     if (url === "/api/me" || url === "/api/auth/refresh") {
       return Promise.resolve(
         json({ error: { code: "UNAUTHORIZED", message: "Please sign in." } }, 401),
@@ -56,8 +77,11 @@ function fakeApi(failures = 0): Mock {
   return fetch;
 }
 
+const requests = (fetch: Mock): string[] => fetch.mock.calls.map(([url]) => String(url));
 const pageRequests = (fetch: Mock): string[] =>
-  fetch.mock.calls.map(([url]) => String(url)).filter((url) => url.startsWith("/api/restaurants/"));
+  requests(fetch).filter((url) => url.startsWith("/api/restaurants/") && !url.includes("?"));
+const availabilityRequests = (fetch: Mock): string[] =>
+  requests(fetch).filter((url) => url.includes("/availability?"));
 
 beforeEach(() => {
   // jsdom has no scrollTo(), which ScrollRestoration calls.
@@ -122,7 +146,7 @@ test("a restaurant that isn't there gets the not-found page, and isn't asked for
 
 test("when it can't load, Try again brings it", async () => {
   // The first try and its one automatic retry both fail.
-  fakeApi(2);
+  fakeApi({ failures: 2 });
   renderAt("/restaurants/tsiran-wine-room");
 
   const retry = await main().findByRole("button", { name: "Try again" }, { timeout: 4000 });
@@ -138,4 +162,134 @@ test("an odd address is sent encoded, so it can't change the request", async () 
 
   await main().findByRole("heading", { level: 1, name: "Restaurant not found" });
   expect(pageRequests(fetch)).toEqual(["/api/restaurants/odd%20%26%20name%3Fq"]);
+});
+
+describe("booking a table", () => {
+  const LORI = "/restaurants/lori-smokehouse";
+  const SEVEN_AT_T2 = `${LORI}?date=2026-11-14&guests=2&time=19:00&table=table-t2`;
+  const lilit: AuthUser = {
+    id: "user-lilit",
+    email: "lilit@example.com",
+    name: "Lilit Harutyunyan",
+    phone: null,
+    role: "CUSTOMER",
+  };
+  const chosen = (router: TestRouter): Record<string, string> =>
+    Object.fromEntries(new URLSearchParams(router.state.location.search));
+  function sent(fetch: Mock): unknown {
+    const booking = fetch.mock.calls.find(([url]) => url === "/api/reservations");
+    if (!booking) throw new Error("Nothing was booked.");
+    return JSON.parse(String((booking[1] as RequestInit).body));
+  }
+
+  beforeEach(() => {
+    // Friday 13 November 2026, 14:00 in Yerevan, the day before the demo Saturday.
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-13T10:00:00Z") });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test("it starts on today, for two, and asks for that day's free tables", async () => {
+    const fetch = fakeApi();
+    renderAt(LORI);
+
+    expect(await main().findByRole("heading", { level: 2, name: "Book a table" })).toBeDefined();
+    expect((main().getByLabelText("Date") as HTMLInputElement).value).toBe("2026-11-13");
+    expect((main().getByLabelText("Guests") as HTMLSelectElement).value).toBe("2");
+    await waitFor(() =>
+      expect(availabilityRequests(fetch)).toEqual([
+        "/api/restaurants/lori-smokehouse/availability?date=2026-11-13&partySize=2",
+      ]),
+    );
+  });
+
+  test("the choices come from the address, and go back into it as they change", async () => {
+    fakeApi({ user: lilit });
+    const router = renderAt(SEVEN_AT_T2);
+
+    expect(
+      await main().findByText("A table for two on Saturday 14 November at 19:00, indoors."),
+    ).toBeDefined();
+    expect(main().getByRole("button", { name: "19:00" }).getAttribute("aria-pressed")).toBe("true");
+
+    await userEvent.click(main().getByRole("button", { name: "21:00" }));
+
+    // A new time clears the table, so there's nothing to book yet.
+    expect(chosen(router)).toEqual({ date: "2026-11-14", guests: "2", time: "21:00" });
+    expect(main().queryByRole("button", { name: "Book this table" })).toBeNull();
+  });
+
+  test("a guest books a table, and the free tables are asked for again", async () => {
+    const fetch = fakeApi({ user: lilit });
+    renderAt(`${LORI}?date=2026-11-14&guests=2`);
+
+    await userEvent.click(await main().findByRole("button", { name: "19:00" }));
+    await userEvent.click(main().getByRole("radio", { name: /T2/ }));
+    await userEvent.type(main().getByLabelText("Special requests"), "A window seat, please");
+    await userEvent.click(main().getByRole("button", { name: "Book this table" }));
+
+    expect(await main().findByRole("heading", { name: "Booking requested" })).toBeDefined();
+    expect(main().getByText("Waiting for the restaurant")).toBeDefined();
+    expect(sent(fetch)).toEqual({
+      tableId: "table-t2",
+      date: "2026-11-14",
+      time: "19:00",
+      partySize: 2,
+      specialRequests: "A window seat, please",
+    });
+    await waitFor(() => expect(availabilityRequests(fetch)).toHaveLength(2));
+  });
+
+  test("a table taken meanwhile is no longer chosen, the reason shows, and the tables are asked for again", async () => {
+    const fetch = fakeApi({
+      user: lilit,
+      booking: json(
+        {
+          error: {
+            code: "SLOT_TAKEN",
+            message:
+              "Sorry, this table was just booked for that time. Please choose another time or table.",
+          },
+        },
+        409,
+      ),
+    });
+    const router = renderAt(SEVEN_AT_T2);
+
+    await userEvent.click(await main().findByRole("button", { name: "Book this table" }));
+
+    expect((await main().findByRole("alert")).textContent).toContain("this table was just booked");
+    expect(chosen(router)).toEqual({ date: "2026-11-14", guests: "2", time: "19:00" });
+    await waitFor(() => expect(availabilityRequests(fetch)).toHaveLength(2));
+  });
+
+  test("signed out, the last step signs in first, then comes back to the same choices", async () => {
+    fakeApi();
+    const router = renderAt(SEVEN_AT_T2);
+
+    await userEvent.click(await main().findByRole("link", { name: "Sign in to book" }));
+
+    expect(router.state.location.pathname).toBe("/login");
+    expect(router.state.location.state).toEqual({
+      from: {
+        pathname: LORI,
+        search: "?date=2026-11-14&guests=2&time=19:00&table=table-t2",
+        hash: "",
+      },
+    });
+  });
+
+  test("an owner's account is told why it can't book", async () => {
+    fakeApi({ user: { ...lilit, name: "Ani Sargsyan", role: "OWNER" } });
+    renderAt(SEVEN_AT_T2);
+
+    expect(
+      await main().findByText(
+        "Tables are booked from a guest account. You’re signed in as Ani Sargsyan.",
+      ),
+    ).toBeDefined();
+    expect(main().queryByRole("button", { name: "Book this table" })).toBeNull();
+  });
 });

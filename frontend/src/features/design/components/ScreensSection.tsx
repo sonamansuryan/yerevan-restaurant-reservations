@@ -11,6 +11,7 @@ import {
 import { SignInForm } from "@/features/auth/components/SignInForm";
 import { SignUpForm } from "@/features/auth/components/SignUpForm";
 import { googleClientId } from "@/features/auth/google";
+import { BookingScreens } from "@/features/design/components/BookingScreens";
 import { BrowseScreens } from "@/features/design/components/BrowseScreens";
 import { DashboardScreens } from "@/features/design/components/DashboardScreens";
 import { HomeScreens } from "@/features/design/components/HomeScreens";
@@ -201,6 +202,7 @@ export function ScreensSection(): ReactElement {
       <HomeScreens />
       <BrowseScreens />
       <RestaurantPageScreens />
+      <BookingScreens />
       <DashboardScreens />
       <TablesAndBlocksScreens />
     </>
