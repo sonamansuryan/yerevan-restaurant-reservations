@@ -1,5 +1,6 @@
 // Blocks as the database hands them over (src/modules/blocks/blocks.service.ts).
 import type { TableZone } from "../../src/generated/prisma/enums.ts";
+import type { TableBlock } from "../../src/modules/availability/availability.rules.ts";
 
 /** A BlockedPeriod row with what the service selects. */
 export interface BlockRow {
@@ -20,6 +21,20 @@ export function blockRow(extra: Partial<BlockRow> = {}): BlockRow {
     reason: "A wobbly leg",
     table: { id: "4f3e2d1c-0b9a-4876-9543-210fedcba987", label: "T1", zone: "INDOOR" },
     restaurant: { timezone: "Asia/Yerevan" },
+    ...extra,
+  };
+}
+
+/**
+ * A block as the free-table check reads it (src/modules/availability/availability.rules.ts):
+ * Lori Smokehouse's T1, blocked on Saturday 14 November 2026 from 12:00 to 15:00 in Yerevan.
+ * With no tableId, a block covers the whole restaurant.
+ */
+export function tableBlock(extra: Partial<TableBlock> = {}): TableBlock {
+  return {
+    tableId: "4f3e2d1c-0b9a-4876-9543-210fedcba987",
+    startsAt: new Date("2026-11-14T08:00:00.000Z"),
+    endsAt: new Date("2026-11-14T11:00:00.000Z"),
     ...extra,
   };
 }

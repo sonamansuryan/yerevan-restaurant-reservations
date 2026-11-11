@@ -5,6 +5,8 @@ import type {
   RestaurantList,
   RestaurantSummary,
 } from "../../src/modules/restaurants/restaurants.service.ts";
+import type { SlotSettings } from "../../src/modules/availability/availability.rules.ts";
+import type { Opening } from "../../src/modules/opening-hours/opening-hours.rules.ts";
 
 /** A Restaurant row with the fields the service selects. */
 export interface RestaurantRow {
@@ -130,6 +132,49 @@ export function ownedRow(extra: Partial<OwnedRow> = {}): OwnedRow {
     googlePlaceId: "ChIJ-tsiran-wine-room",
     avgRating: 4.5,
     reviewCount: 12,
+    ...extra,
+  };
+}
+
+// Demo restaurants as the start-time rules read them, with their hours as seeded. Times are
+// minutes after the service day's midnight: 1080 is 18:00, and 1560 is 02:00 the next morning.
+
+const EVERY_DAY = [0, 1, 2, 3, 4, 5, 6];
+
+/** The same opening on several days (0 = Sunday … 6 = Saturday). */
+function sameHours(days: readonly number[], opensAt: number, closesAt: number): Opening[] {
+  return days.map((dayOfWeek) => ({ dayOfWeek, opensAt, closesAt }));
+}
+
+/** Lori Smokehouse: lunch 12:00–15:00 and dinner 18:00–23:00 every day, 2-hour bookings every 30 minutes. */
+export function loriSlotSettings(extra: Partial<SlotSettings> = {}): SlotSettings {
+  return {
+    timezone: "Asia/Yerevan",
+    slotIntervalMin: 30,
+    reservationDurationMin: 120,
+    openingHours: [...sameHours(EVERY_DAY, 720, 900), ...sameHours(EVERY_DAY, 1080, 1380)],
+    ...extra,
+  };
+}
+
+/** Tsiran Wine Room: 18:00–23:00, until 02:00 on Friday and Saturday, and closed on Monday. 90-minute bookings every 30 minutes. */
+export function tsiranSlotSettings(extra: Partial<SlotSettings> = {}): SlotSettings {
+  return {
+    timezone: "Asia/Yerevan",
+    slotIntervalMin: 30,
+    reservationDurationMin: 90,
+    openingHours: [...sameHours([0, 2, 3, 4], 1080, 1380), ...sameHours([5, 6], 1080, 1560)],
+    ...extra,
+  };
+}
+
+/** Sevan and Salt: 13:00–22:00 every day, 90-minute bookings every 15 minutes. */
+export function sevanSlotSettings(extra: Partial<SlotSettings> = {}): SlotSettings {
+  return {
+    timezone: "Asia/Yerevan",
+    slotIntervalMin: 15,
+    reservationDurationMin: 90,
+    openingHours: sameHours(EVERY_DAY, 780, 1320),
     ...extra,
   };
 }

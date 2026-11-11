@@ -4,6 +4,7 @@ import type {
   ReservationStatus,
   TableZone,
 } from "../../src/generated/prisma/enums.ts";
+import type { TableBooking } from "../../src/modules/availability/availability.rules.ts";
 
 /** A Reservation row with what the day view selects. */
 export interface DayReservationRow {
@@ -32,6 +33,20 @@ export function dayReservationRow(extra: Partial<DayReservationRow> = {}): DayRe
     cancellationReason: null,
     table: { id: "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f", label: "T4", zone: "INDOOR" },
     user: { name: "Aram Petrosyan" },
+    ...extra,
+  };
+}
+
+/**
+ * A booking as the free-table check reads it (src/modules/availability/availability.rules.ts):
+ * Lilit's at Lori Smokehouse's T1, on Saturday 14 November 2026 from 19:00 to 21:00 in Yerevan.
+ */
+export function tableBooking(extra: Partial<TableBooking> = {}): TableBooking {
+  return {
+    tableId: "4f3e2d1c-0b9a-4876-9543-210fedcba987",
+    status: "CONFIRMED",
+    startsAt: new Date("2026-11-14T15:00:00.000Z"),
+    endsAt: new Date("2026-11-14T17:00:00.000Z"),
     ...extra,
   };
 }

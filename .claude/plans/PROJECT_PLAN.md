@@ -28,8 +28,8 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | Register and log in, by email or Google | 2 | ✅ Email and Google, on the Sign in and Sign up pages |
 | Browse, search and filter restaurants | 3 | ✅ The API and the Browse page |
 | Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | 🟡 The page works and shows photos (4.4), with space for reviews (9.1) |
-| Choose a date, time and number of guests; see available tables | 6 | ⬜ |
-| Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | 🟡 The database refuses overlaps |
+| Choose a date, time and number of guests; see available tables | 6 | 🟡 The rules behind it: the times a booking can start (6.1) and the tables free then (6.2). The API and the booking widget come in 6.3 and 6.6 |
+| Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | 🟡 The database refuses overlaps, and the times a booking can start are worked out (6.1) |
 | View and cancel their reservations | 8 | ⬜ |
 | **Restaurants** | | |
 | A private dashboard to manage restaurant information | 4 | ✅ Owners add, edit and publish their restaurants on their dashboard (4.2, 4.6) |
@@ -84,9 +84,9 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 **Out of scope:** payments, combining tables, waitlists, SMS, more languages, staff accounts, floor plans, "near me" search, walk-ins.
 
-## 3. Current state (10 November 2026)
+## 3. Current state (11 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 1492 tests ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 1538 tests ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
@@ -102,6 +102,8 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - owners add, edit and deactivate their tables. Deactivating a table, or giving it fewer seats than a booked party, is refused while upcoming bookings need it, and those bookings are listed. A published restaurant always keeps at least one active table. Each change locks the table's row first, as a booking will
   - owners block one table or the whole restaurant, for a date or a time range. A block with upcoming bookings inside is refused, and those bookings are listed. Blocks are listed and removed
   - the dashboard's Tables and Blocked times pages, with their states in `/design`
+  - the times a booking can start on a date (`generateSlots()`), from the opening hours, slot interval and booking length, at least 1 hour and at most 60 days ahead
+  - the tables free for a party at one of those times (`findFreeTables()`): switched on, the right size, and not booked or blocked then
   - the owner's dashboard: their restaurants, adding one, and each restaurant's bookings for a day, information and publishing, opening hours and photos, with their states in `/design`
   - the Home page, the Browse page and each restaurant's page, with their states in `/design`
   - `lib/api.ts`: GET, POST, PUT, PATCH and DELETE, renewing an expired session once
@@ -292,11 +294,17 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
 
   **Decided (5.3):** the two parts are called Tables and Blocked times, after Opening hours. Adding or editing a table, and blocking a time, open in the Modal, which rises from the bottom on a phone. Switching a table off or back on is a link on its line, with no question, because it can be undone; removing a block asks first, because guests can book that time again at once. A refusal lists the bookings in the way, under the table's line or at the top of the form. Table names are set in sans, because the serif 1 reads like an l (T1). A name that already says "Table", such as "Table 1", is never shown as "Table Table 1".
 
-### Step 6: Reservations ⬜
+### Step 6: Reservations 🟡
 
-- [ ] **6.1 `generateSlots()`.** *Check:* unit tests for a closed day, two shifts, a late closing, the 1-hour minimum and the 60-day limit.
-- [ ] **6.2 `findFreeTables()`.** *Check:* unit tests for party size, back-to-back bookings, inactive tables and blocks.
+- [x] **6.1 `generateSlots()`.** *Check:* unit tests for a closed day, two shifts, a late closing, the 1-hour minimum and the 60-day limit.
+
+  **Decided (6.1):** `generateSlots()` is a pure function in `backend/src/modules/availability/availability.rules.ts`, so 6.3 and 6.5 use the same start times. Each opening on the date's weekday is a shift with its own times, every interval from opening, and a booking must end by that opening's closing time, so lunch can't run into dinner. Bookings start before midnight, so hours past midnight only let the evening's last bookings end later, and never add times to the next date. A time must be at least 1 hour away, and exactly 1 hour is fine. Guests can book today and the next 60 days on the restaurant's calendar (`bookingWindow()`), and the 60th day is offered in full. A local time the clocks skip is never offered.
+- [x] **6.2 `findFreeTables()`.** *Check:* unit tests for party size, back-to-back bookings, inactive tables and blocks.
+
+  **Decided (6.2):** `findFreeTables()` sits beside `generateSlots()` in `availability.rules.ts`, as a pure function. It's given the tables, the bookings and the blocks, and returns the tables that can take the party at a slot's times, in the order given. A table must be switched on, take the party (fewest guests ≤ party ≤ seats), and have no booking or block at any moment of the slot. Only `ACTIVE_STATUSES` hold a table, and a stretch of time includes its start but not its end, both as in `Reservation_no_overlap`, so back-to-back bookings are fine. A block with no table covers every table. `tableProblem()` gives the first reason a table can't be used (`INACTIVE`, `TOO_SMALL`, `TOO_BIG`, `BOOKED` or `BLOCKED`), in the assignment's order, for 6.5's refusals.
 - [ ] **6.3 `GET /api/restaurants/:slug/availability`.** *Check:* the results match the seeded bookings.
+
+  **Decided (from 6.1), for 6.3:** new bookings start before midnight. Tsiran's demo booking on T2, which starts at 00:00 on Saturday (Friday's service), moves to Friday 23:30, so it still ends after midnight, at 01:00. `seed-data.test.ts` then checks for a booking that ends after midnight, not one that starts after it. Until then the seed and `yerevan_dev` stay as they are. The database only changes through a reset and a new seed, with the user's approval first.
 - [ ] **6.4 Test database:** create `yerevan_test`, add `npm run test:db`, and write database tests 1–3 (§5.4). *Check:* they pass on real PostgreSQL, and `npm test` still runs without Docker.
 - [ ] **6.5 `POST /api/reservations`:** one transaction that locks the table's row, runs the four checks and saves the booking as `PENDING`. A real conflict answers `409 SLOT_TAKEN`; any other database error stays a `500`. *Check:* API tests for each refusal, one test showing an unrelated database error doesn't become a `409`, and database test 4.
 
