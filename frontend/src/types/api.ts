@@ -197,6 +197,75 @@ export interface OwnerReservation {
 }
 
 /**
+ * One of a restaurant's tables, as its owner manages them:
+ * - GET /api/owner/restaurants/:restaurantId/tables answers a ListResponse of these, in the order
+ *   they were added, active and inactive
+ * - POST …/tables (201) and PATCH …/tables/:tableId answer { table }
+ *
+ * Tables are never deleted: PATCH { isActive: false } deactivates one, and { isActive: true }
+ * brings it back. A published restaurant keeps at least one active table, so switching off its
+ * last one answers 409 LAST_ACTIVE_TABLE. Someone else's table answers 404 TABLE_NOT_FOUND, and a
+ * name another table of the restaurant has, even a deactivated one, answers 409 TABLE_LABEL_TAKEN.
+ */
+export interface OwnerTable {
+  id: string;
+  /** A short name, such as "T4" or "Terrace 2". */
+  label: string;
+  /** The most guests it seats. */
+  capacity: number;
+  /** The fewest guests it's offered to. */
+  minCapacity: number;
+  zone: TableZone;
+  /** Inactive tables are never offered for new bookings. */
+  isActive: boolean;
+}
+
+export interface OwnerTableResponse {
+  table: OwnerTable;
+}
+
+/**
+ * The `details` of a change refused because of bookings: those bookings, in the day view's shape.
+ * The message already says what to do, such as "Keep at least 4 seats …".
+ * - 409 TABLE_HAS_BOOKINGS: deactivating a table while upcoming bookings need it
+ * - 409 TABLE_TOO_SMALL: fewer seats than a booked party, listing only the parties that won't fit
+ * - 409 BLOCK_HAS_BOOKINGS: a block with upcoming bookings inside it
+ */
+export interface BookingsInTheWayDetails {
+  reservations: OwnerReservation[];
+}
+
+/**
+ * A time when one table, or the whole restaurant, can't be booked, such as a private event:
+ * - GET /api/owner/restaurants/:restaurantId/blocks answers a ListResponse of these: the blocks
+ *   that aren't over yet, by when they start
+ * - POST …/blocks (201) answers { block }. Send { tableId?, date } for a whole date, or
+ *   { tableId?, from, to } for a time range, in the restaurant's own time, such as
+ *   { from: "2026-11-20T18:00", to: "2026-11-21T02:00" }. Leave tableId out to block the whole
+ *   restaurant. Bookings inside it answer 409 BLOCK_HAS_BOOKINGS, with BookingsInTheWayDetails.
+ * - DELETE …/blocks/:blockId answers 204. Someone else's block answers 404 BLOCK_NOT_FOUND.
+ */
+export interface OwnerBlock {
+  id: string;
+  /** The blocked table, or null when the whole restaurant is blocked. */
+  table: { id: string; label: string; zone: TableZone } | null;
+  /** The exact moments, in UTC. */
+  startsAt: string;
+  endsAt: string;
+  /**
+   * The same moments on the restaurant's calendar and clock, ready to show. A whole date runs from
+   * 00:00 to 00:00 on the next day.
+   */
+  starts: { date: string; time: string };
+  ends: { date: string; time: string };
+  reason: string | null;
+}
+
+export interface OwnerBlockResponse {
+  block: OwnerBlock;
+}
+
+/**
  * The `details` of 409 NOT_READY_TO_PUBLISH, when a PATCH tries to publish too early. The message
  * already says what to add, such as "Add your opening hours before you publish."
  */

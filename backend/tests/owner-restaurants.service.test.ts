@@ -1,6 +1,6 @@
 // Creating and changing an owner's restaurant (src/modules/restaurants/owner.service.ts), with
 // Prisma replaced: what the service asks the database for, and what it does with the answers.
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { Prisma } from "../src/generated/prisma/client.ts";
 import { ConflictError, NotFoundError } from "../src/lib/errors.ts";
@@ -21,6 +21,7 @@ vi.mock("../src/lib/prisma.ts", () => ({
     table: { count: vi.fn() },
     openingHour: { count: vi.fn() },
     $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
   },
   isDatabaseReachable: vi.fn(),
 }));
@@ -115,6 +116,56 @@ describe("createRestaurant", () => {
 });
 
 describe("updateRestaurant", () => {
+  beforeEach(() => {
+    // Publishing runs in a transaction. Here the transaction hands over the same mocks, so each
+    // call is recorded in one place, in the order it was made.
+    vi.mocked(prisma.$transaction).mockImplementation(((work: (client: typeof prisma) => unknown) =>
+      work(prisma)) as never);
+    // The lock finds the owner's restaurant.
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ "?column?": 1 }] as never);
+  });
+
+  test("publishing locks the restaurant first, with its owner, then counts, then saves", async () => {
+    activeTables.mockResolvedValue(1);
+    openingHours.mockResolvedValue(7);
+    update.mockResolvedValue(ownedRow({ isPublished: true }) as never);
+
+    await updateRestaurant(ani.id, RESTAURANT, { isPublished: true });
+
+    const [sql, ...values] = vi.mocked(prisma.$queryRaw).mock.calls[0] ?? [];
+    expect((sql as TemplateStringsArray).join("?").replace(/\s+/g, " ").trim()).toBe(
+      'SELECT 1 FROM "Restaurant" WHERE "id" = ? AND "ownerId" = ? FOR UPDATE',
+    );
+    expect(values).toEqual([RESTAURANT, ani.id]);
+    // Counting after the lock is what makes a table switched off a moment ago count as off.
+    const order = [prisma.$queryRaw, activeTables, openingHours, update].map(
+      (step) => vi.mocked(step).mock.invocationCallOrder[0] ?? 0,
+    );
+    expect(order).toEqual(order.toSorted((a, b) => a - b));
+  });
+
+  test("publishing a restaurant the lock doesn't find is a 404: nothing counted or saved", async () => {
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
+
+    const publishing = updateRestaurant(ani.id, RESTAURANT, { isPublished: true });
+
+    await expect(publishing).rejects.toThrow(NotFoundError);
+    await expect(publishing).rejects.toMatchObject({ code: "RESTAURANT_NOT_FOUND" });
+    expect(activeTables).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  test("other changes, unpublishing included, can't leave it without a table, so they take no lock", async () => {
+    update.mockResolvedValue(ownedRow() as never);
+
+    await updateRestaurant(ani.id, RESTAURANT, { name: "New" });
+    await updateRestaurant(ani.id, RESTAURANT, { isPublished: false });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledTimes(2);
+  });
+
   test("saves only the details sent, with the owner in the query", async () => {
     update.mockResolvedValue(ownedRow({ reservationDurationMin: 90 }) as never);
 

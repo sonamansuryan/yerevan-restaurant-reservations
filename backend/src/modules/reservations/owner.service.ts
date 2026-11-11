@@ -31,7 +31,8 @@ export interface OwnerReservationList {
   meta: { page: number; pageSize: number; total: number };
 }
 
-const reservationFields = {
+/** What an owner sees of a booking. Tables reuse it to list the bookings that need a table. */
+export const ownerReservationFields = {
   id: true,
   status: true,
   partySize: true,
@@ -44,7 +45,7 @@ const reservationFields = {
   user: { select: { name: true } },
 } satisfies Prisma.ReservationSelect;
 
-type ReservationRow = Prisma.ReservationGetPayload<{ select: typeof reservationFields }>;
+type ReservationRow = Prisma.ReservationGetPayload<{ select: typeof ownerReservationFields }>;
 
 /**
  * One day's bookings at one of this owner's restaurants, every status included, by time and then
@@ -75,7 +76,7 @@ export async function listReservationsForDay(
     [
       prisma.reservation.findMany({
         where,
-        select: reservationFields,
+        select: ownerReservationFields,
         // The id breaks ties, so no booking shows on two pages.
         orderBy: [{ startsAt: "asc" }, { table: { label: "asc" } }, { id: "asc" }],
         skip: (page - 1) * pageSize,

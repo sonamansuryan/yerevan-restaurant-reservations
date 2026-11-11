@@ -14,6 +14,8 @@ const MESSAGES: Record<string, string> = {
   GOOGLE_UNAVAILABLE: "Google sign-in isn’t available right now. Please try again.",
   RESTAURANT_NOT_FOUND: "We couldn’t find this restaurant.",
   PHOTO_NOT_FOUND: "We couldn’t find this photo.",
+  TABLE_NOT_FOUND: "We couldn’t find this table.",
+  BLOCK_NOT_FOUND: "We couldn’t find this block.",
   UPLOAD_NOT_VERIFIED: "We couldn’t confirm this upload. Please upload the photo again.",
   PHOTO_ALREADY_SAVED: "This photo is already saved.",
 };

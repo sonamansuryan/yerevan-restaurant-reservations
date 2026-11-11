@@ -2,9 +2,11 @@ import { Router } from "express";
 
 import { requireRestaurantOwner } from "../../middleware/requireRestaurantOwner.ts";
 import { validate } from "../../middleware/validate.ts";
+import { blocksRouter } from "../blocks/blocks.routes.ts";
 import { openingHoursRouter } from "../opening-hours/opening-hours.routes.ts";
 import { photosRouter } from "../photos/photos.routes.ts";
 import { ownerReservationsRouter } from "../reservations/owner.routes.ts";
+import { tablesRouter } from "../tables/tables.routes.ts";
 import { create, detail, list, update } from "./owner.controller.ts";
 import {
   createRestaurantSchema,
@@ -38,3 +40,5 @@ ownerRestaurantsRouter.patch("/:restaurantId", validate(updateRestaurantSchema),
 ownerRestaurantsRouter.use("/:restaurantId/opening-hours", openingHoursRouter);
 ownerRestaurantsRouter.use("/:restaurantId/photos", photosRouter);
 ownerRestaurantsRouter.use("/:restaurantId/reservations", ownerReservationsRouter);
+ownerRestaurantsRouter.use("/:restaurantId/tables", tablesRouter);
+ownerRestaurantsRouter.use("/:restaurantId/blocks", blocksRouter);

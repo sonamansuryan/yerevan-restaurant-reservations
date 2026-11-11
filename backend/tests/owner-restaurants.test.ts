@@ -228,10 +228,9 @@ describe("GET /api/owner/restaurants/:restaurantId", () => {
 
 describe("everything under a restaurant passes the same check", () => {
   test("someone else's restaurant is a 404 even at addresses later tasks will add", async () => {
-    // No route exists below a restaurant yet, but the check already runs first for all of them.
-    // Tables arrive in Step 5, so this address doesn't exist yet.
-    const davits = await get(`/api/owner/restaurants/${davitsRestaurant.id}/tables`, ani);
-    const anis = await get(`/api/owner/restaurants/${anisRestaurant.id}/tables`, ani);
+    // The check runs first for every address below a restaurant, even one no task has added.
+    const davits = await get(`/api/owner/restaurants/${davitsRestaurant.id}/no-such-page`, ani);
+    const anis = await get(`/api/owner/restaurants/${anisRestaurant.id}/no-such-page`, ani);
 
     expect(davits.status).toBe(404);
     expect(davits.body).toEqual(NOT_FOUND);

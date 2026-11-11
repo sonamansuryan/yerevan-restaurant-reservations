@@ -1,7 +1,7 @@
 // The owner's side of restaurants. Every query that reads or changes a restaurant includes its
 // owner, so one that exists but belongs to someone else looks exactly like one that doesn't exist.
 // Two queries don't need it: the address check looks across all restaurants, because addresses are
-// unique on Seghan, and the counts before publishing use the id that requireRestaurantOwner checked.
+// unique on Seghan, and the counts before publishing use the id the lock has just checked.
 import { Prisma } from "../../generated/prisma/client.ts";
 import type { Cuisine, District } from "../../generated/prisma/enums.ts";
 import { isRecordMissing, isUniqueViolation } from "../../lib/db-errors.ts";
@@ -157,25 +157,43 @@ export async function createRestaurant(
 /**
  * Changes one of this owner's restaurants, saving only the details sent. Publishing needs at least
  * one active table and opening hours, or nothing is saved (409). Unpublishing is always allowed.
+ *
+ * Publishing checks and saves in one transaction that locks the restaurant's row first.
+ * Switching a table off takes the same lock (after its table's), so the two take turns, and
+ * whichever goes second counts again: a published restaurant never ends up without an active
+ * table. Other changes, unpublishing included, can't break that, so they need no lock.
  */
 export async function updateRestaurant(
   ownerId: string,
   restaurantId: string,
   changes: UpdateRestaurantInput,
 ): Promise<OwnerRestaurant> {
-  if (changes.isPublished === true) {
-    const [activeTables, openingHours] = await Promise.all([
-      prisma.table.count({ where: { restaurantId, isActive: true } }),
-      prisma.openingHour.count({ where: { restaurantId } }),
-    ]);
+  if (changes.isPublished !== true) return saveRestaurant(prisma, ownerId, restaurantId, changes);
+
+  return prisma.$transaction(async (tx) => {
+    if (!(await lockOwnedRestaurant(tx, ownerId, restaurantId))) {
+      throw new NotFoundError("RESTAURANT_NOT_FOUND");
+    }
+    // Counted after the lock, so a table switched off a moment ago already counts as off.
+    const activeTables = await tx.table.count({ where: { restaurantId, isActive: true } });
+    const openingHours = await tx.openingHour.count({ where: { restaurantId } });
     const missing = publishBlockers({ activeTables, openingHours });
     if (missing.length > 0) {
       throw new ConflictError("NOT_READY_TO_PUBLISH", notReadyMessage(missing), { missing });
     }
-  }
+    return saveRestaurant(tx, ownerId, restaurantId, changes);
+  });
+}
 
+/** Saves the details sent. Someone else's restaurant, or a missing one, is a 404. */
+async function saveRestaurant(
+  client: Prisma.TransactionClient,
+  ownerId: string,
+  restaurantId: string,
+  changes: UpdateRestaurantInput,
+): Promise<OwnerRestaurant> {
   try {
-    const row = await prisma.restaurant.update({
+    const row = await client.restaurant.update({
       where: { id: restaurantId, ownerId },
       data: changes,
       select: ownerFields,

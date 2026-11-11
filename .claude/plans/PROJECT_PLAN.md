@@ -34,8 +34,8 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | **Restaurants** | | |
 | A private dashboard to manage restaurant information | 4 | ✅ Owners add, edit and publish their restaurants on their dashboard (4.2, 4.6) |
 | Set opening hours | 4 | ✅ The whole week, saved at once and refusing overlaps (4.3), on the dashboard (4.6) |
-| Add and manage tables and their capacity | 5 | ⬜ |
-| Block tables or dates | 5 | ⬜ |
+| Add and manage tables and their capacity | 5 | 🟡 The API adds, edits and deactivates tables, protecting upcoming bookings (5.1); the page comes in 5.3 |
+| Block tables or dates | 5 | 🟡 The API blocks one table or the whole restaurant, for a date or a time range, refusing a block with bookings inside (5.2); the page comes in 5.3 |
 | View, confirm and cancel reservations; mark guests arrived or no-show | 4, 8 | 🟡 Owners see a day's bookings on their dashboard (4.5, 4.6); the actions come in Step 8 |
 | **Restaurant data** | | |
 | A few restaurants added by hand | 3 | ✅ 7 demo restaurants |
@@ -86,7 +86,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (10 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 1354 tests ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 1447 tests ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
@@ -99,6 +99,8 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - photos: owners upload them straight to Cloudinary with a permission our server signs, then save them, choose the cover and delete them. The restaurant page and Browse cards show them
   - owners read their restaurant's bookings for any date: every status, with times on the restaurant's clock and only the guest's name
   - owners list their own restaurants, and read their saved opening hours and photos
+  - owners add, edit and deactivate their tables. Deactivating a table, or giving it fewer seats than a booked party, is refused while upcoming bookings need it, and those bookings are listed. A published restaurant always keeps at least one active table. Each change locks the table's row first, as a booking will
+  - owners block one table or the whole restaurant, for a date or a time range. A block with upcoming bookings inside is refused, and those bookings are listed. Blocks are listed and removed
   - the owner's dashboard: their restaurants, adding one, and each restaurant's bookings for a day, information and publishing, opening hours and photos, with their states in `/design`
   - the Home page, the Browse page and each restaurant's page, with their states in `/design`
   - `lib/api.ts`: GET, POST, PUT, PATCH and DELETE, renewing an expired session once
@@ -169,7 +171,10 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 - ⬜ A booking runs in one transaction that first locks the table's row, so simultaneous bookings for one table take turns.
   - Only a real conflict answers `409`: an overlap the database refuses (`23P01`), or one the booking's own checks find.
   - Any other database error stays a `500` and is logged. It's never disguised as a conflict.
-- ⬜ Blocks and table deactivation take the same lock. A status change applies only if the status is still the expected one.
+- ✅ Blocks and table deactivation take the same lock: table changes since 5.1, blocks since 5.2.
+- ⬜ A status change applies only if the status is still the expected one.
+- ✅ **Lock order, the same everywhere:** table rows first, in ascending `id` order, then the restaurant's row. Whatever holds a restaurant's row (publishing, opening hours, photos, adding a table) never then waits for a table's, so no two changes can wait on each other forever. Switching a table off takes both, table first, so it can't cross publishing (5.1). A whole-restaurant block takes every table, then the restaurant (5.2).
+- ⬜ **What a booking must lock (from 5.2):** its table's row, then a shared lock (`FOR KEY SHARE`) on its restaurant's row, before it checks for blocks. The second lock is what keeps a whole-restaurant block from missing a table added at that very moment.
 - ⬜ The page says the table was just booked, and shows the free tables again.
 
 **What the real-PostgreSQL tests must prove.** Each test is written in the task shown. Add another whenever a task needs real PostgreSQL to prove it.
@@ -181,6 +186,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 5. Of 20 bookings for one table at the same moment, exactly one succeeds and the rest get `409` (7.1).
 6. A booking and a block made at the same moment never both succeed (7.2).
 7. Of a confirm and a cancel at the same moment, exactly one wins (8.2).
+8. Publishing a restaurant and switching off its last active table at the same moment never leave it published without one (7.2).
 
 ## 6. UI/UX and `/design`
 
@@ -268,16 +274,22 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
 
   **Decided here (from the reviews of 4.3 and 4.4):** what's already saved loads from its own address, `GET …/opening-hours` and `GET …/photos`, in the same shape as the replies to saving it. The list of an owner's restaurants is `GET /api/owner/restaurants`.
 
-### Step 5: Tables ⬜
+### Step 5: Tables 🟡
 
-- [ ] **5.1 Tables:** add, edit and deactivate, with label, capacity, minimum seats and zone. Deactivating or shrinking a table is refused while upcoming bookings need it. *Check:* API tests, including the refusal.
-- [ ] **5.2 Blocks:**
+- [x] **5.1 Tables:** add, edit and deactivate, with label, capacity, minimum seats and zone. Deactivating or shrinking a table is refused while upcoming bookings need it. *Check:* API tests, including the refusal.
+
+  **Decided (5.1):** a published restaurant always keeps at least one active table. Switching off its last one answers `409 LAST_ACTIVE_TABLE`; to stop taking bookings, unpublish. Publishing now checks and saves in one transaction that locks the restaurant's row, and switching a table off takes that lock too, after the table's, so the two can't cross.
+- [x] **5.2 Blocks:**
   - block one table or the whole restaurant, for a date or a time range
   - a block is refused if bookings fall inside it, and those bookings are listed
   - blocks can be listed and removed
 
   *Check:* API tests, including the refusal.
+
+  **Decided (5.2):** a block is a whole date (`{ date }`), or a time range from one local date and time to another (`{ from, to }`), in the restaurant's own time and on the quarter hour. A date is its whole calendar day, midnight to midnight, so a late booking from the night before that runs past midnight counts too. A block may start earlier today, but can't be over already, and lasts at most a year. Blocks that are over drop off the list. Removing a block deletes it, because blocks aren't bookings.
 - [ ] **5.3 Tables and Blocks pages,** with their states in `/design`. *Check:* in the browser and in `/design`.
+
+  **For 5.3 (from 5.1):** the day view says "Table T4", so a table named "Table 1" would read "Table Table 1". Suggest short names such as T4 on the Tables page, or show the label alone.
 
 ### Step 6: Reservations ⬜
 
@@ -286,6 +298,8 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
 - [ ] **6.3 `GET /api/restaurants/:slug/availability`.** *Check:* the results match the seeded bookings.
 - [ ] **6.4 Test database:** create `yerevan_test`, add `npm run test:db`, and write database tests 1–3 (§5.4). *Check:* they pass on real PostgreSQL, and `npm test` still runs without Docker.
 - [ ] **6.5 `POST /api/reservations`:** one transaction that locks the table's row, runs the four checks and saves the booking as `PENDING`. A real conflict answers `409 SLOT_TAKEN`; any other database error stays a `500`. *Check:* API tests for each refusal, one test showing an unrelated database error doesn't become a `409`, and database test 4.
+
+  **From 5.2:** after locking the table's row, take a shared lock on the restaurant's row (`SELECT … FOR KEY SHARE`) before the four checks (§5.4).
 
   **To decide once bookings exist (from the review of 4.3):** saving opening hours should take upcoming bookings into account. For example, it could refuse new hours that leave a booking outside them, as 5.1 does for tables, or list those bookings for the owner. 4.3 deliberately doesn't check bookings yet.
 - [ ] **6.6 Booking widget:**
@@ -300,7 +314,9 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
 ✅ Already built: the database constraint.
 
 - [ ] **7.1 Race test** (database test 5). *Check:* exactly one `201`, nineteen `409`s, and one row in the database.
-- [ ] **7.2 Blocks and table deactivation take the same lock.** *Check:* database test 6 passes.
+- [ ] **7.2 Blocks and table deactivation take the same lock.** *Check:* database tests 6 and 8 pass.
+
+  Table changes take the table's lock since 5.1, and blocks since 5.2. 7.2 proves it on real PostgreSQL with database tests 6 and 8. Until then, test 8's race is played out in `publish-and-last-table.test.ts`.
 - [ ] **7.3 "Just taken" state,** on the page and in `/design`. *Check:* try it in two browser windows.
 - [ ] **7.4 Explain it in your own words.** Optionally, watch a lock make a second `psql` window wait. *Check:* you can explain it to your Team Lead.
 
