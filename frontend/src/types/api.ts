@@ -128,6 +128,33 @@ export interface Availability {
 }
 
 /**
+ * A booking as the guest who made it sees it. POST /api/reservations answers 201 with it inside
+ * { reservation }, for a signed-in guest who sends { tableId, date, time, partySize,
+ * specialRequests? } with a time and table the availability offered. It's PENDING until the
+ * restaurant confirms it. Refusals: 409 SLOT_TAKEN (fetch the availability again), 409
+ * TABLE_BLOCKED, 404 TABLE_NOT_FOUND, and 400 with fields.time or fields.partySize.
+ */
+export interface GuestReservation {
+  id: string;
+  status: ReservationStatus;
+  partySize: number;
+  /** The day it's for, on the restaurant's calendar. */
+  date: string;
+  startsAt: string;
+  endsAt: string;
+  /** On the restaurant's clock, ready to show, such as "23:30" and "01:00". */
+  starts: string;
+  ends: string;
+  restaurant: { slug: string; name: string };
+  table: { label: string; zone: TableZone };
+  specialRequests: string | null;
+}
+
+export interface GuestReservationResponse {
+  reservation: GuestReservation;
+}
+
+/**
  * One of the signed-in owner's restaurants, published or not. GET /api/owner/restaurants answers a
  * ListResponse of them, by name. One restaurant comes inside { restaurant }:
  * - GET /api/owner/restaurants/:restaurantId

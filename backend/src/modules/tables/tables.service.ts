@@ -12,7 +12,7 @@ import { isUniqueViolation } from "../../lib/db-errors.ts";
 import { ConflictError, NotFoundError, ValidationError } from "../../lib/errors.ts";
 import { prisma } from "../../lib/prisma.ts";
 import { ownerReservationFields, toOwnerReservation } from "../reservations/owner.service.ts";
-import { ACTIVE_STATUSES } from "../reservations/reservations.service.ts";
+import { ACTIVE_STATUSES } from "../reservations/reservations.rules.ts";
 import { lockOwnedRestaurant } from "../restaurants/owner.service.ts";
 import {
   LAST_ACTIVE_TABLE,

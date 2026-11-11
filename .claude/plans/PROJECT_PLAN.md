@@ -29,7 +29,7 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | Browse, search and filter restaurants | 3 | ✅ The API and the Browse page |
 | Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | 🟡 The page works and shows photos (4.4), with space for reviews (9.1) |
 | Choose a date, time and number of guests; see available tables | 6 | 🟡 The API answers which times and tables are free for a party on a date (6.1–6.3); the booking widget comes in 6.6 |
-| Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | 🟡 The database refuses overlaps, and the times a booking can start are worked out (6.1) |
+| Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | 🟡 Guests book through the API, in one transaction that locks the table, runs the four checks and saves the booking as pending (6.5). The race test is 7.1, and the booking widget 6.6 |
 | View and cancel their reservations | 8 | ⬜ |
 | **Restaurants** | | |
 | A private dashboard to manage restaurant information | 4 | ✅ Owners add, edit and publish their restaurants on their dashboard (4.2, 4.6) |
@@ -86,7 +86,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (11 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 1560 tests ✅, and 12 database tests on real PostgreSQL ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 1578 tests ✅, and 16 database tests on real PostgreSQL ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
@@ -106,6 +106,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - the tables free for a party at one of those times (`findFreeTables()`): switched on, the right size, and not booked or blocked then
   - `GET /api/restaurants/:slug/availability`: anyone can see a published restaurant's times on a date, each with the tables free for the party
   - the test database: `npm run test:db -w backend` creates and migrates `yerevan_test` beside `yerevan_dev`, then runs the database tests there. `npm test` still needs no database
+  - `POST /api/reservations`: a signed-in guest books a table, in one transaction that locks the table's row, then its restaurant's, runs the four checks and saves the booking as pending
   - the owner's dashboard: their restaurants, adding one, and each restaurant's bookings for a day, information and publishing, opening hours and photos, with their states in `/design`
   - the Home page, the Browse page and each restaurant's page, with their states in `/design`
   - `lib/api.ts`: GET, POST, PUT, PATCH and DELETE, renewing an expired session once
@@ -173,13 +174,13 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 ### 5.4 Double booking
 
 - ✅ The database refuses overlapping active reservations on one table, proven on real PostgreSQL by database tests 1–3.
-- ⬜ A booking runs in one transaction that first locks the table's row, so simultaneous bookings for one table take turns.
+- ✅ A booking runs in one transaction that first locks the table's row, so simultaneous bookings for one table take turns.
   - Only a real conflict answers `409`: an overlap the database refuses (`23P01`), or one the booking's own checks find.
   - Any other database error stays a `500` and is logged. It's never disguised as a conflict.
 - ✅ Blocks and table deactivation take the same lock: table changes since 5.1, blocks since 5.2.
 - ⬜ A status change applies only if the status is still the expected one.
 - ✅ **Lock order, the same everywhere:** table rows first, in ascending `id` order, then the restaurant's row. Whatever holds a restaurant's row (publishing, opening hours, photos, adding a table) never then waits for a table's, so no two changes can wait on each other forever. Switching a table off takes both, table first, so it can't cross publishing (5.1). A whole-restaurant block takes every table, then the restaurant (5.2).
-- ⬜ **What a booking must lock (from 5.2):** its table's row, then a shared lock (`FOR KEY SHARE`) on its restaurant's row, before it checks for blocks. The second lock is what keeps a whole-restaurant block from missing a table added at that very moment.
+- ✅ **What a booking must lock (from 5.2):** its table's row, then a shared lock (`FOR KEY SHARE`) on its restaurant's row, before it checks for blocks. The second lock is what keeps a whole-restaurant block from missing a table added at that very moment.
 - ⬜ The page says the table was just booked, and shows the free tables again.
 
 **What the real-PostgreSQL tests must prove.** Each test is written in the task shown. Add another whenever a task needs real PostgreSQL to prove it.
@@ -187,7 +188,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 1. ✅ An overlapping active booking is refused (6.4).
 2. ✅ Back-to-back bookings are allowed (6.4).
 3. ✅ A cancelled booking frees its table (6.4).
-4. Booking a taken time through the API gets `409` (6.5).
+4. ✅ Booking a taken time through the API gets `409` (6.5).
 5. Of 20 bookings for one table at the same moment, exactly one succeeds and the rest get `409` (7.1).
 6. A booking and a block made at the same moment never both succeed (7.2).
 7. Of a confirm and a cancel at the same moment, exactly one wins (8.2).
@@ -316,9 +317,20 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
   - **Before the tests,** it creates `yerevan_test` from the server's `postgres` database, and only on a server that also holds `yerevan_dev`. It applies the migrations with `prisma migrate deploy`, which never resets. It then asks the database for its own name and checks that `Reservation_no_overlap` is there.
   - **Each test starts from empty tables.** The emptying statement checks `current_database()` first and refuses anything but `yerevan_test`.
   - **The tests** save bookings straight into the table, through the app's Prisma client, so they prove the database's own guard and `isExclusionViolation()` on the real error.
-- [ ] **6.5 `POST /api/reservations`:** one transaction that locks the table's row, runs the four checks and saves the booking as `PENDING`. A real conflict answers `409 SLOT_TAKEN`; any other database error stays a `500`. *Check:* API tests for each refusal, one test showing an unrelated database error doesn't become a `409`, and database test 4.
+- [x] **6.5 `POST /api/reservations`:** one transaction that locks the table's row, runs the four checks and saves the booking as `PENDING`. A real conflict answers `409 SLOT_TAKEN`; any other database error stays a `500`. *Check:* API tests for each refusal, one test showing an unrelated database error doesn't become a `409`, and database test 4.
 
   **From 5.2:** after locking the table's row, take a shared lock on the restaurant's row (`SELECT … FOR KEY SHARE`) before the four checks (§5.4).
+
+  **Decided (6.5):** only signed-in customers book (401 signed out, 403 for any other role). The body is `{ tableId, date, time, partySize, specialRequests? }`: the guest comes from the session, and the restaurant from the locked table.
+  - **The transaction:** it locks the table `FOR UPDATE`, then the restaurant `FOR KEY SHARE`. Only then does it read the hours, bookings and blocks.
+  - **Checks:** the time must be one `generateSlots()` offers, and `tableProblem()` must find nothing.
+  - **Refusals:**
+    - `400` under `time` or `partySize`
+    - `404 TABLE_NOT_FOUND` for an unknown or switched-off table, or one at an unpublished restaurant
+    - `409 SLOT_TAKEN` when the table is booked, from the checks or the constraint's `23P01`
+    - `409 TABLE_BLOCKED`
+  - **Any other database error** is passed on and becomes a logged `500`.
+  - **`ACTIVE_STATUSES`** moved to a pure `reservations.rules.ts`, so the availability rules don't depend on this service.
 
   **To decide once bookings exist (from the review of 4.3):** saving opening hours should take upcoming bookings into account. For example, it could refuse new hours that leave a booking outside them, as 5.1 does for tables, or list those bookings for the owner. 4.3 deliberately doesn't check bookings yet.
 - [ ] **6.6 Booking widget:**

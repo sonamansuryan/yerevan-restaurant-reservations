@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 
 import { describe, expect, test } from "vitest";
 
-import { ACTIVE_STATUSES } from "../src/modules/reservations/reservations.service.ts";
+import { ACTIVE_STATUSES } from "../src/modules/reservations/reservations.rules.ts";
 
 const folder = resolve(import.meta.dirname, "../prisma/migrations");
 

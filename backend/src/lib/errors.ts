@@ -2,6 +2,7 @@
 const MESSAGES: Record<string, string> = {
   SLOT_TAKEN:
     "Sorry, this table was just booked for that time. Please choose another time or table.",
+  TABLE_BLOCKED: "This table can’t be booked at that time. Please choose another time or table.",
   DATABASE_UNAVAILABLE: "The database is unavailable right now. Please try again.",
   EMAIL_TAKEN: "There’s already an account with this email.",
   INVALID_CREDENTIALS: "Incorrect email or password. Please try again.",

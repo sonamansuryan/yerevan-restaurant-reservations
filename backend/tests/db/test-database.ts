@@ -33,7 +33,7 @@ export interface TestRestaurant {
   t2: string;
 }
 
-/** An owner, a guest, and Lori Smokehouse with two tables. */
+/** An owner, a guest, and Lori Smokehouse with two tables and its seeded hours. */
 export async function addRestaurant(): Promise<TestRestaurant> {
   const owner = await prisma.user.create({
     data: { email: "ani.owner@example.com", name: "Ani Sargsyan", role: "OWNER" },
@@ -58,5 +58,12 @@ export async function addRestaurant(): Promise<TestRestaurant> {
     });
   const t1 = await table("T1");
   const t2 = await table("T2");
+  // Lunch from 12:00 to 15:00 and dinner from 18:00 to 23:00, every day.
+  await prisma.openingHour.createMany({
+    data: [0, 1, 2, 3, 4, 5, 6].flatMap((dayOfWeek) => [
+      { restaurantId: restaurant.id, dayOfWeek, opensAt: 720, closesAt: 900 },
+      { restaurantId: restaurant.id, dayOfWeek, opensAt: 1080, closesAt: 1380 },
+    ]),
+  });
   return { guestId: guest.id, restaurantId: restaurant.id, t1: t1.id, t2: t2.id };
 }

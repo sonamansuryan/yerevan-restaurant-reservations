@@ -10,7 +10,7 @@ import { ConflictError, NotFoundError, ValidationError } from "../../lib/errors.
 import { prisma } from "../../lib/prisma.ts";
 import { localClockTime, localDate } from "../../lib/time.ts";
 import { ownerReservationFields, toOwnerReservation } from "../reservations/owner.service.ts";
-import { ACTIVE_STATUSES } from "../reservations/reservations.service.ts";
+import { ACTIVE_STATUSES } from "../reservations/reservations.rules.ts";
 import { lockOwnedTable } from "../tables/tables.service.ts";
 import { blockRange, blockRangeProblem, blockRefusalMessage } from "./blocks.rules.ts";
 import type { BlockTime } from "./blocks.rules.ts";

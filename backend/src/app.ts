@@ -9,6 +9,7 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler.ts";
 import { requireAuth } from "./middleware/requireAuth.ts";
 import { requireRole } from "./middleware/requireRole.ts";
 import { authRouter, meRouter } from "./modules/auth/auth.routes.ts";
+import { reservationsRouter } from "./modules/reservations/reservations.routes.ts";
 import { ownerRestaurantsRouter } from "./modules/restaurants/owner.routes.ts";
 import { restaurantsRouter } from "./modules/restaurants/restaurants.routes.ts";
 
@@ -29,6 +30,8 @@ app.get("/api/health", async (_req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/me", meRouter);
 app.use("/api/restaurants", restaurantsRouter);
+// Booking is for signed-in guests: signed out gets 401, and any other role 403.
+app.use("/api/reservations", requireAuth, requireRole("CUSTOMER"), reservationsRouter);
 
 // The owner area. Every route under /api/owner is for restaurant owners only, and this one line
 // enforces it for all of them: signed out gets 401, any other role 403. The owner routes go below

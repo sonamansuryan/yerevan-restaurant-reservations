@@ -5,6 +5,8 @@ import type {
   TableZone,
 } from "../../src/generated/prisma/enums.ts";
 import type { TableBooking } from "../../src/modules/availability/availability.rules.ts";
+import type { CreateReservationInput } from "../../src/modules/reservations/reservations.schemas.ts";
+import type { GuestReservation } from "../../src/modules/reservations/reservations.service.ts";
 
 /** A Reservation row with what the day view selects. */
 export interface DayReservationRow {
@@ -50,3 +52,26 @@ export function tableBooking(extra: Partial<TableBooking> = {}): TableBooking {
     ...extra,
   };
 }
+
+/** What a guest sends to book Lori Smokehouse's T1 for two, on the demo Saturday at 19:00. */
+export const bookingRequest: CreateReservationInput = {
+  tableId: "4f3e2d1c-0b9a-4876-9543-210fedcba987",
+  date: "2026-11-14",
+  time: "19:00",
+  partySize: 2,
+};
+
+/** What that booking answers: pending, from 19:00 to 21:00 in Yerevan. */
+export const guestReservation: GuestReservation = {
+  id: "d1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a",
+  status: "PENDING",
+  partySize: 2,
+  date: "2026-11-14",
+  startsAt: "2026-11-14T15:00:00.000Z",
+  endsAt: "2026-11-14T17:00:00.000Z",
+  starts: "19:00",
+  ends: "21:00",
+  restaurant: { slug: "lori-smokehouse", name: "Lori Smokehouse" },
+  table: { label: "T1", zone: "INDOOR" },
+  specialRequests: null,
+};

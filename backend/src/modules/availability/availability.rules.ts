@@ -12,7 +12,7 @@ import {
   minutesToTime,
 } from "../../lib/time.ts";
 import type { Opening } from "../opening-hours/opening-hours.rules.ts";
-import { ACTIVE_STATUSES } from "../reservations/reservations.service.ts";
+import { ACTIVE_STATUSES } from "../reservations/reservations.rules.ts";
 
 /** A booking starts at least this long from now, so the restaurant has time to prepare. */
 export const MIN_NOTICE_MINUTES = 60;

@@ -5,7 +5,7 @@ import type { TableZone } from "../../generated/prisma/enums.ts";
 import { NotFoundError } from "../../lib/errors.ts";
 import { prisma } from "../../lib/prisma.ts";
 import { localClockTime } from "../../lib/time.ts";
-import { ACTIVE_STATUSES } from "../reservations/reservations.service.ts";
+import { ACTIVE_STATUSES } from "../reservations/reservations.rules.ts";
 import { bookingWindow, findFreeTables, generateSlots } from "./availability.rules.ts";
 import type { AvailabilityQuery } from "./availability.schemas.ts";
 
