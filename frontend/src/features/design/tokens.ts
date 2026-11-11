@@ -335,6 +335,8 @@ export const screenStates = {
     "An owner’s account",
     "Booking",
     "The table was just taken",
+    "The table is no longer free",
+    "The time is no longer free",
     "Couldn’t book",
     "Booked",
   ],

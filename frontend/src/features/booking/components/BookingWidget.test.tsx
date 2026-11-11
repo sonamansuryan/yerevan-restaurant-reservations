@@ -112,10 +112,30 @@ test("a chosen table is said back, and booking sends the note, trimmed", async (
   expect(onBook).toHaveBeenCalledWith("A window seat");
 });
 
-test("a table that's no longer free isn't chosen any more, so nothing is said back", () => {
+test("a table chosen earlier that isn't free any more says so above the tables, and can't be booked", () => {
+  // T1 is booked at 19:00 in the demo.
   renderWidget({ choices: { ...AT_T2, tableId: "table-t1" } });
 
+  expect(screen.getByRole("alert").textContent).toBe(
+    "The table you chose isn’t free at 19:00 any more. Choose another.",
+  );
   expect(screen.queryByRole("button", { name: "Book this table" })).toBeNull();
+});
+
+test("so does a time that isn't free any more, above the times", () => {
+  // Every table is taken at 13:00 in the demo.
+  renderWidget({ choices: { ...AT_T2, time: "13:00" } });
+
+  expect(screen.getByRole("alert").textContent).toBe(
+    "13:00 isn’t free any more. Choose another time.",
+  );
+});
+
+test("after a refusal, focus moves to the reason, because the button pressed has gone", () => {
+  const taken = new ApiError(409, "SLOT_TAKEN", "Sorry, this table was just booked for that time.");
+  renderWidget({ choices: { ...SATURDAY, time: "19:00" }, refusal: taken });
+
+  expect(document.activeElement).toBe(screen.getByRole("alert").parentElement);
 });
 
 test("while it books, the button is busy", () => {

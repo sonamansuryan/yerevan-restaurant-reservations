@@ -29,7 +29,7 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | Browse, search and filter restaurants | 3 | ✅ The API and the Browse page |
 | Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | 🟡 The page works and shows photos (4.4), with space for reviews (9.1) |
 | Choose a date, time and number of guests; see available tables | 6 | ✅ Guests choose them on each restaurant's page, and see the free tables (6.1–6.6) |
-| Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | 🟡 Guests book on the restaurant's page, in one transaction that locks the table, runs the four checks and saves the booking as pending (6.5, 6.6). The race test is 7.1 |
+| Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | ✅ Guests book on the restaurant's page, in one transaction that locks the table (6.5, 6.6). Of 20 at once for one table, exactly one succeeds (7.1) |
 | View and cancel their reservations | 8 | ⬜ |
 | **Restaurants** | | |
 | A private dashboard to manage restaurant information | 4 | ✅ Owners add, edit and publish their restaurants on their dashboard (4.2, 4.6) |
@@ -61,7 +61,7 @@ Everything marked ✅ is already built, and stays as it is.
 - ✅ **Roles:** guest, restaurant and admin, checked by `requireRole` on the server ✅ and by the route guard in the browser ✅. Asking for someone else's restaurant returns `404` ✅ (task 4.1).
 - ✅ **Safety basics:** Zod checks every input, all errors share one JSON format, secrets live only in `backend/.env`, and logs never contain secrets. Sign-in and sign-up allow 10 tries per minute per address.
 - ✅ **Data:** times are stored in UTC. Nothing important is deleted: restaurants are unpublished, tables deactivated and bookings cancelled instead.
-- 🟡 **Double booking:** the database constraint ✅, plus a transaction that locks the table's row ⬜ (§5).
+- ✅ **Double booking:** the database constraint, a booking transaction that locks the table's row, the race test, and blocks and table changes that take turns with bookings, all proven on real PostgreSQL (§5).
 - ✅ **UI/UX:** the Seghan design, 25 shared components, and the protected `EmptyState` and `ErrorState`. 🟡 `/design` keeps growing (§6).
 - 🟡 **Tests:** unit, API and real-PostgreSQL tests.
 
@@ -86,7 +86,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (11 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 1608 tests ✅, and 16 database tests on real PostgreSQL ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 1608 tests ✅, and 31 database tests on real PostgreSQL ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
@@ -116,8 +116,6 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 - **Partly built:**
   - the time helpers
   - a placeholder page: My reservations (task 8.3)
-- **Still missing:**
-  - no test proves the double-booking guarantee on real PostgreSQL yet (from task 6.4)
 
 ## 4. Data model
 
@@ -190,10 +188,10 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 2. ✅ Back-to-back bookings are allowed (6.4).
 3. ✅ A cancelled booking frees its table (6.4).
 4. ✅ Booking a taken time through the API gets `409` (6.5).
-5. Of 20 bookings for one table at the same moment, exactly one succeeds and the rest get `409` (7.1).
-6. A booking and a block made at the same moment never both succeed (7.2).
+5. ✅ Of 20 bookings for one table at the same moment, exactly one succeeds and the rest get `409` (7.1).
+6. ✅ A booking and a block made at the same moment never both succeed (7.2).
 7. Of a confirm and a cancel at the same moment, exactly one wins (8.2).
-8. Publishing a restaurant and switching off its last active table at the same moment never leave it published without one (7.2).
+8. ✅ Publishing a restaurant and switching off its last active table at the same moment never leave it published without one (7.2).
 
 ## 6. UI/UX and `/design`
 
@@ -341,16 +339,15 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
 
   *Check:* make a booking in the browser.
 
-### Step 7: Double booking ★ 🟡
+### Step 7: Double booking ★ ✅
 
 ✅ Already built: the database constraint.
 
-- [ ] **7.1 Race test** (database test 5). *Check:* exactly one `201`, nineteen `409`s, and one row in the database.
-- [ ] **7.2 Blocks and table deactivation take the same lock.** *Check:* database tests 6 and 8 pass.
+- [x] **7.1 Race test** (database test 5). *Check:* exactly one `201`, nineteen `409`s, and one row in the database.
+- [x] **7.2 Blocks and table deactivation take the same lock.** *Check:* database tests 6 and 8 pass.
 
-  Table changes take the table's lock since 5.1, and blocks since 5.2. 7.2 proves it on real PostgreSQL with database tests 6 and 8. Until then, test 8's race is played out in `publish-and-last-table.test.ts`.
-- [ ] **7.3 "Just taken" state,** on the page and in `/design`. *Check:* try it in two browser windows.
-- [ ] **7.4 Explain it in your own words.** Optionally, watch a lock make a second `psql` window wait. *Check:* you can explain it to your Team Lead.
+  Table changes take the table's lock since 5.1, and blocks since 5.2. Database tests 6 and 8 prove it on real PostgreSQL.
+- [x] **7.3 "Just taken" state,** on the page and in `/design`. *Check:* try it in two browser windows.
 
 ### Step 8: Reservation management ⬜
 

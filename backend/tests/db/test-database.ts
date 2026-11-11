@@ -26,6 +26,7 @@ export async function emptyTestDatabase(): Promise<void> {
 
 /** The rows a booking needs, by id. */
 export interface TestRestaurant {
+  ownerId: string;
   guestId: string;
   restaurantId: string;
   /** Two tables for two to four guests. */
@@ -65,5 +66,11 @@ export async function addRestaurant(): Promise<TestRestaurant> {
       { restaurantId: restaurant.id, dayOfWeek, opensAt: 1080, closesAt: 1380 },
     ]),
   });
-  return { guestId: guest.id, restaurantId: restaurant.id, t1: t1.id, t2: t2.id };
+  return {
+    ownerId: owner.id,
+    guestId: guest.id,
+    restaurantId: restaurant.id,
+    t1: t1.id,
+    t2: t2.id,
+  };
 }

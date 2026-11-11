@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { ReactElement } from "react";
 
 import { FormNotice } from "@/components/FormNotice";
@@ -51,6 +52,31 @@ export function BookingWidget({
   onBook,
   onBookAnother,
 }: BookingWidgetProps): ReactElement {
+  // A choice only counts while it's still free, so a table someone else has just taken drops out.
+  const slot = availability.data?.slots.find(
+    ({ starts, tables }) => starts === choices.time && tables.length > 0,
+  );
+  const table = slot?.tables.find(({ id }) => id === choices.tableId);
+
+  // A choice still in the address that isn't free any more: someone else took it, perhaps from
+  // another window, and the free tables have just been asked for again.
+  let gone: string | null = null;
+  if (choices.time && availability.data && !slot) {
+    gone = `${choices.time} isn’t free any more. Choose another time.`;
+  } else if (choices.tableId && slot && !table) {
+    gone = `The table you chose isn’t free at ${slot.starts} any more. Choose another.`;
+  }
+
+  // A refusal shows by the step to choose again: above the tables or times when the choice has
+  // gone, or by the button when it's still free, as after a lost connection.
+  const message = table ? null : (refusal?.message ?? gone);
+  const noticeRef = useRef<HTMLDivElement>(null);
+  const refusedChoice = refusal !== null && !table;
+  // The button just pressed went with the table, so focus moves to the reason instead.
+  useEffect(() => {
+    if (refusedChoice) noticeRef.current?.focus();
+  }, [refusedChoice]);
+
   if (booked) {
     return (
       <BookingDone
@@ -62,14 +88,11 @@ export function BookingWidget({
     );
   }
 
-  // A choice only counts while it's still free, so a table someone else has just taken drops out.
-  const slot = availability.data?.slots.find(
-    ({ starts, tables }) => starts === choices.time && tables.length > 0,
+  const notice = message && (
+    <div ref={noticeRef} tabIndex={-1} className="outline-hidden">
+      <FormNotice>{message}</FormNotice>
+    </div>
   );
-  const table = slot?.tables.find(({ id }) => id === choices.tableId);
-  // A refusal shows by the step to choose again: above the tables when the table has gone, or by
-  // the button when it's still free, as after a lost connection.
-  const notice = refusal && !table && <FormNotice>{refusal.message}</FormNotice>;
 
   return (
     <div className="flex flex-col gap-8">

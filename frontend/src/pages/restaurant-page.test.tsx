@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // A restaurant's page, through the real routes, shell and hooks, with a fake API.
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider, focusManager } from "@tanstack/react-query";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
@@ -10,7 +10,7 @@ import type { Mock } from "vitest";
 
 import { loriPage, loriSaturday, sampleBooked, tsiranPage } from "@/features/design/samples";
 import { routes } from "@/router";
-import type { AuthUser } from "@/types/api";
+import type { AuthUser, Availability } from "@/types/api";
 
 type TestRouter = ReturnType<typeof createMemoryRouter>;
 
@@ -24,18 +24,20 @@ interface FakeOptions {
   user?: AuthUser | null;
   /** What booking answers, if not a success. */
   booking?: Response;
+  /** The free tables, asked for each time. Lori's demo Saturday unless this says. */
+  availability?: () => Availability;
 }
 
 /**
  * Answers like the API, with Tsiran Wine Room and Lori Smokehouse as the only restaurants. Every
  * date has Lori's demo Saturday's times and free tables.
  */
-function fakeApi({ failures = 0, user = null, booking }: FakeOptions = {}): Mock {
+function fakeApi({ failures = 0, user = null, booking, availability }: FakeOptions = {}): Mock {
   let failuresLeft = failures;
   const fetch = vi.fn((url: string, init?: RequestInit) => {
     if (url.includes("/availability?")) {
       const date = new URLSearchParams(url.split("?")[1]).get("date");
-      return Promise.resolve(json({ ...loriSaturday, date }));
+      return Promise.resolve(json({ ...(availability?.() ?? loriSaturday), date }));
     }
     if (url === "/api/reservations" && init?.method === "POST") {
       return Promise.resolve(booking ?? json({ reservation: sampleBooked }, 201));
@@ -189,6 +191,7 @@ describe("booking a table", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    focusManager.setFocused(undefined);
   });
 
   test("it starts on today, for two, and asks for that day's free tables", async () => {
@@ -263,6 +266,30 @@ describe("booking a table", () => {
     expect((await main().findByRole("alert")).textContent).toContain("this table was just booked");
     expect(chosen(router)).toEqual({ date: "2026-11-14", guests: "2", time: "19:00" });
     await waitFor(() => expect(availabilityRequests(fetch)).toHaveLength(2));
+  });
+
+  test("when the table is taken in another window, coming back to this one says so", async () => {
+    let takenElsewhere = false;
+    const withoutT2: Availability = {
+      ...loriSaturday,
+      slots: loriSaturday.slots.map((slot) => ({
+        ...slot,
+        tables: slot.tables.filter(({ id }) => id !== "table-t2"),
+      })),
+    };
+    fakeApi({ user: lilit, availability: () => (takenElsewhere ? withoutT2 : loriSaturday) });
+    renderAt(SEVEN_AT_T2);
+    await main().findByRole("button", { name: "Book this table" });
+
+    // Someone books T2 elsewhere. This window comes back into focus, which asks again.
+    takenElsewhere = true;
+    act(() => focusManager.setFocused(false));
+    act(() => focusManager.setFocused(true));
+
+    expect((await main().findByRole("alert")).textContent).toBe(
+      "The table you chose isn’t free at 19:00 any more. Choose another.",
+    );
+    expect(main().queryByRole("button", { name: "Book this table" })).toBeNull();
   });
 
   test("signed out, the last step signs in first, then comes back to the same choices", async () => {

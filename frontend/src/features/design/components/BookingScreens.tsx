@@ -92,6 +92,9 @@ const confirming: Record<StateOf<"bookingConfirm">, ReactElement> = {
     availability: loaded(t2Gone),
     refusal: tableTaken,
   }),
+  // Coming back to the page after someone else took the choice, the free tables are asked for again.
+  "The table is no longer free": bookingAt({ choices: atT2, availability: loaded(t2Gone) }),
+  "The time is no longer free": bookingAt({ choices: { ...atT2, time: "13:00" } }),
   "Couldn’t book": bookingAt({ choices: atT2, refusal: noConnection }),
   Booked: bookingAt({ booked: sampleBooked }),
 };
@@ -107,7 +110,7 @@ export function BookingScreens(): ReactElement {
       </Group>
       <Group
         title="Booking it"
-        note="The booking is said back before it’s sent. Signed out, the button signs in first and comes back. A table taken meanwhile drops out, with the reason above the tables."
+        note="The booking is said back before it’s sent. Signed out, the button signs in first and comes back. A table or time taken meanwhile drops out, with the reason where the next choice is made."
       >
         <Specimens specimens={confirming} />
       </Group>
