@@ -77,7 +77,7 @@ backend/
   src/middleware/     requireAuth · validate · errorHandler
   src/modules/<name>/ routes · controller · service · schemas (· rules)
   src/integrations/   Google · Cloudinary · email
-  tests/              fixtures/ · helpers/ · fake-prisma.ts · db/ (from task 6.4)
+  tests/              fixtures/ · helpers/ · fake-prisma.ts · db/ (npm run test:db only)
 ```
 
 npm installs every package into the root `node_modules`, so that folder must stay. Each side has its own `.env` (never committed) and `.env.example`.
@@ -101,13 +101,14 @@ npm run db:migrate -w backend -- --create-only --name <change>  # a migration to
 npm run db:generate -w backend           # regenerate the Prisma client
 npm run db:studio -w backend             # browse the data
 npm run db:reset -w backend              # ⚠ wipes the local database: ask first
+npm run test:db -w backend               # database tests on yerevan_test, with Docker running
 ```
 
-**Not added yet:** `db:up` and `db:down` (start and stop the database), `check` (typecheck, lint and tests together), and `test:db`, which arrives in task 6.4.
+**Not added yet:** `db:up` and `db:down` (start and stop the database), and `check` (typecheck, lint and tests together).
 
 ## Security
 
-- **Secrets** live only in `backend/.env`. The app reads them only through `backend/src/config/env.ts`, which refuses to start if one is missing. The Prisma CLI config is the only other reader.
+- **Secrets** live only in `backend/.env`. The app reads them only through `backend/src/config/env.ts`, which refuses to start if one is missing. The Prisma CLI config is the only other reader, apart from `npm run test:db`, which takes only `DATABASE_URL`, to reach `yerevan_test` on the same server.
 - **`POSTGRES_PASSWORD`** lives there too, for Docker Compose, and `DATABASE_URL` uses the same password.
 - **The frontend holds no secrets:** every `VITE_*` value ends up in public JavaScript.
 - **Outside services** (Google, Cloudinary, Resend) are called only from `backend/src/integrations/`. The only exceptions are made for browsers:
@@ -191,7 +192,7 @@ npm run db:reset -w backend              # ⚠ wipes the local database: ask fir
 |---|---|---|---|
 | **Unit** | Business rules as pure functions (slots, free tables, statuses, time), edge cases included | None | `npm test` |
 | **API** | Each endpoint with Supertest: a success, a bad input and a "not allowed". Mock the service, or use the in-memory fake for simple lookups | None | `npm test` |
-| **Database** | What only PostgreSQL can prove: the constraint, races, compare-and-set. Required from task 6.4 onward for every task that affects database behavior. The starting list is in `PROJECT_PLAN.md` §5.4 | `yerevan_test` | `npm run test:db -w backend`, with Docker running (from task 6.4) |
+| **Database** | What only PostgreSQL can prove: the constraint, races, compare-and-set. Required from task 6.4 onward for every task that affects database behavior. The starting list is in `PROJECT_PLAN.md` §5.4 | `yerevan_test` | `npm run test:db -w backend`, with Docker running |
 
 - **Docker:** `npm test` never needs it. `test:db` refuses any database but `yerevan_test`.
 - **The existing tests** and `fake-prisma.ts` stay. Don't extend the fake beyond simple lookups; write a database test instead.

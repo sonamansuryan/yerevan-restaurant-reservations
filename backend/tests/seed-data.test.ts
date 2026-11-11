@@ -231,7 +231,18 @@ describe("reservations", () => {
     }
   });
 
-  test("includes an after-midnight booking", () => {
-    expect(RESERVATIONS.some(({ startMinutes }) => startMinutes >= 1440)).toBe(true);
+  test("every booking starts before midnight, as guests' bookings must", () => {
+    for (const { id, startMinutes } of RESERVATIONS) {
+      expect(startMinutes, id).toBeLessThan(1440);
+    }
+  });
+
+  test("includes a booking that ends after midnight", () => {
+    const endsAfterMidnight = RESERVATIONS.some(
+      ({ restaurant, startMinutes }) =>
+        startMinutes + restaurantFor(restaurant).reservationDurationMin > 1440,
+    );
+
+    expect(endsAfterMidnight).toBe(true);
   });
 });

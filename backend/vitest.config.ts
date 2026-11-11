@@ -1,8 +1,10 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
-// Fake values, so tests never read your real backend/.env or reach a real service. No test uses a
-// database: tests that need one get the in-memory stand-in from tests/fake-prisma.ts.
-const FAKE_ENV = {
+// npm test. Fake values, so these tests never read your real backend/.env, reach a real service or
+// need a database: the few that look rows up get the in-memory stand-in from tests/fake-prisma.ts.
+// The tests that need real PostgreSQL are in tests/db/, and only npm run test:db runs them, with
+// vitest.db.config.ts. It uses these same fake values for everything but the database.
+export const FAKE_ENV = {
   NODE_ENV: "test",
   APP_URL: "http://localhost:5173",
   DATABASE_URL: "postgresql://test:not_a_real_password@localhost:5432/not_a_real_database",
@@ -25,5 +27,6 @@ export default defineConfig({
   test: {
     env: FAKE_ENV,
     include: ["tests/**/*.test.ts"],
+    exclude: [...configDefaults.exclude, "tests/db/**"],
   },
 });

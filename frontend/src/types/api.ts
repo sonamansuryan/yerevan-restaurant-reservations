@@ -93,6 +93,40 @@ export interface RestaurantResponse {
   restaurant: RestaurantDetail;
 }
 
+/** A table a guest can book at one start time. */
+export interface AvailableTable {
+  id: string;
+  label: string;
+  zone: TableZone;
+  /** The most guests it takes. */
+  capacity: number;
+}
+
+/** A time a booking can start, with the tables free for the whole booking. */
+export interface AvailabilitySlot {
+  /** Exact moments, in UTC. */
+  startsAt: string;
+  endsAt: string;
+  /** On the restaurant's clock, ready to show, such as "23:30" and "01:00". */
+  starts: string;
+  ends: string;
+  /** Empty when every table that fits the party is taken then. */
+  tables: AvailableTable[];
+}
+
+/**
+ * GET /api/restaurants/:slug/availability?date=YYYY-MM-DD&partySize=N, for anyone. A restaurant
+ * that isn't published answers 404 RESTAURANT_NOT_FOUND. A date with no times, such as a closed
+ * day or one outside bookingWindow, has no slots.
+ */
+export interface Availability {
+  date: string;
+  partySize: number;
+  /** The first and last dates guests can book: today and 60 days later, as YYYY-MM-DD. */
+  bookingWindow: { first: string; last: string };
+  slots: AvailabilitySlot[];
+}
+
 /**
  * One of the signed-in owner's restaurants, published or not. GET /api/owner/restaurants answers a
  * ListResponse of them, by name. One restaurant comes inside { restaurant }:

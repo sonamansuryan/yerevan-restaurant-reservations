@@ -340,7 +340,8 @@ export const RESERVATIONS: SeedReservation[] = [
     specialRequests: "A table by the window, if possible",
   },
   {
-    // Friday's service, so this starts at 00:00 on Saturday morning.
+    // Friday's last time, so it ends at 01:00 on Saturday morning. Bookings start before
+    // midnight, but may end after it.
     id: seedId(6),
     restaurant: "tsiran-wine-room",
     table: "T2",
@@ -348,7 +349,7 @@ export const RESERVATIONS: SeedReservation[] = [
     partySize: 3,
     weekday: FRI,
     weeks: 1,
-    startMinutes: at(24),
+    startMinutes: at(23, 30),
     status: "CONFIRMED",
   },
   {

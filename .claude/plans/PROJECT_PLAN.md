@@ -28,7 +28,7 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | Register and log in, by email or Google | 2 | ✅ Email and Google, on the Sign in and Sign up pages |
 | Browse, search and filter restaurants | 3 | ✅ The API and the Browse page |
 | Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | 🟡 The page works and shows photos (4.4), with space for reviews (9.1) |
-| Choose a date, time and number of guests; see available tables | 6 | 🟡 The rules behind it: the times a booking can start (6.1) and the tables free then (6.2). The API and the booking widget come in 6.3 and 6.6 |
+| Choose a date, time and number of guests; see available tables | 6 | 🟡 The API answers which times and tables are free for a party on a date (6.1–6.3); the booking widget comes in 6.6 |
 | Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | 🟡 The database refuses overlaps, and the times a booking can start are worked out (6.1) |
 | View and cancel their reservations | 8 | ⬜ |
 | **Restaurants** | | |
@@ -86,7 +86,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (11 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 1538 tests ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 1560 tests ✅, and 12 database tests on real PostgreSQL ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
@@ -104,6 +104,8 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - the dashboard's Tables and Blocked times pages, with their states in `/design`
   - the times a booking can start on a date (`generateSlots()`), from the opening hours, slot interval and booking length, at least 1 hour and at most 60 days ahead
   - the tables free for a party at one of those times (`findFreeTables()`): switched on, the right size, and not booked or blocked then
+  - `GET /api/restaurants/:slug/availability`: anyone can see a published restaurant's times on a date, each with the tables free for the party
+  - the test database: `npm run test:db -w backend` creates and migrates `yerevan_test` beside `yerevan_dev`, then runs the database tests there. `npm test` still needs no database
   - the owner's dashboard: their restaurants, adding one, and each restaurant's bookings for a day, information and publishing, opening hours and photos, with their states in `/design`
   - the Home page, the Browse page and each restaurant's page, with their states in `/design`
   - `lib/api.ts`: GET, POST, PUT, PATCH and DELETE, renewing an expired session once
@@ -170,7 +172,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ### 5.4 Double booking
 
-- ✅ The database refuses overlapping active reservations on one table.
+- ✅ The database refuses overlapping active reservations on one table, proven on real PostgreSQL by database tests 1–3.
 - ⬜ A booking runs in one transaction that first locks the table's row, so simultaneous bookings for one table take turns.
   - Only a real conflict answers `409`: an overlap the database refuses (`23P01`), or one the booking's own checks find.
   - Any other database error stays a `500` and is logged. It's never disguised as a conflict.
@@ -182,9 +184,9 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 **What the real-PostgreSQL tests must prove.** Each test is written in the task shown. Add another whenever a task needs real PostgreSQL to prove it.
 
-1. An overlapping active booking is refused (6.4).
-2. Back-to-back bookings are allowed (6.4).
-3. A cancelled booking frees its table (6.4).
+1. ✅ An overlapping active booking is refused (6.4).
+2. ✅ Back-to-back bookings are allowed (6.4).
+3. ✅ A cancelled booking frees its table (6.4).
 4. Booking a taken time through the API gets `409` (6.5).
 5. Of 20 bookings for one table at the same moment, exactly one succeeds and the rest get `409` (7.1).
 6. A booking and a block made at the same moment never both succeed (7.2).
@@ -302,10 +304,18 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
 - [x] **6.2 `findFreeTables()`.** *Check:* unit tests for party size, back-to-back bookings, inactive tables and blocks.
 
   **Decided (6.2):** `findFreeTables()` sits beside `generateSlots()` in `availability.rules.ts`, as a pure function. It's given the tables, the bookings and the blocks, and returns the tables that can take the party at a slot's times, in the order given. A table must be switched on, take the party (fewest guests ≤ party ≤ seats), and have no booking or block at any moment of the slot. Only `ACTIVE_STATUSES` hold a table, and a stretch of time includes its start but not its end, both as in `Reservation_no_overlap`, so back-to-back bookings are fine. A block with no table covers every table. `tableProblem()` gives the first reason a table can't be used (`INACTIVE`, `TOO_SMALL`, `TOO_BIG`, `BOOKED` or `BLOCKED`), in the assignment's order, for 6.5's refusals.
-- [ ] **6.3 `GET /api/restaurants/:slug/availability`.** *Check:* the results match the seeded bookings.
+- [x] **6.3 `GET /api/restaurants/:slug/availability`.** *Check:* the results match the seeded bookings.
 
-  **Decided (from 6.1), for 6.3:** new bookings start before midnight. Tsiran's demo booking on T2, which starts at 00:00 on Saturday (Friday's service), moves to Friday 23:30, so it still ends after midnight, at 01:00. `seed-data.test.ts` then checks for a booking that ends after midnight, not one that starts after it. Until then the seed and `yerevan_dev` stay as they are. The database only changes through a reset and a new seed, with the user's approval first.
-- [ ] **6.4 Test database:** create `yerevan_test`, add `npm run test:db`, and write database tests 1–3 (§5.4). *Check:* they pass on real PostgreSQL, and `npm test` still runs without Docker.
+  **Decided (6.3):** anyone can ask, signed in or not, as on the restaurant's page. Only a published restaurant answers; any other is `404 RESTAURANT_NOT_FOUND`. The query takes `date` (YYYY-MM-DD) and `partySize` (1 to 50, the most a table seats), and anything else is a `400` under its field. The reply has every start time of the date, each with its UTC moments, its times on the restaurant's clock and the free tables (`id`, `label`, `zone` and `capacity` only). A time with no free table stays in the list, so the widget can show it's full. It also has `bookingWindow`, today and 60 days later, for the widget's date picker. A date outside it has no times rather than an error. The tables, the bookings that hold one and the blocks are read in one transaction at REPEATABLE READ, and only those touching the first start to the last end, which can be after midnight. The tables come in the owner's order. The answer is a preview: booking checks again under the table's lock (6.5).
+
+  **Decided (from 6.1), done in 6.3:** new bookings start before midnight. In `seed-data.ts`, Tsiran's demo booking on T2 now starts at Friday 23:30 instead of 00:00 on Saturday, so it still ends after midnight, at 01:00. `seed-data.test.ts` checks that every booking starts before midnight and that one ends after it. `yerevan_dev` keeps the 00:00 booking until a reset and a new seed, which wait for the user's approval. The seed doesn't compare booking times, so seeding without a reset would leave that booking as it is.
+- [x] **6.4 Test database:** create `yerevan_test`, add `npm run test:db`, and write database tests 1–3 (§5.4). *Check:* they pass on real PostgreSQL, and `npm test` still runs without Docker.
+
+  **Decided (6.4):** `yerevan_test` lives on the same Docker server as `yerevan_dev`, with the same migrations but no seed. `npm run test:db -w backend` (`vitest.db.config.ts`) runs only `tests/db/`, and `npm test` skips that folder.
+  - **Its address** is `DATABASE_URL` from `backend/.env` with the database renamed, so no new secret is needed. It must be a PostgreSQL server on this computer, and must name a development database. Every other value stays fake.
+  - **Before the tests,** it creates `yerevan_test` from the server's `postgres` database, and only on a server that also holds `yerevan_dev`. It applies the migrations with `prisma migrate deploy`, which never resets. It then asks the database for its own name and checks that `Reservation_no_overlap` is there.
+  - **Each test starts from empty tables.** The emptying statement checks `current_database()` first and refuses anything but `yerevan_test`.
+  - **The tests** save bookings straight into the table, through the app's Prisma client, so they prove the database's own guard and `isExclusionViolation()` on the real error.
 - [ ] **6.5 `POST /api/reservations`:** one transaction that locks the table's row, runs the four checks and saves the booking as `PENDING`. A real conflict answers `409 SLOT_TAKEN`; any other database error stays a `500`. *Check:* API tests for each refusal, one test showing an unrelated database error doesn't become a `409`, and database test 4.
 
   **From 5.2:** after locking the table's row, take a shared lock on the restaurant's row (`SELECT … FOR KEY SHARE`) before the four checks (§5.4).
