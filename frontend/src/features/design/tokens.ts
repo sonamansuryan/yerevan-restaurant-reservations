@@ -281,6 +281,9 @@ export const screenStates = {
   dashboardHeader: ["Published", "A draft, with a long Armenian name"],
   dayBookings: [
     "Today, a full book (live)",
+    "Sending a change",
+    "Changed",
+    "Changed elsewhere first",
     "Another day, no bookings",
     "Loading",
     "Couldn’t load",
@@ -340,10 +343,23 @@ export const screenStates = {
     "Couldn’t book",
     "Booked",
   ],
+  myReservations: [
+    "Upcoming (live)",
+    "Past, over several pages",
+    "Cancelling",
+    "Cancelled",
+    "Too late to cancel",
+    "Couldn’t cancel",
+    "No upcoming bookings",
+    "No past bookings",
+    "Loading",
+    "Couldn’t load",
+    "Past the last page",
+  ],
 } as const;
 
 /** The journeys the Flows section shows, one screen after another. */
-export const flows = ["Book a table"] as const;
+export const flows = ["Book a table", "Handle a reservation"] as const;
 
 function componentsIn(section: string): number {
   return shownComponents.filter((component) => component.section === section).length;

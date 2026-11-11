@@ -128,11 +128,17 @@ export interface Availability {
 }
 
 /**
- * A booking as the guest who made it sees it. POST /api/reservations answers 201 with it inside
- * { reservation }, for a signed-in guest who sends { tableId, date, time, partySize,
- * specialRequests? } with a time and table the availability offered. It's PENDING until the
- * restaurant confirms it. Refusals: 409 SLOT_TAKEN (fetch the availability again), 409
- * TABLE_BLOCKED, 404 TABLE_NOT_FOUND, and 400 with fields.time or fields.partySize.
+ * A booking as the guest who made it sees it. Only signed-in guests reach these:
+ * - POST /api/reservations answers 201 with it inside { reservation }, for { tableId, date, time,
+ *   partySize, specialRequests? } with a time and table the availability offered. It's PENDING
+ *   until the restaurant confirms it. Refusals: 409 SLOT_TAKEN (fetch the availability again), 409
+ *   TABLE_BLOCKED, 404 TABLE_NOT_FOUND, and 400 with fields.time or fields.partySize.
+ * - GET /api/reservations?when=upcoming|past&page=&pageSize= answers a ListResponse of the guest's
+ *   own bookings, every status included. Upcoming ones aren't over yet, soonest first. Past ones
+ *   are over, latest first. Upcoming is the default, with 20 to a page and at most 50.
+ * - PATCH /api/reservations/:reservationId with { status: "CANCELLED" } cancels one, and answers it
+ *   inside { reservation }. Refusals: 404 RESERVATION_NOT_FOUND (not this guest's), 409
+ *   ALREADY_CANCELLED and 409 CANCEL_TOO_LATE (it has started, or the guest has arrived).
  */
 export interface GuestReservation {
   id: string;
@@ -148,6 +154,10 @@ export interface GuestReservation {
   restaurant: { slug: string; name: string };
   table: { label: string; zone: TableZone };
   specialRequests: string | null;
+  /** Who cancelled, and why, for a cancelled booking. Otherwise null. */
+  cancellation: { by: "CUSTOMER" | "RESTAURANT" | null; reason: string | null } | null;
+  /** Whether the guest can still cancel it: pending or confirmed, and not started yet. */
+  canCancel: boolean;
 }
 
 export interface GuestReservationResponse {
@@ -233,11 +243,23 @@ export type PublishBlocker = "TABLE" | "OPENING_HOURS";
 export type ReservationStatus = "PENDING" | "CONFIRMED" | "ARRIVED" | "NO_SHOW" | "CANCELLED";
 export type TableZone = "INDOOR" | "TERRACE" | "VIP" | "BAR_COUNTER";
 
+/** A change a restaurant makes to one of its bookings (PROJECT_PLAN.md §5.3). */
+export type RestaurantChange = "CONFIRMED" | "CANCELLED" | "ARRIVED" | "NO_SHOW";
+
 /**
- * One booking in a restaurant's book for the day. GET
- * /api/owner/restaurants/:restaurantId/reservations?date=YYYY-MM-DD answers a ListResponse of
- * these: every status, by time and then table. A booking belongs to the date it starts on, on the
- * restaurant's clock.
+ * One booking in a restaurant's book for the day:
+ * - GET /api/owner/restaurants/:restaurantId/reservations?date=YYYY-MM-DD answers a ListResponse
+ *   of these: every status, by time and then table. A booking belongs to the date it starts on, on
+ *   the restaurant's clock.
+ * - PATCH …/reservations/:reservationId moves one on, and answers it inside { reservation }. Send
+ *   { status: "CONFIRMED" } (before the start), { status: "CANCELLED", reason? } (any time; the
+ *   guest sees the reason), { status: "ARRIVED" } (a confirmed booking from 30 minutes before
+ *   the start, or a pending one while it's on) or { status: "NO_SHOW" } (a confirmed booking,
+ *   after the start). Only a pending booking can be confirmed. Refusals: 404
+ *   RESERVATION_NOT_FOUND, and 409 with what the booking already is (NOT_CONFIRMED,
+ *   ALREADY_CONFIRMED, ALREADY_ARRIVED, ALREADY_NO_SHOW, ALREADY_CANCELLED) or the time
+ *   (CONFIRM_TOO_LATE, ARRIVAL_TOO_EARLY, ARRIVAL_TOO_LATE, NO_SHOW_TOO_EARLY). Fetch the day
+ *   again after a 409.
  */
 export interface OwnerReservation {
   id: string;
@@ -255,6 +277,15 @@ export interface OwnerReservation {
   specialRequests: string | null;
   /** Who cancelled, and why, for a cancelled booking. Otherwise null. */
   cancellation: { by: "CUSTOMER" | "RESTAURANT" | null; reason: string | null } | null;
+  /**
+   * The changes the restaurant can make to it now, as the server decides them, so the dashboard
+   * offers only those. The server still checks each one when it's sent.
+   */
+  actions: RestaurantChange[];
+}
+
+export interface OwnerReservationResponse {
+  reservation: OwnerReservation;
 }
 
 /**

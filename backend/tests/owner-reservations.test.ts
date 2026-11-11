@@ -1,16 +1,19 @@
-// GET /api/owner/restaurants/:restaurantId/reservations?date=: a restaurant's bookings for one
-// day. The service is tested in owner-reservations.service.test.ts. Here it's replaced, to test the
-// HTTP side: the ownership check, the date and pages, and the reply.
+// A restaurant's bookings at /api/owner/restaurants/:restaurantId/reservations: one day's, read
+// with GET ?date=, and moving one on with PATCH /:reservationId. The services are tested in
+// owner-reservations.service.test.ts and owner-status.service.test.ts. Here they're replaced, to
+// test the HTTP side: the ownership check, the input, and the reply.
 import request from "supertest";
 import type { Response } from "supertest";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { app } from "../src/app.ts";
+import { ConflictError, NotFoundError } from "../src/lib/errors.ts";
 import { prisma } from "../src/lib/prisma.ts";
 import { ACCESS_COOKIE } from "../src/modules/auth/auth.cookies.ts";
 import { signAccessToken } from "../src/modules/auth/token.service.ts";
 import type { SessionUser } from "../src/modules/auth/token.service.ts";
 import { listReservationsForDay } from "../src/modules/reservations/owner.service.ts";
+import { changeReservationStatus } from "../src/modules/reservations/reservations.service.ts";
 import { ownedRow } from "./fixtures/restaurants.ts";
 import { ani, davit, sessionUser } from "./fixtures/users.ts";
 
@@ -21,6 +24,12 @@ vi.mock("../src/lib/prisma.ts", () => ({
 }));
 vi.mock("../src/modules/reservations/owner.service.ts", () => ({
   listReservationsForDay: vi.fn(),
+}));
+vi.mock("../src/modules/reservations/reservations.service.ts", () => ({
+  changeReservationStatus: vi.fn(),
+  createReservation: vi.fn(),
+  listGuestReservations: vi.fn(),
+  cancelReservation: vi.fn(),
 }));
 
 const ANIS = ownedRow().id;
@@ -42,6 +51,7 @@ const day = {
       guest: { name: "Aram Petrosyan" },
       specialRequests: null,
       cancellation: null,
+      actions: ["CANCELLED" as const],
     },
   ],
   meta: { page: 1, pageSize: 100, total: 1 },
@@ -130,5 +140,130 @@ describe("GET /api/owner/restaurants/:restaurantId/reservations", () => {
     expect(signedOut.status).toBe(401);
     expect(customer.status).toBe(403);
     expect(listReservationsForDay).not.toHaveBeenCalled();
+  });
+});
+
+describe("PATCH /api/owner/restaurants/:restaurantId/reservations/:reservationId", () => {
+  const booking = day.data[0]!;
+  const ID = booking.id;
+  const moved = vi.mocked(changeReservationStatus);
+  const patch = async (restaurantId: string, id: string, body: object, user?: SessionUser) => {
+    const call = request(app)
+      .patch(`${reservations(restaurantId)}/${id}`)
+      .send(body);
+    return user ? call.set("Cookie", `${ACCESS_COOKIE}=${await signAccessToken(user)}`) : call;
+  };
+
+  test("an owner confirms, cancels, or marks a guest arrived or no-show, and gets the booking back", async () => {
+    const changes: [object, object][] = [
+      [{ status: "CONFIRMED" }, { status: "CONFIRMED" }],
+      [{ status: "ARRIVED" }, { status: "ARRIVED" }],
+      [{ status: "NO_SHOW" }, { status: "NO_SHOW" }],
+      [{ status: "CANCELLED" }, { status: "CANCELLED" }],
+      // A reason is trimmed, and a blank one counts as none.
+      [
+        { status: "CANCELLED", reason: "  We're closed tonight.  " },
+        { status: "CANCELLED", reason: "We're closed tonight." },
+      ],
+      [
+        { status: "CANCELLED", reason: "   " },
+        { status: "CANCELLED", reason: null },
+      ],
+    ];
+
+    for (const [body, checked] of changes) {
+      moved.mockResolvedValueOnce({ ...booking });
+
+      const reply = await patch(ANIS, ID, body, ani);
+
+      expect(reply.status, JSON.stringify(body)).toBe(200);
+      expect(reply.body).toEqual({ reservation: booking });
+      expect(moved).toHaveBeenLastCalledWith(ani.id, ANIS, ID, checked);
+    }
+  });
+
+  test("the owner and the restaurant come from the session and the address, never the body", async () => {
+    moved.mockResolvedValue({ ...booking });
+
+    await patch(ANIS, ID, { status: "CONFIRMED", ownerId: davit.id, restaurantId: DAVITS }, ani);
+
+    expect(moved).toHaveBeenCalledWith(ani.id, ANIS, ID, { status: "CONFIRMED" });
+  });
+
+  test("a missing or unknown status is a 400, and nothing goes back to pending", async () => {
+    for (const body of [{}, { status: "PENDING" }, { status: "confirmed" }, { status: 3 }]) {
+      const reply = await patch(ANIS, ID, body, ani);
+
+      expect(reply.status, JSON.stringify(body)).toBe(400);
+      expect(reply.body.error.details.fields).toEqual({
+        status: "Choose confirmed, cancelled, arrived or no-show.",
+      });
+    }
+    expect(moved).not.toHaveBeenCalled();
+  });
+
+  test("a reason goes only with a cancellation, as text of up to 200 characters", async () => {
+    const cases: [object, string][] = [
+      [{ status: "CONFIRMED", reason: "Running late" }, "Only a cancellation takes a reason."],
+      [{ status: "CANCELLED", reason: "x".repeat(201) }, "Use 200 characters or fewer."],
+      [{ status: "CANCELLED", reason: 42 }, "Enter a reason."],
+    ];
+
+    for (const [body, message] of cases) {
+      const reply = await patch(ANIS, ID, body, ani);
+
+      expect(reply.status, JSON.stringify(body)).toBe(400);
+      expect(reply.body.error.details.fields).toEqual({ reason: message });
+    }
+    expect(moved).not.toHaveBeenCalled();
+  });
+
+  test("a booking id that isn't a UUID is a 400, before the database is asked", async () => {
+    const reply = await patch(ANIS, "booking-1", { status: "CONFIRMED" }, ani);
+
+    expect(reply.status).toBe(400);
+    expect(reply.body.error.details.fields).toEqual({ reservationId: "Choose a booking." });
+    expect(moved).not.toHaveBeenCalled();
+  });
+
+  test("someone else's restaurant is a 404 before anything else is checked", async () => {
+    const reply = await patch(DAVITS, "booking-1", { status: "PENDING" }, ani);
+
+    expect(reply.status).toBe(404);
+    expect(reply.body.error.code).toBe("RESTAURANT_NOT_FOUND");
+    expect(moved).not.toHaveBeenCalled();
+  });
+
+  test("only owners move bookings on: signed out gets 401 and a guest 403", async () => {
+    expect((await patch(ANIS, ID, { status: "CONFIRMED" })).status).toBe(401);
+    expect((await patch(ANIS, ID, { status: "CONFIRMED" }, sessionUser)).status).toBe(403);
+    expect(moved).not.toHaveBeenCalled();
+  });
+
+  test("a refusal reaches the owner as it is", async () => {
+    const refusals: [Error, number, string][] = [
+      [new NotFoundError("RESERVATION_NOT_FOUND"), 404, "We couldn’t find this booking."],
+      [new ConflictError("ALREADY_CANCELLED"), 409, "This booking is already cancelled."],
+      [new ConflictError("NOT_CONFIRMED"), 409, "Confirm this booking first."],
+      [
+        new ConflictError("ARRIVAL_TOO_LATE"),
+        409,
+        "This booking is already over, so the guest can’t be marked as arrived.",
+      ],
+      [
+        new ConflictError("CONFIRM_TOO_LATE"),
+        409,
+        "This booking has already started, so it can’t be confirmed.",
+      ],
+    ];
+
+    for (const [error, status, message] of refusals) {
+      moved.mockRejectedValueOnce(error);
+
+      const reply = await patch(ANIS, ID, { status: "CONFIRMED" }, ani);
+
+      expect(reply.status).toBe(status);
+      expect(reply.body.error.message).toBe(message);
+    }
   });
 });

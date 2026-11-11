@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -139,6 +139,25 @@ describe("its contents", () => {
     renderMenu(true, vi.fn(), "/register");
 
     expect(screen.queryAllByRole("link", { current: "page" })).toHaveLength(0);
+  });
+});
+
+describe("its main lines, by who's signed in", () => {
+  const lines = (): string[] =>
+    within(screen.getByRole("navigation", { name: "Main" }))
+      .getAllByRole("link")
+      .map((one) => one.textContent ?? "");
+
+  test("a guest finds My reservations, not For restaurants", () => {
+    renderMenu(true, vi.fn(), "/", account({ user: lilit }));
+
+    expect(lines()).toEqual(["Discover All of Yerevan", "My reservations Your bookings"]);
+  });
+
+  test("an owner finds their Dashboard", () => {
+    renderMenu(true, vi.fn(), "/", account({ user: { ...lilit, role: "OWNER" } }));
+
+    expect(lines()).toEqual(["Discover All of Yerevan", "Dashboard Your restaurants"]);
   });
 });
 

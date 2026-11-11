@@ -105,7 +105,13 @@ describe("listReservationsForDay", () => {
   });
 
   test("each booking comes back with its times on the restaurant's clock, and the guest's name only", async () => {
-    const list = await listReservationsForDay(ani.id, RESTAURANT, friday);
+    // Friday at 18:10, ten minutes into the booking: it can be cancelled, or marked arrived or not.
+    const list = await listReservationsForDay(
+      ani.id,
+      RESTAURANT,
+      friday,
+      new Date("2026-11-13T14:10:00.000Z"),
+    );
 
     expect(list.data).toEqual([
       {
@@ -120,6 +126,7 @@ describe("listReservationsForDay", () => {
         guest: { name: "Aram Petrosyan" },
         specialRequests: null,
         cancellation: null,
+        actions: ["CANCELLED", "ARRIVED", "NO_SHOW"],
       },
     ]);
     // The database is asked for the guest's name and nothing else about them: exactly that.

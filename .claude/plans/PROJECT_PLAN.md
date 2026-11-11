@@ -30,13 +30,13 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | 🟡 The page works and shows photos (4.4), with space for reviews (9.1) |
 | Choose a date, time and number of guests; see available tables | 6 | ✅ Guests choose them on each restaurant's page, and see the free tables (6.1–6.6) |
 | Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | ✅ Guests book on the restaurant's page, in one transaction that locks the table (6.5, 6.6). Of 20 at once for one table, exactly one succeeds (7.1) |
-| View and cancel their reservations | 8 | ⬜ |
+| View and cancel their reservations | 8 | ✅ Guests see their upcoming and past bookings on My reservations, and cancel them there (8.1, 8.3) |
 | **Restaurants** | | |
 | A private dashboard to manage restaurant information | 4 | ✅ Owners add, edit and publish their restaurants on their dashboard (4.2, 4.6) |
 | Set opening hours | 4 | ✅ The whole week, saved at once and refusing overlaps (4.3), on the dashboard (4.6) |
 | Add and manage tables and their capacity | 5 | ✅ Owners add, edit, switch off and back on their tables on their dashboard, and upcoming bookings are protected (5.1, 5.3) |
 | Block tables or dates | 5 | ✅ Owners block a table or the whole restaurant, for a date or a time range, on their dashboard, and a block with bookings inside is refused (5.2, 5.3) |
-| View, confirm and cancel reservations; mark guests arrived or no-show | 4, 8 | 🟡 Owners see a day's bookings on their dashboard (4.5, 4.6); the actions come in Step 8 |
+| View, confirm and cancel reservations; mark guests arrived or no-show | 4, 8 | ✅ Owners see a day's bookings on their dashboard, refreshed every 30 seconds, and confirm, cancel or mark guests arrived or no-show there (4.5, 4.6, 8.2, 8.4) |
 | **Restaurant data** | | |
 | A few restaurants added by hand | 3 | ✅ 7 demo restaurants |
 | Import real Yerevan restaurants with Google Places ("later") | 9 | ⬜ Deferred until after Step 8 (task 9.7) |
@@ -86,7 +86,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (11 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 1608 tests ✅, and 31 database tests on real PostgreSQL ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 1709 tests ✅, and 63 database tests on real PostgreSQL ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
@@ -107,15 +107,19 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - `GET /api/restaurants/:slug/availability`: anyone can see a published restaurant's times on a date, each with the tables free for the party
   - the test database: `npm run test:db -w backend` creates and migrates `yerevan_test` beside `yerevan_dev`, then runs the database tests there. `npm test` still needs no database
   - `POST /api/reservations`: a signed-in guest books a table, in one transaction that locks the table's row, then its restaurant's, runs the four checks and saves the booking as pending
+  - `GET /api/reservations` and `PATCH /api/reservations/:id`: a signed-in guest lists their own upcoming and past bookings, and cancels one while it's pending or confirmed and hasn't started
+  - `PATCH /api/owner/restaurants/:restaurantId/reservations/:id`: an owner confirms a booking, cancels it with an optional reason the guest sees, or marks the guest arrived or no-show, each only from the statuses and at the times §5.3 allows
   - the booking widget on each restaurant's page, with its states and the "Book a table" flow in `/design`
+  - My reservations: a guest's upcoming and past bookings, each cancellable until it starts, with its states in `/design`
+  - the dashboard's bookings: confirm, cancel with a reason, or mark guests arrived or no-show, refreshed every 30 seconds, with the "Handle a reservation" flow in `/design`
   - the owner's dashboard: their restaurants, adding one, and each restaurant's bookings for a day, information and publishing, opening hours and photos, with their states in `/design`
   - the Home page, the Browse page and each restaurant's page, with their states in `/design`
   - `lib/api.ts`: GET, POST, PUT, PATCH and DELETE, renewing an expired session once
   - route guards: signed-out visitors go to Sign in and come back afterwards, and owner pages are for owners only
+  - the main links follow who's signed in, on desktop and phones: My reservations for guests, the Dashboard for owners, and For restaurants for everyone else
   - the Seghan foundation and `/design`
 - **Partly built:**
   - the time helpers
-  - a placeholder page: My reservations (task 8.3)
 
 ## 4. Data model
 
@@ -168,6 +172,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 | `PENDING` → `CONFIRMED` | Restaurant | Before the start |
 | `PENDING` or `CONFIRMED` → `CANCELLED` | Guest or restaurant | Guest: before the start. Restaurant: any time, optionally with a reason |
 | `CONFIRMED` → `ARRIVED` | Restaurant | From 30 minutes before the start |
+| `PENDING` → `ARRIVED` | Restaurant | During the booking, for a guest who comes before it was confirmed |
 | `CONFIRMED` → `NO_SHOW` | Restaurant | After the start |
 
 ### 5.4 Double booking
@@ -177,7 +182,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - Only a real conflict answers `409`: an overlap the database refuses (`23P01`), or one the booking's own checks find.
   - Any other database error stays a `500` and is logged. It's never disguised as a conflict.
 - ✅ Blocks and table deactivation take the same lock: table changes since 5.1, blocks since 5.2.
-- ⬜ A status change applies only if the status is still the expected one.
+- ✅ A status change applies only if the status is still one that change may come from (§5.3): the guest's cancel (8.1) and the restaurant's changes (8.2).
 - ✅ **Lock order, the same everywhere:** table rows first, in ascending `id` order, then the restaurant's row. Whatever holds a restaurant's row (publishing, opening hours, photos, adding a table) never then waits for a table's, so no two changes can wait on each other forever. Switching a table off takes both, table first, so it can't cross publishing (5.1). A whole-restaurant block takes every table, then the restaurant (5.2).
 - ✅ **What a booking must lock (from 5.2):** its table's row, then a shared lock (`FOR KEY SHARE`) on its restaurant's row, before it checks for blocks. The second lock is what keeps a whole-restaurant block from missing a table added at that very moment.
 - ✅ The page says the table was just booked, and shows the free tables again.
@@ -190,8 +195,9 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 4. ✅ Booking a taken time through the API gets `409` (6.5).
 5. ✅ Of 20 bookings for one table at the same moment, exactly one succeeds and the rest get `409` (7.1).
 6. ✅ A booking and a block made at the same moment never both succeed (7.2).
-7. Of a confirm and a cancel at the same moment, exactly one wins (8.2).
+7. ✅ Status changes that cross never undo or overwrite each other. A confirm and a cancel at the same moment always leave the booking cancelled, since a confirmed booking can still be cancelled. The restaurant's and the guest's cancels, or an arrival and a no-show, never both apply (8.2).
 8. ✅ Publishing a restaurant and switching off its last active table at the same moment never leave it published without one (7.2).
+9. ✅ Of two cancels of one booking at the same moment, only one applies (8.1).
 
 ## 6. UI/UX and `/design`
 
@@ -201,8 +207,8 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 |---|---|---|
 | Foundations | Color, type, space, shape, motion | ✅ |
 | Components | Actions, forms, feedback, brand and shell, protected designs, responsive | ✅ |
-| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, Sign in with Google, the route guard's states, Home, Browse, the restaurant page, and the owner's dashboard, tables and blocked times included, and the booking widget |
-| Flows | "Book a table" (the assignment's final result) and "Handle a reservation" | 🟡 "Book a table" is built; "Handle a reservation" comes in Step 8 |
+| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, Sign in with Google, the route guard's states, Home, Browse, the restaurant page, and the owner's dashboard, tables and blocked times included, the booking widget, and My reservations |
+| Flows | "Book a table" (the assignment's final result) and "Handle a reservation" | ✅ Both are built |
 
 **Key states:** loading, empty, error with a retry, field errors, sending, success, not allowed, and each feature's own errors. A step is done only when its screens are in `/design`. `EmptyState` and `ErrorState` keep their approved look.
 
@@ -349,13 +355,17 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
   Table changes take the table's lock since 5.1, and blocks since 5.2. Database tests 6 and 8 prove it on real PostgreSQL.
 - [x] **7.3 "Just taken" state,** on the page and in `/design`. *Check:* try it in two browser windows.
 
-### Step 8: Reservation management ⬜
+### Step 8: Reservation management ✅
 
-- [ ] **8.1 Guest:** My reservations (upcoming and past), and cancel. *Check:* API tests.
-- [ ] **8.2 Restaurant:** confirm, cancel, arrived and no-show (§5.3). Each change applies only if the status is still the expected one. *Check:* unit tests for the rules, and database test 7.
-- [ ] **8.3 My reservations page,** with its states in `/design`. *Check:* in the browser.
-- [ ] **8.4 Dashboard reservations with actions,** refreshing every 30 seconds, and the "Handle a reservation" flow in `/design`. *Check:* in the browser.
-- [ ] **Core complete:** the assignment's final result works from start to finish.
+- [x] **8.1 Guest:** My reservations (upcoming and past), and cancel. *Check:* API tests.
+
+  **Decided (8.1):** `GET /api/reservations?when=upcoming|past` lists the guest's own bookings, every status included: upcoming ones aren't over yet, and past ones are. `PATCH /api/reservations/:id` with `{ "status": "CANCELLED" }` cancels one only while it's pending or confirmed and hasn't started, as a compare-and-set, and each booking says whether it can still be cancelled (`canCancel`).
+- [x] **8.2 Restaurant:** confirm, cancel, arrived and no-show (§5.3). Each change applies only if the status is still the expected one. *Check:* unit tests for the rules, and database test 7.
+
+  **Decided (8.2):** `PATCH /api/owner/restaurants/:restaurantId/reservations/:id` with `{ "status": "CONFIRMED" | "CANCELLED" | "ARRIVED" | "NO_SHOW" }` moves a booking on, and only a cancellation takes a `reason`. The rules are checked first, then the update applies only while the status is still one the change may come from. So a confirm can be followed by a cancel, by either side, but a cancelled, arrived or no-show booking never changes again.
+- [x] **8.3 My reservations page,** with its states in `/design`. *Check:* in the browser.
+- [x] **8.4 Dashboard reservations with actions,** refreshing every 30 seconds, and the "Handle a reservation" flow in `/design`. *Check:* in the browser.
+- [x] **Core complete:** the assignment's final result works from start to finish.
 
 ### Step 9: Final features, post-MVP ⬜
 

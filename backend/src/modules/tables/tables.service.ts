@@ -214,7 +214,7 @@ export async function updateTable(
             refusalMessage(inTheWay.refusal, inTheWay.bookings),
             {
               reservations: inTheWay.bookings.map((booking) =>
-                toOwnerReservation(booking, table.timezone),
+                toOwnerReservation(booking, table.timezone, now),
               ),
             },
           );

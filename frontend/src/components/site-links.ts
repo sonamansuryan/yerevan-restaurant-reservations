@@ -1,3 +1,5 @@
+import type { AuthUser } from "@/types/api";
+
 export interface SiteLink {
   to: string;
   label: string;
@@ -10,8 +12,6 @@ export interface SiteLink {
   marksPage?: boolean;
 }
 
-// The pages behind most of these links arrive in later tasks. Until then, they show the not-found
-// page, which is why nothing here needs changing when each page is built.
 export const discover: SiteLink = {
   to: "/restaurants",
   label: "Discover",
@@ -26,6 +26,31 @@ export const forRestaurants: SiteLink = {
 };
 
 export const signIn: SiteLink = { to: "/login", label: "Sign in", note: "Your reservations" };
+
+export const myReservations: SiteLink = {
+  to: "/reservations",
+  label: "My reservations",
+  note: "Your bookings",
+};
+
+export const dashboard: SiteLink = {
+  to: "/dashboard",
+  label: "Dashboard",
+  note: "Your restaurants",
+};
+
+/**
+ * The main links, by who's signed in: a guest's bookings, an owner's dashboard, and for anyone
+ * else the page for restaurants. While the app is still asking who's signed in, only Discover
+ * shows, so a wrong link never flashes up.
+ */
+export function mainLinks(user: AuthUser | null | undefined): SiteLink[] {
+  if (user === undefined) return [discover];
+  if (user === null) return [discover, forRestaurants];
+  if (user.role === "CUSTOMER") return [discover, myReservations];
+  if (user.role === "OWNER") return [discover, dashboard];
+  return [discover];
+}
 
 // The query matches the `district` filter of GET /api/restaurants.
 export const districts = [

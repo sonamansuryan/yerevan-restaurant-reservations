@@ -71,9 +71,13 @@ export const routes: RouteObject[] = [
             ],
           },
           {
-            // For anyone signed in.
-            element: <RequireAuth />,
-            children: [{ path: "reservations", element: <ReservationsPage /> }],
+            // For guests: their own bookings. A restaurant's are on its dashboard.
+            element: <RequireAuth roles={["CUSTOMER"]} notAllowedTitle="This page is for guests" />,
+            children: [
+              { path: "reservations", element: <ReservationsPage key="upcoming" /> },
+              // Its own key, so what was said on one list doesn't follow you to the other.
+              { path: "reservations/past", element: <ReservationsPage key="past" when="past" /> },
+            ],
           },
           {
             // For restaurant owners only.

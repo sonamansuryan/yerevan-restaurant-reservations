@@ -1,6 +1,9 @@
+import { useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 import type { To } from "react-router";
 
+import type { BookingChange } from "@/features/dashboard/bookingChanges";
+import { BookingChangeNotice } from "@/features/dashboard/components/BookingChangeNotice";
 import { DayBookings } from "@/features/dashboard/components/DayBookings";
 import { DayNav } from "@/features/dashboard/components/DayNav";
 import {
@@ -33,6 +36,7 @@ import {
 } from "@/features/design/samples";
 import { screenStates } from "@/features/design/tokens";
 import { ApiError } from "@/lib/api";
+import type { OwnerReservation } from "@/types/api";
 
 type StateOf<K extends keyof typeof screenStates> = (typeof screenStates)[K][number];
 
@@ -111,11 +115,74 @@ function Day({ date, children }: { date: string; children: ReactNode }): ReactEl
   );
 }
 
-const day: Record<StateOf<"dayBookings">, ReactElement> = {
-  "Today, a full book (live)": (
+/** The live day: a change is made here as the server would answer it, instead of being sent. */
+function LiveDay(): ReactElement {
+  const [bookings, setBookings] = useState(fridayBookings);
+  const [changed, setChanged] = useState<OwnerReservation | null>(null);
+
+  function change(reservation: OwnerReservation, { status, reason }: BookingChange): void {
+    const done: OwnerReservation = {
+      ...reservation,
+      status,
+      cancellation: status === "CANCELLED" ? { by: "RESTAURANT", reason: reason ?? null } : null,
+      // Confirmed, the guest can still arrive or be cancelled. The others are final.
+      actions: status === "CONFIRMED" ? ["ARRIVED", "CANCELLED"] : [],
+    };
+    setBookings((all) => all.map((one) => (one.id === reservation.id ? done : one)));
+    setChanged(done);
+  }
+
+  return (
     <Day date={FRIDAY}>
-      <p className="mb-4 text-ui text-ink-secondary">{daySummary(fridayBookings)}</p>
-      <DayBookings reservations={fridayBookings} />
+      <BookingChangeNotice changed={changed} refusal={null} className="mb-6" />
+      <p className="mb-4 text-ui text-ink-secondary">{daySummary(bookings)}</p>
+      <DayBookings reservations={bookings} onChange={change} />
+    </Day>
+  );
+}
+
+// Aram Khachatryan's pending booking at 19:30, as each state finds it.
+const aramsBooking = fridayBookings.find(({ id }) => id === "booking-4") ?? fridayBookings[0]!;
+const withAram = (aram: OwnerReservation): OwnerReservation[] =>
+  fridayBookings.map((one) => (one.id === aram.id ? aram : one));
+const aramConfirmed: OwnerReservation = {
+  ...aramsBooking,
+  status: "CONFIRMED",
+  actions: ["ARRIVED", "CANCELLED"],
+};
+const aramCancelledFirst: OwnerReservation = {
+  ...aramsBooking,
+  status: "CANCELLED",
+  cancellation: { by: "CUSTOMER", reason: null },
+  actions: [],
+};
+const alreadyCancelled = new ApiError(
+  409,
+  "ALREADY_CANCELLED",
+  "This booking is already cancelled.",
+);
+
+const day: Record<StateOf<"dayBookings">, ReactElement> = {
+  "Today, a full book (live)": <LiveDay />,
+  "Sending a change": (
+    <Day date={FRIDAY}>
+      <DayBookings
+        reservations={fridayBookings}
+        onChange={ignore}
+        changing={{ id: aramsBooking.id, status: "CONFIRMED" }}
+      />
+    </Day>
+  ),
+  Changed: (
+    <Day date={FRIDAY}>
+      <BookingChangeNotice changed={aramConfirmed} refusal={null} className="mb-6" />
+      <DayBookings reservations={withAram(aramConfirmed)} onChange={ignore} />
+    </Day>
+  ),
+  "Changed elsewhere first": (
+    <Day date={FRIDAY}>
+      <BookingChangeNotice changed={null} refusal={alreadyCancelled} className="mb-6" />
+      <DayBookings reservations={withAram(aramCancelledFirst)} onChange={ignore} />
     </Day>
   ),
   "Another day, no bookings": (
@@ -240,7 +307,7 @@ export function DashboardScreens(): ReactElement {
       </Group>
       <Group
         title="Bookings"
-        note="The first part, one day at a time, view only. The date is in the address, so Back works and a day can be bookmarked. A booking belongs to the day it starts on, so 22:30 to 00:30 is Friday's. The live one's date can be tried, and goes nowhere."
+        note="The first part, one day at a time, asked for again every 30 seconds. Each booking offers the changes the server allows now: Confirm before the start, Mark arrived from 30 minutes before, or while a booking not yet confirmed is on, Mark no-show after the start, and Cancel booking any time, with a reason the guest sees. A no-show and a cancellation ask first. The questions open over the page, so only the live one shows them, and it changes the booking here instead of sending anything. The date is in the address, so Back works and a day can be bookmarked. A booking belongs to the day it starts on, so 22:30 to 00:30 is Friday's."
       >
         <Specimens wide specimens={day} />
       </Group>

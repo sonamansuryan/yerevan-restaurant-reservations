@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import type { Account } from "@/components/account";
 import { CurrentPageDot, Logo } from "@/components/Logo";
 import { MenuAccountLine } from "@/components/MobileMenu";
-import { HeaderAccount } from "@/components/SiteHeader";
+import { HeaderAccount, MainLinks } from "@/components/SiteHeader";
 import { Group, Section, Specimen, SpecimenRow } from "@/features/design/components/parts";
 
 /** A sample account: undefined while checking, null for nobody, or a person by name. */
@@ -24,6 +24,26 @@ const accountStates = [
   {
     label: "Sign-out failed",
     account: sampleAccount("Lilit Harutyunyan", { signOutFailed: true }),
+  },
+];
+
+// The header's main links, by who's signed in. The menu on phones lists the same ones.
+const mainLinkStates = [
+  { label: "Checking: Discover only", account: sampleAccount(undefined) },
+  { label: "Signed out", account: sampleAccount(null) },
+  { label: "A guest", account: sampleAccount("Lilit Harutyunyan") },
+  {
+    label: "A restaurant owner",
+    account: {
+      ...sampleAccount(null),
+      user: {
+        id: "sample-owner",
+        email: "ani.owner@example.com",
+        name: "Ani Sargsyan",
+        phone: null,
+        role: "OWNER" as const,
+      },
+    },
   },
 ];
 
@@ -57,6 +77,20 @@ export function BrandSection(): ReactElement {
           Discover
           <CurrentPageDot />
         </span>
+      </Group>
+      <Group
+        title="The main links"
+        note="Beside the logo, from tablet width up, and first in the menu on phones. A guest reaches My reservations and an owner their Dashboard, where anyone else sees the page for restaurants."
+      >
+        <SpecimenRow>
+          {mainLinkStates.map(({ label, account }) => (
+            <Specimen key={label} label={label} frozen>
+              <div className="flex items-baseline gap-8">
+                <MainLinks user={account.user} />
+              </div>
+            </Specimen>
+          ))}
+        </SpecimenRow>
       </Group>
       <Group
         title="Account, in the header"

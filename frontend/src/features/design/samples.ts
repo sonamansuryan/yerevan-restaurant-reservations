@@ -255,11 +255,15 @@ function booking(
     guest: { name: guest },
     specialRequests: null,
     cancellation: null,
+    actions: [],
     ...extra,
   };
 }
 
-/** A full Friday: every status, notes, a cancellation with a reason, and a booking past midnight. */
+/**
+ * A full Friday, seen at 19:10: every status, notes, a cancellation with a reason, and a booking past
+ * midnight. Each offers the changes the server would allow then.
+ */
 export const fridayBookings: OwnerReservation[] = [
   booking(
     "booking-1",
@@ -287,7 +291,7 @@ export const fridayBookings: OwnerReservation[] = [
     T3,
     4,
     "CONFIRMED",
-    { specialRequests: "Birthday dinner" },
+    { specialRequests: "Birthday dinner", actions: ["CANCELLED", "ARRIVED", "NO_SHOW"] },
   ),
   booking(
     "booking-4",
@@ -297,7 +301,10 @@ export const fridayBookings: OwnerReservation[] = [
     T5,
     6,
     "PENDING",
-    { specialRequests: "A table by the window, if possible" },
+    {
+      specialRequests: "A table by the window, if possible",
+      actions: ["CONFIRMED", "CANCELLED"],
+    },
   ),
   booking(
     "booking-5",
@@ -317,6 +324,7 @@ export const fridayBookings: OwnerReservation[] = [
     T1,
     2,
     "CONFIRMED",
+    { actions: ["CANCELLED"] },
   ),
 ];
 
@@ -473,4 +481,108 @@ export const sampleBooked: GuestReservation = {
   restaurant: { slug: "lori-smokehouse", name: "Lori Smokehouse" },
   table: { label: "T2", zone: "INDOOR" },
   specialRequests: null,
+  cancellation: null,
+  canCancel: true,
 };
+
+/** A guest's booking as My reservations lists it: Lori's T2 on the demo Saturday unless told. */
+function guestBooking(
+  extra: Partial<GuestReservation> & Pick<GuestReservation, "id">,
+): GuestReservation {
+  return { ...sampleBooked, ...extra };
+}
+
+/** Lilit's upcoming bookings, seen on Wednesday 11 November 2026: two on Saturday, one cancelled. */
+export const guestUpcoming: GuestReservation[] = [
+  guestBooking({
+    id: "upcoming-sevan",
+    status: "CONFIRMED",
+    partySize: 4,
+    startsAt: "2026-11-14T09:00:00.000Z",
+    endsAt: "2026-11-14T10:30:00.000Z",
+    starts: "13:00",
+    ends: "14:30",
+    restaurant: { slug: "sevan-and-salt", name: "Sevan & Salt" },
+    table: { label: "T3", zone: "INDOOR" },
+  }),
+  guestBooking({ id: "upcoming-lori", specialRequests: "A table by the window, please." }),
+  guestBooking({
+    id: "upcoming-tsiran",
+    status: "CANCELLED",
+    date: "2026-11-20",
+    startsAt: "2026-11-20T19:30:00.000Z",
+    endsAt: "2026-11-20T21:00:00.000Z",
+    starts: "23:30",
+    ends: "01:00",
+    restaurant: { slug: "tsiran-wine-room", name: "Tsiran Wine Room" },
+    table: { label: "B1", zone: "BAR_COUNTER" },
+    cancellation: { by: "RESTAURANT", reason: "We’re closed for a private event that night." },
+    canCancel: false,
+  }),
+  guestBooking({
+    id: "upcoming-sardarapat",
+    status: "CONFIRMED",
+    partySize: 6,
+    date: "2026-11-28",
+    startsAt: "2026-11-28T16:00:00.000Z",
+    endsAt: "2026-11-28T18:00:00.000Z",
+    starts: "20:00",
+    ends: "22:00",
+    restaurant: { slug: armenianName.slug, name: armenianName.name },
+    table: { label: "T5", zone: "TERRACE" },
+  }),
+];
+
+/** Lilit's past bookings, latest first, back to last New Year's Eve. */
+export const guestPast: GuestReservation[] = [
+  guestBooking({
+    id: "past-lori",
+    status: "ARRIVED",
+    date: "2026-11-06",
+    startsAt: "2026-11-06T16:00:00.000Z",
+    endsAt: "2026-11-06T18:00:00.000Z",
+    starts: "20:00",
+    ends: "22:00",
+    table: { label: "T1", zone: "INDOOR" },
+    canCancel: false,
+  }),
+  guestBooking({
+    id: "past-kond",
+    status: "NO_SHOW",
+    partySize: 4,
+    date: "2026-10-31",
+    startsAt: "2026-10-31T15:30:00.000Z",
+    endsAt: "2026-10-31T17:30:00.000Z",
+    starts: "19:30",
+    ends: "21:30",
+    restaurant: { slug: "kond-house", name: "Kond House" },
+    table: { label: "T3", zone: "INDOOR" },
+    canCancel: false,
+  }),
+  guestBooking({
+    id: "past-nurr",
+    status: "CANCELLED",
+    partySize: 3,
+    date: "2026-10-23",
+    startsAt: "2026-10-23T09:00:00.000Z",
+    endsAt: "2026-10-23T11:00:00.000Z",
+    starts: "13:00",
+    ends: "15:00",
+    restaurant: { slug: "nurr", name: "Nurr" },
+    table: { label: "T4", zone: "TERRACE" },
+    cancellation: { by: "CUSTOMER", reason: null },
+    canCancel: false,
+  }),
+  guestBooking({
+    id: "past-new-year",
+    status: "ARRIVED",
+    partySize: 6,
+    date: "2025-12-31",
+    startsAt: "2025-12-31T16:00:00.000Z",
+    endsAt: "2025-12-31T18:00:00.000Z",
+    starts: "20:00",
+    ends: "22:00",
+    table: { label: "T4", zone: "INDOOR" },
+    canCancel: false,
+  }),
+];

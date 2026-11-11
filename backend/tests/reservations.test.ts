@@ -1,6 +1,7 @@
-// POST /api/reservations, with the service replaced: who may book, the input checks and the
-// replies. The transaction and its checks are in reservations.service.test.ts, and on real
-// PostgreSQL in tests/db/booking.test.ts.
+// A guest's bookings at /api/reservations, with the service replaced: booking, listing and
+// cancelling. Who may, the input checks and the replies. The transaction and its checks are in
+// reservations.service.test.ts, the list and the cancel in guest-reservations.service.test.ts, and
+// all three run on real PostgreSQL in tests/db/booking.test.ts and tests/db/cancelling.test.ts.
 import request from "supertest";
 import type { Response } from "supertest";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -10,20 +11,35 @@ import { ConflictError, NotFoundError } from "../src/lib/errors.ts";
 import { ACCESS_COOKIE } from "../src/modules/auth/auth.cookies.ts";
 import { signAccessToken } from "../src/modules/auth/token.service.ts";
 import type { SessionUser } from "../src/modules/auth/token.service.ts";
-import { createReservation } from "../src/modules/reservations/reservations.service.ts";
+import {
+  cancelReservation,
+  createReservation,
+  listGuestReservations,
+} from "../src/modules/reservations/reservations.service.ts";
+import type { GuestReservation } from "../src/modules/reservations/reservations.service.ts";
 import { prismaError } from "./fixtures/prisma-errors.ts";
 import { bookingRequest, guestReservation } from "./fixtures/reservations.ts";
 import { ani, sessionUser } from "./fixtures/users.ts";
 
 vi.mock("../src/modules/reservations/reservations.service.ts", () => ({
   createReservation: vi.fn(),
+  listGuestReservations: vi.fn(),
+  cancelReservation: vi.fn(),
 }));
 
 const book = vi.mocked(createReservation);
+const listMine = vi.mocked(listGuestReservations);
+const cancelMine = vi.mocked(cancelReservation);
 
 afterEach(() => {
-  book.mockReset();
+  vi.resetAllMocks();
 });
+
+/** Asks with the signed-in person's cookie, or as no one. */
+async function signedIn(req: request.Test, user?: SessionUser): Promise<Response> {
+  if (user) req.set("Cookie", `${ACCESS_COOKIE}=${await signAccessToken(user)}`);
+  return req;
+}
 
 async function post(body: object, user?: SessionUser): Promise<Response> {
   const req = request(app).post("/api/reservations");
@@ -129,5 +145,165 @@ describe("POST /api/reservations", () => {
 
     expect(reply.status).toBe(500);
     expect(reply.body.error.code).toBe("INTERNAL_ERROR");
+  });
+});
+
+describe("GET /api/reservations", () => {
+  const onePage = { data: [guestReservation], meta: { page: 1, pageSize: 20, total: 1 } };
+  const list = (query: string, user?: SessionUser): Promise<Response> =>
+    signedIn(request(app).get(`/api/reservations${query}`), user);
+
+  test("a signed-in guest gets their upcoming bookings by default, 20 to a page", async () => {
+    listMine.mockResolvedValue(onePage);
+
+    const reply = await list("", sessionUser);
+
+    expect(reply.status).toBe(200);
+    expect(reply.body).toEqual(onePage);
+    expect(listMine).toHaveBeenCalledWith(sessionUser.id, {
+      when: "upcoming",
+      page: 1,
+      pageSize: 20,
+    });
+  });
+
+  test("past bookings, another page and another size are asked for in the address", async () => {
+    listMine.mockResolvedValue(onePage);
+
+    await list("?when=past&page=2&pageSize=50", sessionUser);
+    await list("?when=&page=", sessionUser);
+
+    expect(listMine).toHaveBeenNthCalledWith(1, sessionUser.id, {
+      when: "past",
+      page: 2,
+      pageSize: 50,
+    });
+    // Left empty, they mean the defaults.
+    expect(listMine).toHaveBeenNthCalledWith(2, sessionUser.id, {
+      when: "upcoming",
+      page: 1,
+      pageSize: 20,
+    });
+  });
+
+  test("the guest is whoever is signed in: the address can't ask for anyone else's bookings", async () => {
+    listMine.mockResolvedValue(onePage);
+
+    await list("?userId=someone-else", sessionUser);
+
+    expect(listMine).toHaveBeenCalledWith(sessionUser.id, {
+      when: "upcoming",
+      page: 1,
+      pageSize: 20,
+    });
+  });
+
+  test("an unknown list, page or size is a 400 under its field", async () => {
+    const cases: [string, Record<string, string>][] = [
+      ["?when=soon", { when: "Choose upcoming or past." }],
+      ["?page=0", { page: "Choose a page from 1." }],
+      ["?pageSize=51", { pageSize: "Choose a page size from 1 to 50." }],
+    ];
+
+    for (const [query, fields] of cases) {
+      const reply = await list(query, sessionUser);
+
+      expect(reply.status, query).toBe(400);
+      expect(reply.body.error.details.fields, query).toEqual(fields);
+    }
+    expect(listMine).not.toHaveBeenCalled();
+  });
+
+  test("only guests have bookings to list: signed out is a 401, and an owner a 403", async () => {
+    expect((await list("")).status).toBe(401);
+    expect((await list("", ani)).status).toBe(403);
+    expect(listMine).not.toHaveBeenCalled();
+  });
+});
+
+describe("PATCH /api/reservations/:reservationId", () => {
+  const ID = guestReservation.id;
+  const cancelled: GuestReservation = {
+    ...guestReservation,
+    status: "CANCELLED",
+    cancellation: { by: "CUSTOMER", reason: null },
+    canCancel: false,
+  };
+  const patch = (id: string, body: object, user?: SessionUser): Promise<Response> =>
+    signedIn(request(app).patch(`/api/reservations/${id}`).send(body), user);
+
+  test("a guest cancels their booking, and gets it back cancelled", async () => {
+    cancelMine.mockResolvedValue(cancelled);
+
+    const reply = await patch(ID, { status: "CANCELLED" }, sessionUser);
+
+    expect(reply.status).toBe(200);
+    expect(reply.body).toEqual({ reservation: cancelled });
+    expect(cancelMine).toHaveBeenCalledWith(sessionUser.id, ID);
+  });
+
+  test("the guest is whoever is signed in, and the body can't name anyone or change anything else", async () => {
+    cancelMine.mockResolvedValue(cancelled);
+
+    const reply = await patch(
+      ID,
+      { status: "CANCELLED", userId: "someone-else", cancelledBy: "RESTAURANT", partySize: 8 },
+      sessionUser,
+    );
+
+    expect(reply.status).toBe(200);
+    expect(cancelMine).toHaveBeenCalledWith(sessionUser.id, ID);
+  });
+
+  test("cancelling is a guest's only change: any other status, or none, is a 400", async () => {
+    for (const body of [
+      { status: "CONFIRMED" },
+      { status: "ARRIVED" },
+      { status: "cancelled" },
+      {},
+    ]) {
+      const reply = await patch(ID, body, sessionUser);
+
+      expect(reply.status, JSON.stringify(body)).toBe(400);
+      expect(reply.body.error.details.fields).toEqual({
+        status: "A guest can only cancel a booking.",
+      });
+    }
+    expect(cancelMine).not.toHaveBeenCalled();
+  });
+
+  test("a booking id that isn't a UUID is a 400, before the database is asked", async () => {
+    const reply = await patch("booking-1", { status: "CANCELLED" }, sessionUser);
+
+    expect(reply.status).toBe(400);
+    expect(reply.body.error.details.fields).toEqual({ reservationId: "Choose a booking." });
+    expect(cancelMine).not.toHaveBeenCalled();
+  });
+
+  test("only guests cancel here: signed out is a 401, and an owner a 403", async () => {
+    expect((await patch(ID, { status: "CANCELLED" })).status).toBe(401);
+    expect((await patch(ID, { status: "CANCELLED" }, ani)).status).toBe(403);
+    expect(cancelMine).not.toHaveBeenCalled();
+  });
+
+  test("a refusal reaches the guest as it is", async () => {
+    const refusals: [Error, number, string][] = [
+      [new NotFoundError("RESERVATION_NOT_FOUND"), 404, "We couldn’t find this booking."],
+      [new ConflictError("ALREADY_CANCELLED"), 409, "This booking is already cancelled."],
+      [
+        new ConflictError("CANCEL_TOO_LATE"),
+        409,
+        "This booking has already started, so it can’t be cancelled.",
+      ],
+    ];
+
+    for (const [error, status, message] of refusals) {
+      cancelMine.mockRejectedValueOnce(error);
+
+      const reply = await patch(ID, { status: "CANCELLED" }, sessionUser);
+
+      expect(reply.status).toBe(status);
+      expect(reply.body.error.message).toBe(message);
+    }
   });
 });

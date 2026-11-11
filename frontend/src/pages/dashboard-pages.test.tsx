@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 // The owner's dashboard through the real routes, shell, guard and hooks, with a fake API.
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Mock } from "vitest";
 
+import { DAY_REFRESH_MS } from "@/features/dashboard/hooks/useDayReservations";
 import { clockTime } from "@/features/dashboard/hours";
 import type { Opening } from "@/features/dashboard/hours";
 import {
@@ -55,6 +56,8 @@ interface FakeOptions {
   tableSwitch?: Response;
   /** What adding a block answers, if not a success. */
   blocking?: Response;
+  /** What a change to a booking answers, if not a success. */
+  bookingChange?: Response;
 }
 
 /**
@@ -69,6 +72,7 @@ function fakeApi({
   blocks = [],
   tableSwitch,
   blocking,
+  bookingChange,
 }: FakeOptions = {}): Mock {
   let created: OwnerRestaurant | null = null;
   let tablesNow = [...tables];
@@ -97,6 +101,13 @@ function fakeApi({
         return Promise.resolve(publishing);
       }
       return Promise.resolve(json({ restaurant: { ...lori, ...(body as object) } }));
+    }
+    if (url.startsWith(`${LORI}/reservations/`) && method === "PATCH") {
+      if (bookingChange) return Promise.resolve(bookingChange);
+      const booking = fridayBookings.find(({ id }) => url.endsWith(`/${id}`));
+      return Promise.resolve(
+        json({ reservation: { ...booking, ...(body as object), actions: [] } }),
+      );
     }
     if (url.startsWith(`${LORI}/reservations?`)) {
       return Promise.resolve(
@@ -260,6 +271,60 @@ describe("your restaurants", () => {
     expect(screen.getByRole("link", { name: "Set opening hours" }).getAttribute("href")).toBe(
       `/dashboard/${NEW_ID}/hours`,
     );
+  });
+});
+
+describe("moving a booking on, in the day's bookings", () => {
+  const dayRequests = (fetch: Mock): string[] =>
+    requests(fetch).filter((url) => url.startsWith(`${LORI}/reservations?`));
+
+  test("Confirm sends the change, says so, and asks for the day again", async () => {
+    const fetch = fakeApi();
+    renderAt(`/dashboard/${ownedLori.id}`);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Confirm, Aram Khachatryan, 19:30" }),
+    );
+
+    expect(
+      await screen.findByText("Aram Khachatryan’s booking at 19:30 is confirmed."),
+    ).toBeDefined();
+    expect(sent(fetch, "PATCH", `${LORI}/reservations/booking-4`)).toEqual({ status: "CONFIRMED" });
+    await waitFor(() => expect(dayRequests(fetch)).toHaveLength(2));
+  });
+
+  test("a change refused by the server is said in its words, and the day is asked for again", async () => {
+    const fetch = fakeApi({
+      bookingChange: refusal(409, "ALREADY_CANCELLED", "This booking is already cancelled."),
+    });
+    renderAt(`/dashboard/${ownedLori.id}`);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Confirm, Aram Khachatryan, 19:30" }),
+    );
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "This booking is already cancelled.",
+    );
+    await waitFor(() => expect(dayRequests(fetch)).toHaveLength(2));
+  });
+
+  test("an open day is asked for again every 30 seconds, so new bookings show up", async () => {
+    // Intervals are faked too here, so 30 seconds can pass at once.
+    vi.useFakeTimers({
+      toFake: ["Date", "setInterval", "clearInterval"],
+      now: new Date("2026-11-13T10:00:00Z"),
+    });
+    const fetch = fakeApi();
+    renderAt(`/dashboard/${ownedLori.id}`);
+    await screen.findByText("Anahit Petrosyan");
+    const asked = dayRequests(fetch).length;
+
+    await act(async () => {
+      vi.advanceTimersByTime(DAY_REFRESH_MS);
+    });
+
+    await vi.waitFor(() => expect(dayRequests(fetch)).toHaveLength(asked + 1));
   });
 });
 

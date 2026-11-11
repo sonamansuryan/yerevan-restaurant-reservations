@@ -15,6 +15,7 @@ import { BookingScreens } from "@/features/design/components/BookingScreens";
 import { BrowseScreens } from "@/features/design/components/BrowseScreens";
 import { DashboardScreens } from "@/features/design/components/DashboardScreens";
 import { HomeScreens } from "@/features/design/components/HomeScreens";
+import { ReservationsScreens } from "@/features/design/components/ReservationsScreens";
 import { RestaurantPageScreens } from "@/features/design/components/RestaurantPageScreens";
 import { TablesAndBlocksScreens } from "@/features/design/components/TablesAndBlocksScreens";
 import { Group, Section, Specimens } from "@/features/design/components/parts";
@@ -203,6 +204,7 @@ export function ScreensSection(): ReactElement {
       <BrowseScreens />
       <RestaurantPageScreens />
       <BookingScreens />
+      <ReservationsScreens />
       <DashboardScreens />
       <TablesAndBlocksScreens />
     </>

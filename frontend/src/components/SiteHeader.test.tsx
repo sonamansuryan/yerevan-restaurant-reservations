@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -126,6 +126,32 @@ test("Menu opens the mobile menu, and Close closes it", async () => {
   await userEvent.click(screen.getByRole("button", { name: "Close" }));
 
   expect(HTMLDialogElement.prototype.close).toHaveBeenCalledOnce();
+});
+
+describe("the main links, by who's signed in", () => {
+  test("a guest reaches My reservations instead of For restaurants, marked on either list", () => {
+    renderAt("/reservations/past", account({ user: lilit }));
+
+    expect(link("My reservations").getAttribute("href")).toBe("/reservations");
+    expect(link("My reservations").getAttribute("aria-current")).toBe("page");
+    expect(screen.queryByRole("link", { name: "For restaurants" })).toBeNull();
+  });
+
+  test("an owner reaches their Dashboard, marked in each restaurant's parts too", () => {
+    const ani: AuthUser = { ...lilit, name: "Ani Sargsyan", role: "OWNER" };
+    renderAt("/dashboard/restaurant-1/tables", account({ user: ani }));
+
+    expect(link("Dashboard").getAttribute("href")).toBe("/dashboard");
+    expect(link("Dashboard").getAttribute("aria-current")).toBe("page");
+    expect(screen.queryByRole("link", { name: "For restaurants" })).toBeNull();
+  });
+
+  test("while the app is still checking, only Discover shows", () => {
+    renderAt("/", account({ user: undefined }));
+
+    const main = within(screen.getByRole("navigation", { name: "Main" }));
+    expect(main.getAllByRole("link").map((one) => one.textContent)).toEqual(["Discover"]);
+  });
 });
 
 describe("the account corner", () => {

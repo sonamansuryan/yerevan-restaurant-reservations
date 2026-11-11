@@ -7,7 +7,7 @@ import { LinkButton } from "@/components/Button";
 import { CurrentPageDot, Logo } from "@/components/Logo";
 import { MastheadRow, MastheadStart, MenuToggle } from "@/components/Masthead";
 import { PageContainer } from "@/components/PageContainer";
-import { discover, districts, forRestaurants, signIn } from "@/components/site-links";
+import { discover, districts, mainLinks, signIn } from "@/components/site-links";
 import type { SiteLink } from "@/components/site-links";
 
 interface MobileMenuProps {
@@ -138,8 +138,9 @@ export function MobileMenu({ open, onClose, account }: MobileMenuProps): ReactEl
         <PageContainer className="menu-sheet-list flex flex-1 flex-col pt-4 pb-6">
           <nav aria-label="Main">
             <ul>
-              <MenuLine link={discover} onClose={onClose} />
-              <MenuLine link={forRestaurants} onClose={onClose} />
+              {mainLinks(account.user).map((link) => (
+                <MenuLine key={link.to} link={link} onClose={onClose} />
+              ))}
               <MenuAccountLine account={account} onClose={onClose} />
             </ul>
           </nav>

@@ -6,6 +6,8 @@ import { NotFoundError } from "../../lib/errors.ts";
 import { prisma } from "../../lib/prisma.ts";
 import { localClockTime, localDayRange } from "../../lib/time.ts";
 import type { ReservationDayQuery } from "./owner.schemas.ts";
+import { RESTAURANT_CHANGES, restaurantChangeProblem } from "./reservations.rules.ts";
+import type { RestaurantChange } from "./reservations.rules.ts";
 
 /** One booking in the restaurant's book for the day. */
 export interface OwnerReservation {
@@ -24,6 +26,11 @@ export interface OwnerReservation {
   specialRequests: string | null;
   /** Who cancelled, and why, for a cancelled booking. Otherwise null. */
   cancellation: { by: CancelledBy | null; reason: string | null } | null;
+  /**
+   * The changes the restaurant can make to it now (PROJECT_PLAN.md §5.3), so the dashboard offers
+   * only those. The server still checks each one when it's made.
+   */
+  actions: RestaurantChange[];
 }
 
 export interface OwnerReservationList {
@@ -56,6 +63,7 @@ export async function listReservationsForDay(
   ownerId: string,
   restaurantId: string,
   { date, page, pageSize }: ReservationDayQuery,
+  now: Date = new Date(),
 ): Promise<OwnerReservationList> {
   // The owner again, as in every owner query, even though requireRestaurantOwner has checked.
   const restaurant = await prisma.restaurant.findUnique({
@@ -88,12 +96,16 @@ export async function listReservationsForDay(
   );
 
   return {
-    data: rows.map((row) => toOwnerReservation(row, restaurant.timezone)),
+    data: rows.map((row) => toOwnerReservation(row, restaurant.timezone, now)),
     meta: { page, pageSize, total },
   };
 }
 
-export function toOwnerReservation(row: ReservationRow, timeZone: string): OwnerReservation {
+export function toOwnerReservation(
+  row: ReservationRow,
+  timeZone: string,
+  now: Date = new Date(),
+): OwnerReservation {
   return {
     id: row.id,
     status: row.status,
@@ -107,5 +119,8 @@ export function toOwnerReservation(row: ReservationRow, timeZone: string): Owner
     specialRequests: row.specialRequests,
     cancellation:
       row.status === "CANCELLED" ? { by: row.cancelledBy, reason: row.cancellationReason } : null,
+    actions: RESTAURANT_CHANGES.filter(
+      (change) => restaurantChangeProblem(row, change, now) === null,
+    ),
   };
 }

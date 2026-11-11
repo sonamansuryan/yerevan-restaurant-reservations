@@ -9,7 +9,7 @@ import { CurrentPageDot, Logo } from "@/components/Logo";
 import { MastheadRow, MastheadStart, MenuToggle } from "@/components/Masthead";
 import { MobileMenu } from "@/components/MobileMenu";
 import { PageContainer } from "@/components/PageContainer";
-import { discover, forRestaurants, signIn } from "@/components/site-links";
+import { discover, mainLinks, signIn } from "@/components/site-links";
 import type { SiteLink } from "@/components/site-links";
 import { cx } from "@/lib/cx";
 
@@ -31,6 +31,17 @@ function MastheadLink({ link }: { link: SiteLink }): ReactElement {
         <CurrentPageDot />
       </span>
     </NavLink>
+  );
+}
+
+/** The way around the site, for whoever is signed in: see mainLinks(). */
+export function MainLinks({ user }: { user: Account["user"] }): ReactElement {
+  return (
+    <>
+      {mainLinks(user).map((link) => (
+        <MastheadLink key={link.to} link={link} />
+      ))}
+    </>
   );
 }
 
@@ -93,8 +104,7 @@ export function SiteHeader({ account }: SiteHeaderProps): ReactElement {
           <MastheadStart>
             <Logo className="text-logo text-ink md:text-masthead" />
             <nav aria-label="Main" className="flex items-baseline gap-8 max-md:hidden">
-              <MastheadLink link={discover} />
-              <MastheadLink link={forRestaurants} />
+              <MainLinks user={account.user} />
             </nav>
             <MenuToggle aria-haspopup="dialog" onClick={() => setMenuOpen(true)}>
               Menu

@@ -74,4 +74,37 @@ export const guestReservation: GuestReservation = {
   restaurant: { slug: "lori-smokehouse", name: "Lori Smokehouse" },
   table: { label: "T1", zone: "INDOOR" },
   specialRequests: null,
+  cancellation: null,
+  canCancel: true,
 };
+
+/** A Reservation row with what a guest's own list selects. */
+export interface GuestReservationRow {
+  id: string;
+  status: ReservationStatus;
+  partySize: number;
+  startsAt: Date;
+  endsAt: Date;
+  specialRequests: string | null;
+  cancelledBy: CancelledBy | null;
+  cancellationReason: string | null;
+  restaurant: { slug: string; name: string; timezone: string };
+  table: { label: string; zone: TableZone };
+}
+
+/** That same booking as the database holds it: Lori's T1 on Saturday, 19:00 to 21:00, pending. */
+export function guestReservationRow(extra: Partial<GuestReservationRow> = {}): GuestReservationRow {
+  return {
+    id: guestReservation.id,
+    status: "PENDING",
+    partySize: 2,
+    startsAt: new Date("2026-11-14T15:00:00.000Z"),
+    endsAt: new Date("2026-11-14T17:00:00.000Z"),
+    specialRequests: null,
+    cancelledBy: null,
+    cancellationReason: null,
+    restaurant: { slug: "lori-smokehouse", name: "Lori Smokehouse", timezone: "Asia/Yerevan" },
+    table: { label: "T1", zone: "INDOOR" },
+    ...extra,
+  };
+}

@@ -1,17 +1,20 @@
 import type { ReactElement } from "react";
 
 import { PageContainer } from "@/components/PageContainer";
+import { MyReservations } from "@/features/reservations/components/MyReservations";
+import { useMyReservations } from "@/features/reservations/hooks/useMyReservations";
+import type { ReservationsWhen } from "@/features/reservations/reservations";
 
-/**
- * A stand-in at the address the footer already links to, so the guard has a page to protect. Task
- * 8.3 builds the real list of bookings here.
- */
-export function ReservationsPage(): ReactElement {
+/** /reservations and /reservations/past: the signed-in guest's own bookings. */
+export function ReservationsPage({ when = "upcoming" }: { when?: ReservationsWhen }): ReactElement {
+  const reservations = useMyReservations(when);
   return (
     <PageContainer className="py-section-sm">
-      <title>My reservations · Seghan</title>
+      <title>
+        {when === "upcoming" ? "My reservations · Seghan" : "Past reservations · Seghan"}
+      </title>
       <h1 className="font-display text-section">My reservations</h1>
-      <p className="mt-3 text-body text-ink-secondary">Your bookings will be listed here.</p>
+      <MyReservations {...reservations} className="mt-6" />
     </PageContainer>
   );
 }

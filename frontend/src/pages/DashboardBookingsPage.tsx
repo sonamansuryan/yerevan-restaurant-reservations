@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 import { useNavigate } from "react-router";
 
 import { Pagination } from "@/components/Pagination";
+import { BookingChangeNotice } from "@/features/dashboard/components/BookingChangeNotice";
 import { DayBookings } from "@/features/dashboard/components/DayBookings";
 import { DayNav } from "@/features/dashboard/components/DayNav";
 import {
@@ -12,11 +13,17 @@ import {
 } from "@/features/dashboard/components/DashboardStates";
 import { useDashboardRestaurant } from "@/features/dashboard/hooks/useDashboardRestaurant";
 import { useDayParams } from "@/features/dashboard/hooks/useDayParams";
-import { useDayReservations } from "@/features/dashboard/hooks/useDayReservations";
+import {
+  useChangeBooking,
+  useDayReservations,
+} from "@/features/dashboard/hooks/useDayReservations";
 import { daySummary } from "@/features/dashboard/labels";
 import { yerevanToday } from "@/lib/time";
 
-/** A restaurant's bookings for one day, today unless the address names another. View only. */
+/**
+ * A restaurant's bookings for one day, today unless the address names another, asked for again every
+ * 30 seconds. Each booking offers the changes the server allows now.
+ */
 export function DashboardBookingsPage(): ReactElement {
   const restaurant = useDashboardRestaurant();
   const navigate = useNavigate();
@@ -25,6 +32,18 @@ export function DashboardBookingsPage(): ReactElement {
   const { date, page, dayHref, pageHref } = useDayParams(today);
   const day = useDayReservations(restaurant.id, date, page);
   const retrying = day.isFetching && day.errorUpdateCount > 0;
+  const change = useChangeBooking(restaurant.id);
+  const { reset } = change;
+
+  // What was said about the last change belongs to the day it was made on.
+  useEffect(() => {
+    reset();
+  }, [date, page, reset]);
+
+  const changing =
+    change.isPending && change.variables
+      ? { id: change.variables.reservation.id, status: change.variables.status }
+      : null;
 
   let body: ReactElement;
   if (day.data && day.data.data.length > 0) {
@@ -36,7 +55,11 @@ export function DashboardBookingsPage(): ReactElement {
         {pageCount === 1 && (
           <p className="mb-4 text-ui text-ink-secondary">{daySummary(bookings)}</p>
         )}
-        <DayBookings reservations={bookings} />
+        <DayBookings
+          reservations={bookings}
+          onChange={(reservation, next) => change.mutate({ reservation, ...next })}
+          changing={changing}
+        />
         <Pagination page={page} pageCount={pageCount} hrefFor={pageHref} className="mt-8" />
       </>
     );
@@ -63,7 +86,14 @@ export function DashboardBookingsPage(): ReactElement {
         hrefFor={dayHref}
         onGoTo={(chosen) => void navigate(dayHref(chosen))}
       />
-      <div className="mt-8">{body}</div>
+      <div className="mt-8">
+        <BookingChangeNotice
+          changed={change.data ?? null}
+          refusal={change.error}
+          className="mb-6"
+        />
+        {body}
+      </div>
     </>
   );
 }

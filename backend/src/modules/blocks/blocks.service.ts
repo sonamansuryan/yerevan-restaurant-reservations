@@ -166,7 +166,7 @@ export async function addBlock(
     });
     if (inside.length > 0) {
       throw new ConflictError("BLOCK_HAS_BOOKINGS", blockRefusalMessage(inside.length), {
-        reservations: inside.map((booking) => toOwnerReservation(booking, timeZone)),
+        reservations: inside.map((booking) => toOwnerReservation(booking, timeZone, now)),
       });
     }
 

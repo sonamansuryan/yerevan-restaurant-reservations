@@ -204,6 +204,7 @@ describe("in a production build", () => {
       "login",
       "register",
       "reservations",
+      "reservations/past",
       "dashboard",
       "dashboard/new",
       // One restaurant's dashboard: its parts sit inside dashboard/:restaurantId, Bookings first.
