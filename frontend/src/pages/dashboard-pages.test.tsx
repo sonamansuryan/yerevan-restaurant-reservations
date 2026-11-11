@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // The owner's dashboard through the real routes, shell, guard and hooks, with a fake API.
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
@@ -15,11 +15,14 @@ import {
   ownedDraft,
   ownedLori,
   ownedRestaurants,
+  ownedTables,
+  sampleBlocks,
   samplePhotos,
   tsiranPage,
 } from "@/features/design/samples";
+import { shiftDate } from "@/lib/time";
 import { routes } from "@/router";
-import type { AuthUser, OwnerRestaurant } from "@/types/api";
+import type { AuthUser, OwnerBlock, OwnerRestaurant, OwnerTable } from "@/types/api";
 
 type TestRouter = ReturnType<typeof createMemoryRouter>;
 
@@ -45,6 +48,13 @@ interface FakeOptions {
   lori?: OwnerRestaurant;
   /** What publishing answers, if not a success. */
   publishing?: Response;
+  /** Lori's tables and blocks. Changes to them are kept, so a list fetched again shows them. */
+  tables?: OwnerTable[];
+  blocks?: OwnerBlock[];
+  /** What switching a table off or on answers, if not a success. */
+  tableSwitch?: Response;
+  /** What adding a block answers, if not a success. */
+  blocking?: Response;
 }
 
 /**
@@ -55,8 +65,16 @@ function fakeApi({
   restaurants = ownedRestaurants,
   lori = ownedLori,
   publishing,
+  tables = ownedTables,
+  blocks = [],
+  tableSwitch,
+  blocking,
 }: FakeOptions = {}): Mock {
   let created: OwnerRestaurant | null = null;
+  let tablesNow = [...tables];
+  let blocksNow = [...blocks];
+  const list = <T,>(data: T[]): Response =>
+    json({ data, meta: { page: 1, pageSize: 100, total: data.length } });
   const fetch = vi.fn((url: string, init?: RequestInit) => {
     const method = init?.method ?? "GET";
     const body: unknown = init?.body ? JSON.parse(String(init.body)) : undefined;
@@ -101,6 +119,40 @@ function fakeApi({
       return Promise.resolve(json({ openingHours: week }));
     }
     if (url === `${LORI}/photos`) return Promise.resolve(json({ photos: samplePhotos }));
+    if (url === `${LORI}/tables` && method === "GET") return Promise.resolve(list(tablesNow));
+    if (url === `${LORI}/tables` && method === "POST") {
+      const table = { id: "table-new", isActive: true, ...(body as object) } as OwnerTable;
+      tablesNow = [...tablesNow, table];
+      return Promise.resolve(json({ table }, 201));
+    }
+    if (url.startsWith(`${LORI}/tables/`) && method === "PATCH") {
+      const change = body as Partial<OwnerTable>;
+      if (tableSwitch && "isActive" in change) return Promise.resolve(tableSwitch);
+      const id = url.slice(`${LORI}/tables/`.length);
+      tablesNow = tablesNow.map((table) => (table.id === id ? { ...table, ...change } : table));
+      return Promise.resolve(json({ table: tablesNow.find((table) => table.id === id) }));
+    }
+    if (url === `${LORI}/blocks` && method === "GET") return Promise.resolve(list(blocksNow));
+    if (url === `${LORI}/blocks` && method === "POST") {
+      if (blocking) return Promise.resolve(blocking);
+      const { date } = body as { date: string };
+      const block: OwnerBlock = {
+        id: "block-new",
+        table: null,
+        startsAt: `${date}T00:00:00.000Z`,
+        endsAt: `${shiftDate(date, 1)}T00:00:00.000Z`,
+        starts: { date, time: "00:00" },
+        ends: { date: shiftDate(date, 1), time: "00:00" },
+        reason: null,
+      };
+      blocksNow = [...blocksNow, block];
+      return Promise.resolve(json({ block }, 201));
+    }
+    if (url.startsWith(`${LORI}/blocks/`) && method === "DELETE") {
+      const id = url.slice(`${LORI}/blocks/`.length);
+      blocksNow = blocksNow.filter((block) => block.id !== id);
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }
     if (/^\/api\/owner\/restaurants\/[\da-f-]{36}(\/|$)/.test(url)) {
       return Promise.resolve(
         refusal(404, "RESTAURANT_NOT_FOUND", "We couldn’t find this restaurant."),
@@ -134,6 +186,13 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-13T10:00:00Z") });
   // jsdom has no scrollTo(), which ScrollRestoration calls.
   window.scrollTo = vi.fn();
+  // Nor showModal(), which Modal uses. These open and close it the simple way.
+  HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
+    this.open = true;
+  });
+  HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+    this.open = false;
+  });
 });
 
 afterEach(() => {
@@ -334,5 +393,130 @@ describe("the restaurant's parts", () => {
 
     expect(await screen.findByRole("img", { name: "Lori Smokehouse, cover photo" })).toBeDefined();
     expect(screen.getByText("5 of 10 photos.", { exact: false })).toBeDefined();
+  });
+});
+
+describe("tables and blocked times", () => {
+  const tablesPage = `/dashboard/${ownedLori.id}/tables`;
+  const blocksPage = `/dashboard/${ownedLori.id}/blocks`;
+
+  test("Tables lists the tables by area, with what can be booked at a glance", async () => {
+    fakeApi();
+    renderAt(tablesPage);
+
+    expect(await screen.findByText("7 tables, 37 seats · 1 inactive")).toBeDefined();
+    expect(
+      screen.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent),
+    ).toEqual(["Indoor", "Terrace", "VIP", "Bar counter"]);
+    expect(screen.getByRole("link", { name: "Tables" }).getAttribute("aria-current")).toBe("page");
+    await waitFor(() => expect(document.title).toBe("Tables · Lori Smokehouse · Seghan"));
+  });
+
+  test("adding a table sends it, closes the form, and shows it in its area", async () => {
+    const fetch = fakeApi();
+    renderAt(tablesPage);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Add a table" }));
+    const form = screen.getByRole("dialog", { name: "Add a table" });
+    await userEvent.type(within(form).getByLabelText("Name"), "T7");
+    await userEvent.selectOptions(within(form).getByLabelText("Seats"), "6");
+    await userEvent.selectOptions(within(form).getByLabelText("Fewest guests"), "3");
+    await userEvent.selectOptions(within(form).getByLabelText("Area"), "Terrace");
+    await userEvent.click(within(form).getByRole("button", { name: "Add the table" }));
+
+    expect(await screen.findByRole("button", { name: "Edit T7" })).toBeDefined();
+    expect(sent(fetch, "POST", `${LORI}/tables`)).toEqual({
+      label: "T7",
+      capacity: 6,
+      minCapacity: 3,
+      zone: "TERRACE",
+    });
+    expect((form as HTMLDialogElement).open).toBe(false);
+  });
+
+  test("switching off a table that bookings need shows them under its line", async () => {
+    const fetch = fakeApi({
+      tableSwitch: refusal(
+        409,
+        "TABLE_HAS_BOOKINGS",
+        "An upcoming booking still needs this table. You can deactivate it once that booking is over or cancelled.",
+        { reservations: fridayBookings.slice(0, 1) },
+      ),
+    });
+    renderAt(tablesPage);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Deactivate T1" }));
+
+    const t1 = screen.getByRole("button", { name: "Edit T1" }).closest("li") as HTMLElement;
+    expect((await within(t1).findByRole("alert")).textContent).toContain(
+      "An upcoming booking still needs this table.",
+    );
+    expect(within(t1).getByRole("list", { name: "Bookings in the way" }).textContent).toContain(
+      "Lilit Harutyunyan",
+    );
+    expect(sent(fetch, "PATCH", `${LORI}/tables/table-t1`)).toEqual({ isActive: false });
+  });
+
+  test("Blocked times starts empty, and blocking a whole day sends just the date", async () => {
+    const fetch = fakeApi();
+    renderAt(blocksPage);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Block a time" }));
+    const form = screen.getByRole("dialog", { name: "Block a time" });
+    // The form starts on today, in Yerevan.
+    expect((within(form).getByLabelText("Date") as HTMLInputElement).value).toBe("2026-11-13");
+    fireEvent.change(within(form).getByLabelText("Date"), { target: { value: "2026-12-31" } });
+    await userEvent.click(within(form).getByRole("button", { name: "Block this time" }));
+
+    expect(await screen.findByText("Thursday 31 December")).toBeDefined();
+    expect(sent(fetch, "POST", `${LORI}/blocks`)).toEqual({ date: "2026-12-31" });
+    expect(screen.getByRole("link", { name: "Blocked times" }).getAttribute("aria-current")).toBe(
+      "page",
+    );
+  });
+
+  test("a block with bookings inside lists them in the form, and stays open", async () => {
+    fakeApi({
+      blocking: refusal(
+        409,
+        "BLOCK_HAS_BOOKINGS",
+        "2 upcoming bookings fall inside this block. Choose another time, or cancel them first.",
+        { reservations: fridayBookings.slice(2, 4) },
+      ),
+    });
+    renderAt(blocksPage);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Block a time" }));
+    const form = screen.getByRole("dialog", { name: "Block a time" });
+    await userEvent.click(within(form).getByRole("button", { name: "Block this time" }));
+
+    expect((await within(form).findByRole("alert")).textContent).toContain(
+      "2 upcoming bookings fall inside this block.",
+    );
+    expect(
+      within(form).getByRole("list", { name: "Bookings in the way" }).querySelectorAll("li"),
+    ).toHaveLength(2);
+    expect((form as HTMLDialogElement).open).toBe(true);
+  });
+
+  test("removing a block asks first, then removes it", async () => {
+    const fetch = fakeApi({ blocks: sampleBlocks });
+    renderAt(blocksPage);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /^Remove, Saturday 14 November/ }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Remove block" }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: /^Remove, Saturday 14 November/ })).toBeNull(),
+    );
+    expect(
+      fetch.mock.calls.some(
+        ([url, init]) =>
+          url === `${LORI}/blocks/block-1` &&
+          (init as RequestInit | undefined)?.method === "DELETE",
+      ),
+    ).toBe(true);
   });
 });

@@ -49,7 +49,7 @@ function ButtonStates({ variant, onDark = false }: ButtonStatesProps): ReactElem
   );
 }
 
-const PARTS = ["Bookings", "Information", "Opening hours", "Photos"];
+const PARTS = ["Bookings", "Information", "Opening hours", "Tables", "Blocked times", "Photos"];
 
 /**
  * The links lead nowhere real, so these are frozen. The open part's link is this page's own

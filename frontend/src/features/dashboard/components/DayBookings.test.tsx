@@ -45,6 +45,20 @@ describe("a day's bookings", () => {
   });
 });
 
+test("a table whose name already says so isn't called a table twice", () => {
+  const [first] = fridayBookings;
+  if (!first) throw new Error("No sample booking");
+
+  render(
+    <DayBookings
+      reservations={[{ ...first, table: { id: "table-1", label: "Table 1", zone: "INDOOR" } }]}
+    />,
+  );
+
+  expect(screen.getByRole("listitem").textContent).toContain("Table 1 · Indoor · 2 guests");
+  expect(screen.getByRole("listitem").textContent).not.toContain("Table Table");
+});
+
 describe("the day's heading and ways around", () => {
   // Days are links, so each points where hrefFor says.
   const hrefFor = (date: string): To => ({ search: `?date=${date}` });

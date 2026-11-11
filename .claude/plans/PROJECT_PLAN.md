@@ -34,8 +34,8 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | **Restaurants** | | |
 | A private dashboard to manage restaurant information | 4 | ✅ Owners add, edit and publish their restaurants on their dashboard (4.2, 4.6) |
 | Set opening hours | 4 | ✅ The whole week, saved at once and refusing overlaps (4.3), on the dashboard (4.6) |
-| Add and manage tables and their capacity | 5 | 🟡 The API adds, edits and deactivates tables, protecting upcoming bookings (5.1); the page comes in 5.3 |
-| Block tables or dates | 5 | 🟡 The API blocks one table or the whole restaurant, for a date or a time range, refusing a block with bookings inside (5.2); the page comes in 5.3 |
+| Add and manage tables and their capacity | 5 | ✅ Owners add, edit, switch off and back on their tables on their dashboard, and upcoming bookings are protected (5.1, 5.3) |
+| Block tables or dates | 5 | ✅ Owners block a table or the whole restaurant, for a date or a time range, on their dashboard, and a block with bookings inside is refused (5.2, 5.3) |
 | View, confirm and cancel reservations; mark guests arrived or no-show | 4, 8 | 🟡 Owners see a day's bookings on their dashboard (4.5, 4.6); the actions come in Step 8 |
 | **Restaurant data** | | |
 | A few restaurants added by hand | 3 | ✅ 7 demo restaurants |
@@ -86,7 +86,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (10 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 1447 tests ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 1492 tests ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
@@ -101,6 +101,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - owners list their own restaurants, and read their saved opening hours and photos
   - owners add, edit and deactivate their tables. Deactivating a table, or giving it fewer seats than a booked party, is refused while upcoming bookings need it, and those bookings are listed. A published restaurant always keeps at least one active table. Each change locks the table's row first, as a booking will
   - owners block one table or the whole restaurant, for a date or a time range. A block with upcoming bookings inside is refused, and those bookings are listed. Blocks are listed and removed
+  - the dashboard's Tables and Blocked times pages, with their states in `/design`
   - the owner's dashboard: their restaurants, adding one, and each restaurant's bookings for a day, information and publishing, opening hours and photos, with their states in `/design`
   - the Home page, the Browse page and each restaurant's page, with their states in `/design`
   - `lib/api.ts`: GET, POST, PUT, PATCH and DELETE, renewing an expired session once
@@ -196,7 +197,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 |---|---|---|
 | Foundations | Color, type, space, shape, motion | ✅ |
 | Components | Actions, forms, feedback, brand and shell, protected designs, responsive | ✅ |
-| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, Sign in with Google, the route guard's states, Home, Browse, the restaurant page, and the owner's dashboard |
+| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, Sign in with Google, the route guard's states, Home, Browse, the restaurant page, and the owner's dashboard, tables and blocked times included |
 | Flows | "Book a table" (the assignment's final result) and "Handle a reservation" | ⬜ |
 
 **Key states:** loading, empty, error with a retry, field errors, sending, success, not allowed, and each feature's own errors. A step is done only when its screens are in `/design`. `EmptyState` and `ErrorState` keep their approved look.
@@ -274,7 +275,7 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
 
   **Decided here (from the reviews of 4.3 and 4.4):** what's already saved loads from its own address, `GET …/opening-hours` and `GET …/photos`, in the same shape as the replies to saving it. The list of an owner's restaurants is `GET /api/owner/restaurants`.
 
-### Step 5: Tables 🟡
+### Step 5: Tables ✅
 
 - [x] **5.1 Tables:** add, edit and deactivate, with label, capacity, minimum seats and zone. Deactivating or shrinking a table is refused while upcoming bookings need it. *Check:* API tests, including the refusal.
 
@@ -287,9 +288,9 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
   *Check:* API tests, including the refusal.
 
   **Decided (5.2):** a block is a whole date (`{ date }`), or a time range from one local date and time to another (`{ from, to }`), in the restaurant's own time and on the quarter hour. A date is its whole calendar day, midnight to midnight, so a late booking from the night before that runs past midnight counts too. A block may start earlier today, but can't be over already, and lasts at most a year. Blocks that are over drop off the list. Removing a block deletes it, because blocks aren't bookings.
-- [ ] **5.3 Tables and Blocks pages,** with their states in `/design`. *Check:* in the browser and in `/design`.
+- [x] **5.3 Tables and Blocks pages,** with their states in `/design`. *Check:* in the browser and in `/design`.
 
-  **For 5.3 (from 5.1):** the day view says "Table T4", so a table named "Table 1" would read "Table Table 1". Suggest short names such as T4 on the Tables page, or show the label alone.
+  **Decided (5.3):** the two parts are called Tables and Blocked times, after Opening hours. Adding or editing a table, and blocking a time, open in the Modal, which rises from the bottom on a phone. Switching a table off or back on is a link on its line, with no question, because it can be undone; removing a block asks first, because guests can book that time again at once. A refusal lists the bookings in the way, under the table's line or at the top of the form. Table names are set in sans, because the serif 1 reads like an l (T1). A name that already says "Table", such as "Table 1", is never shown as "Table Table 1".
 
 ### Step 6: Reservations ⬜
 

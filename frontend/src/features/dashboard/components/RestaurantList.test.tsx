@@ -45,6 +45,8 @@ test("a restaurant's header names it, and its parts link to their own addresses"
     ["Bookings", base],
     ["Information", `${base}/information`],
     ["Opening hours", `${base}/hours`],
+    ["Tables", `${base}/tables`],
+    ["Blocked times", `${base}/blocks`],
     ["Photos", `${base}/photos`],
   ]);
   expect(screen.getByRole("link", { name: "Opening hours" }).getAttribute("aria-current")).toBe(

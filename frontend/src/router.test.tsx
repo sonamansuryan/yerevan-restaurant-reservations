@@ -210,6 +210,8 @@ describe("in a production build", () => {
       undefined,
       "information",
       "hours",
+      "tables",
+      "blocks",
       "photos",
       "*",
     ]);

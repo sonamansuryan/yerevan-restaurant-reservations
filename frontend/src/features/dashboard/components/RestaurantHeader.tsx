@@ -12,6 +12,8 @@ function sectionLinks(base: string): SectionLink[] {
     { to: base, label: "Bookings", end: true },
     { to: `${base}/information`, label: "Information" },
     { to: `${base}/hours`, label: "Opening hours" },
+    { to: `${base}/tables`, label: "Tables" },
+    { to: `${base}/blocks`, label: "Blocked times" },
     { to: `${base}/photos`, label: "Photos" },
   ];
 }

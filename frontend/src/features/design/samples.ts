@@ -2,9 +2,11 @@
 // restaurants, with their real hours, so /design and the real pages look alike.
 import type {
   OpeningHours,
+  OwnerBlock,
   OwnerPhoto,
   OwnerReservation,
   OwnerRestaurant,
+  OwnerTable,
   ReservationStatus,
   RestaurantDetail,
   RestaurantSummary,
@@ -338,3 +340,76 @@ export const samplePhotos: OwnerPhoto[] = Array.from({ length: 5 }, (_, index) =
 
 /** As many as a restaurant can have. */
 export const tenPhotos: OwnerPhoto[] = Array.from({ length: 10 }, (_, index) => samplePhoto(index));
+
+// The Tables part: Lori Smokehouse's tables, as the bookings above use them, with one switched off,
+// a long name, and every area.
+const table = (
+  id: string,
+  label: string,
+  [minCapacity, capacity]: [number, number],
+  zone: OwnerTable["zone"],
+  isActive = true,
+): OwnerTable => ({ id, label, capacity, minCapacity, zone, isActive });
+
+export const ownedTables: OwnerTable[] = [
+  table(T1.id, T1.label, [2, 4], "INDOOR"),
+  table(T2.id, T2.label, [1, 2], "INDOOR"),
+  table(T3.id, T3.label, [2, 4], "INDOOR"),
+  table(T5.id, T5.label, [4, 8], "INDOOR"),
+  table("table-t6", "T6", [2, 4], "INDOOR", false),
+  table(T4.id, T4.label, [3, 6], "TERRACE"),
+  table("table-v1", "The long table", [6, 12], "VIP"),
+  table("table-b1", "Bar 1", [1, 1], "BAR_COUNTER"),
+];
+
+/** A block as the API sends it. Yerevan is 4 hours ahead of UTC. */
+function block(
+  id: string,
+  tableId: string | null,
+  [startDate, startTime, startsAt]: [string, string, string],
+  [endDate, endTime, endsAt]: [string, string, string],
+  reason: string | null,
+): OwnerBlock {
+  const blocked = ownedTables.find((one) => one.id === tableId);
+  return {
+    id,
+    table: blocked ? { id: blocked.id, label: blocked.label, zone: blocked.zone } : null,
+    startsAt,
+    endsAt,
+    starts: { date: startDate, time: startTime },
+    ends: { date: endDate, time: endTime },
+    reason,
+  };
+}
+
+/** One table for an evening, the whole restaurant past midnight, a whole day, and a holiday week. */
+export const sampleBlocks: OwnerBlock[] = [
+  block(
+    "block-1",
+    T4.id,
+    ["2026-11-14", "18:00", "2026-11-14T14:00:00.000Z"],
+    ["2026-11-14", "23:00", "2026-11-14T19:00:00.000Z"],
+    "A wobbly leg",
+  ),
+  block(
+    "block-2",
+    null,
+    ["2026-11-20", "18:00", "2026-11-20T14:00:00.000Z"],
+    ["2026-11-21", "02:00", "2026-11-20T22:00:00.000Z"],
+    "Private event",
+  ),
+  block(
+    "block-3",
+    null,
+    ["2026-12-31", "00:00", "2026-12-30T20:00:00.000Z"],
+    ["2027-01-01", "00:00", "2026-12-31T20:00:00.000Z"],
+    null,
+  ),
+  block(
+    "block-4",
+    null,
+    ["2027-01-01", "00:00", "2026-12-31T20:00:00.000Z"],
+    ["2027-01-08", "00:00", "2027-01-07T20:00:00.000Z"],
+    "Holiday week",
+  ),
+];

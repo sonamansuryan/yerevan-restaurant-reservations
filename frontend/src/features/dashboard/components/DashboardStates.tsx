@@ -51,3 +51,23 @@ export function NoRestaurantsYet({ onAdd }: { onAdd: () => void }): ReactElement
 export function NoBookingsThatDay(): ReactElement {
   return <EmptyState title="No bookings" description="Nothing is booked for this day yet." />;
 }
+
+export function NoTablesYet({ onAdd }: { onAdd: () => void }): ReactElement {
+  return (
+    <EmptyState
+      title="No tables yet"
+      description="Add your tables, so guests can book them."
+      action={{ label: "Add a table", onClick: onAdd }}
+    />
+  );
+}
+
+export function NoBlocksYet({ onAdd }: { onAdd: () => void }): ReactElement {
+  return (
+    <EmptyState
+      title="No blocked times"
+      description="Block a table or the whole restaurant when guests can’t book it."
+      action={{ label: "Block a time", onClick: onAdd }}
+    />
+  );
+}

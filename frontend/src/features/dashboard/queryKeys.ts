@@ -8,6 +8,10 @@ export const ownerKeys = {
   photos: (id: string) => ["owner", "photos", id] as const,
   day: (id: string, date: string, page: number) =>
     ["owner", "reservations", id, date, page] as const,
+  /** Every day of one restaurant's bookings, to fetch them all again at once. */
+  bookings: (id: string) => ["owner", "reservations", id] as const,
+  tables: (id: string) => ["owner", "tables", id] as const,
+  blocks: (id: string) => ["owner", "blocks", id] as const,
 };
 
 /** Where one of the owner's restaurants lives in the API. Ids are encoded, like any address part. */

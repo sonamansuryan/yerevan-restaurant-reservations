@@ -8,6 +8,7 @@ import {
   cancellationWords,
   guestsWords,
 } from "@/features/dashboard/labels";
+import { tableName } from "@/features/dashboard/tables";
 import { cx } from "@/lib/cx";
 import type { OwnerReservation } from "@/types/api";
 
@@ -32,7 +33,7 @@ function BookingLine({ reservation }: { reservation: OwnerReservation }): ReactE
       <div className="col-span-2 min-w-0 sm:col-span-1">
         <p className={cx("font-display text-title-xs break-words", crossedOut)}>{guest.name}</p>
         <p className="mt-0.5 text-meta text-ink-secondary">
-          Table {table.label} · {ZONE_LABELS[table.zone]} · {guestsWords(partySize)}
+          {tableName(table.label)} · {ZONE_LABELS[table.zone]} · {guestsWords(partySize)}
         </p>
         {specialRequests && (
           <p className="mt-2 text-meta break-words text-ink-secondary">

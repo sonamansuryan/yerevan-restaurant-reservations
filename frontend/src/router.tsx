@@ -5,12 +5,14 @@ import { AppLayout } from "@/components/AppLayout";
 import { Spinner } from "@/components/Spinner";
 import { RequireAuth } from "@/features/auth/components/RequireAuth";
 import { SignedOutOnly } from "@/features/auth/components/SignedOutOnly";
+import { DashboardBlocksPage } from "@/pages/DashboardBlocksPage";
 import { DashboardBookingsPage } from "@/pages/DashboardBookingsPage";
 import { DashboardHoursPage } from "@/pages/DashboardHoursPage";
 import { DashboardInformationPage } from "@/pages/DashboardInformationPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { DashboardPhotosPage } from "@/pages/DashboardPhotosPage";
 import { DashboardRestaurantPage } from "@/pages/DashboardRestaurantPage";
+import { DashboardTablesPage } from "@/pages/DashboardTablesPage";
 import { DevErrorPage } from "@/pages/DevErrorPage";
 import { ErrorPage } from "@/pages/ErrorPage";
 import { HomePage } from "@/pages/HomePage";
@@ -90,6 +92,8 @@ export const routes: RouteObject[] = [
                   { index: true, element: <DashboardBookingsPage /> },
                   { path: "information", element: <DashboardInformationPage /> },
                   { path: "hours", element: <DashboardHoursPage /> },
+                  { path: "tables", element: <DashboardTablesPage /> },
+                  { path: "blocks", element: <DashboardBlocksPage /> },
                   { path: "photos", element: <DashboardPhotosPage /> },
                 ],
               },

@@ -296,6 +296,30 @@ export const screenStates = {
     "Saved",
   ],
   photos: ["A cover and photos (live)", "No photos yet", "Uploading", "The limit", "Upload failed"],
+  tables: [
+    "Every area (live)",
+    "No tables yet",
+    "Loading",
+    "Couldn’t load",
+    "Bookings need the table",
+    "The last active table",
+  ],
+  tableForm: [
+    "A new table (live)",
+    "Editing T4",
+    "Field errors",
+    "Sending",
+    "The name is taken",
+    "Too few seats for a booking",
+  ],
+  blockedTimes: ["Coming up (live)", "No blocked times", "Loading", "Couldn’t load"],
+  blockForm: [
+    "A whole day (live)",
+    "One table, a time range",
+    "Field errors",
+    "Sending",
+    "Bookings inside it",
+  ],
 } as const;
 
 function componentsIn(section: string): number {
