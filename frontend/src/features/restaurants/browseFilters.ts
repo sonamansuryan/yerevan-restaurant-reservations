@@ -1,4 +1,5 @@
 import { CUISINE_LABELS, DISTRICT_LABELS } from "@/features/restaurants/labels";
+import { readDate, readGuests, readTime } from "@/features/restaurants/tableSearch";
 import type { Cuisine, District, RestaurantSort } from "@/types/api";
 
 /** What Browse is showing. The address holds it, so Back, Forward and shared links all work. */
@@ -10,6 +11,13 @@ export interface BrowseFilters {
   /** By name when it's missing, as the API sorts. */
   sort?: RestaurantSort;
   page: number;
+  /**
+   * The table looked for: its day, about when, and for how many. Each card shows its free times
+   * nearest then (tableSearch.ts). They aren't filters: the list is the same whatever they are.
+   */
+  date?: string;
+  time?: string;
+  guests?: number;
 }
 
 export const isCuisine = (value: string | null): value is Cuisine =>
@@ -35,6 +43,9 @@ export function readFilters(params: URLSearchParams): BrowseFilters {
   const cuisine = params.get("cuisine");
   const district = params.get("district");
   const price = wholeNumber(params.get("price"), 1, 4);
+  const date = readDate(params.get("date"));
+  const time = readTime(params.get("time"));
+  const guests = readGuests(params.get("guests"));
   return {
     ...(q ? { q } : {}),
     ...(isCuisine(cuisine) ? { cuisine } : {}),
@@ -43,6 +54,9 @@ export function readFilters(params: URLSearchParams): BrowseFilters {
     // Name is the default, so only rating is ever in the address.
     ...(params.get("sort") === "rating" ? { sort: "rating" as const } : {}),
     page: wholeNumber(params.get("page"), 1, 1000) ?? 1,
+    ...(date ? { date } : {}),
+    ...(time ? { time } : {}),
+    ...(guests ? { guests } : {}),
   };
 }
 
@@ -55,6 +69,9 @@ export function filtersToParams(filters: BrowseFilters): URLSearchParams {
   if (filters.price) params.set("price", String(filters.price));
   if (filters.sort === "rating") params.set("sort", "rating");
   if (filters.page > 1) params.set("page", String(filters.page));
+  if (filters.date) params.set("date", filters.date);
+  if (filters.time) params.set("time", filters.time);
+  if (filters.guests) params.set("guests", String(filters.guests));
   return params;
 }
 

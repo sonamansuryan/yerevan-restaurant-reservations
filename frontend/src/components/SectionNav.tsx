@@ -2,7 +2,6 @@ import type { ComponentProps, ReactElement } from "react";
 import { NavLink } from "react-router";
 import type { To } from "react-router";
 
-import { CurrentPageDot } from "@/components/Logo";
 import { cx } from "@/lib/cx";
 
 export interface SectionLink {
@@ -13,33 +12,29 @@ export interface SectionLink {
 }
 
 interface SectionNavProps extends ComponentProps<"nav"> {
-  /** What screen readers call these links, such as "Lori Smokehouse". */
+  /** What screen readers call these links, such as "Your reservations". */
   label: string;
   links: SectionLink[];
 }
 
 /**
- * The parts of one place, as serif links in a row on a hairline, in the header's own style: the
- * part you're on is in ink and carries the logo's dot. On a phone the row wraps onto a second line.
+ * The parts of one page as tabs, such as Upcoming and Past: words in a row on a hairline, the part
+ * you're on in ink and underlined on the rule. On a phone the row wraps onto a second line.
  */
 export function SectionNav({ label, links, className, ...rest }: SectionNavProps): ReactElement {
   return (
     <nav aria-label={label} className={cx("border-b border-line", className)} {...rest}>
-      <ul className="flex flex-wrap gap-x-6 sm:gap-x-8">
+      <ul className="flex flex-wrap gap-x-2">
         {links.map((link) => (
           <li key={link.label}>
-            {/* NavLink marks the link to the page you're on with aria-current="page". */}
+            {/* NavLink marks the link to the page you're on with aria-current="page". The 2px line
+                overlaps the hairline below it, so the current tab sits on the rule. */}
             <NavLink
               to={link.to}
               end={link.end}
-              className="group inline-flex min-h-touch items-center font-display text-title-xs text-ink-secondary transition-[color] duration-button hover:text-ink aria-[current=page]:text-ink"
+              className="-mb-px inline-flex min-h-12 items-center border-b-2 border-transparent px-4 text-body text-ink-secondary transition-[color,border-color] duration-button hover:text-ink aria-[current=page]:border-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink"
             >
-              <span className="inline-flex items-baseline gap-1">
-                <span className="underline decoration-transparent decoration-1 underline-offset-4 transition-[text-decoration-color] duration-button group-hover:decoration-ink">
-                  {link.label}
-                </span>
-                <CurrentPageDot />
-              </span>
+              {link.label}
             </NavLink>
           </li>
         ))}

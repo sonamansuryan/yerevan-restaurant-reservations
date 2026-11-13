@@ -1,5 +1,6 @@
 import type { ComponentProps, MouseEvent, ReactElement } from "react";
 
+import { HeartIcon } from "@/components/icons";
 import { cx } from "@/lib/cx";
 
 interface SaveButtonProps extends Omit<ComponentProps<"button">, "children" | "type"> {
@@ -11,10 +12,14 @@ interface SaveButtonProps extends Omit<ComponentProps<"button">, "children" | "t
   loading?: boolean;
 }
 
+/** The toggle's white pill, which "Sign in to save" shares, so the two look alike (SaveRestaurant). */
+export const savePillClass =
+  "inline-flex min-h-touch items-center gap-2 rounded-pill border border-line bg-surface-raised px-4 text-ui font-semibold text-ink transition-[border-color] duration-150 hover:border-ink";
+
 /**
- * Saves something to the guest's favorites, or takes it out: a toggle that says Save, or Saved
- * once it is. The ring takes the logo's dot when saved, the same mark as a chosen line, so a saved
- * restaurant reads as chosen. While the change is sent, the ring turns, as a button's spinner does.
+ * Saves something to the guest's favorites, or takes it out: a white pill with a heart, that says
+ * Save, or Saved once it is, with the heart filled in wine. While the change is sent, a ring turns
+ * in the heart's place, as a button's spinner does.
  */
 export function SaveButton({
   saved,
@@ -42,32 +47,20 @@ export function SaveButton({
       aria-busy={loading || undefined}
       aria-disabled={loading || undefined}
       onClick={handleClick}
-      className={cx(
-        "group/save relative inline-flex min-h-touch items-center gap-2.5 rounded-control text-ui font-medium text-ink",
-        loading && "cursor-progress",
-        className,
-      )}
+      className={cx(savePillClass, loading && "cursor-progress", className)}
     >
-      <span
-        aria-hidden="true"
-        className={cx(
-          "relative size-4 flex-none rounded-pill border transition-[border-color] duration-150",
-          saved
-            ? "border-accent group-hover/save:border-accent-hover"
-            : "border-line-control group-hover/save:border-ink",
-          loading && "animate-spin border-r-transparent motion-reduce:[animation-duration:3s]",
-        )}
-      >
+      {loading ? (
         <span
-          className={cx(
-            "absolute inset-1 rounded-pill bg-accent transition-opacity duration-150",
-            saved && !loading ? "opacity-100" : "opacity-0",
-          )}
+          aria-hidden="true"
+          className="size-4 flex-none animate-spin rounded-pill border-[1.5px] border-current border-r-transparent motion-reduce:[animation-duration:3s]"
         />
-      </span>
-      <span className="underline decoration-transparent decoration-1 underline-offset-4 transition-[text-decoration-color] duration-button group-hover/save:decoration-current">
-        {label}
-      </span>
+      ) : (
+        <HeartIcon
+          className={cx("flex-none", saved && "text-accent")}
+          fill={saved ? "currentColor" : "none"}
+        />
+      )}
+      {label}
     </button>
   );
 }

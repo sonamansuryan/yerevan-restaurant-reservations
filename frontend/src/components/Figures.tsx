@@ -18,23 +18,25 @@ interface FiguresProps extends ComponentProps<"dl"> {
 }
 
 /**
- * Headline numbers side by side, each under a hairline like a column in a ledger: what's counted,
- * the number, and a note. The numbers are in the sans, whose figures read more plainly than the
- * serif's. As many fit in a row as the width allows, two at least.
+ * Headline numbers side by side, each on its own white card: what's counted, the number in bold,
+ * and a note. As many fit in a row as the width allows, two at least.
  */
 export function Figures({ figures, className, ...rest }: FiguresProps): ReactElement {
   return (
     <dl
       className={cx(
-        "grid grid-cols-[repeat(auto-fit,minmax(min(9rem,40%),1fr))] gap-x-6 gap-y-8",
+        "grid grid-cols-[repeat(auto-fit,minmax(min(11.25rem,45%),1fr))] gap-3 sm:gap-4",
         className,
       )}
       {...rest}
     >
       {figures.map((figure) => (
-        <div key={figure.label} className="min-w-0 border-t border-line-rule pt-3">
-          <dt className="text-meta text-ink-secondary">{figure.label}</dt>
-          <dd className="mt-2 text-logo font-medium text-ink">
+        <div
+          key={figure.label}
+          className="min-w-0 rounded-band border border-line bg-surface-raised px-4.5 py-4"
+        >
+          <dt className="text-meta font-medium text-ink-secondary">{figure.label}</dt>
+          <dd className="mt-1 font-grotesque text-heading font-bold text-ink tabular-nums">
             {figure.spoken ? (
               <>
                 <span aria-hidden="true">{figure.value}</span>
@@ -44,7 +46,7 @@ export function Figures({ figures, className, ...rest }: FiguresProps): ReactEle
               figure.value
             )}
           </dd>
-          {figure.note && <dd className="mt-1 text-meta text-ink-muted">{figure.note}</dd>}
+          {figure.note && <dd className="mt-1 text-caption text-ink-muted">{figure.note}</dd>}
         </div>
       ))}
     </dl>

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import type { ReactElement } from "react";
 
-import { GuestBookLines, RestaurantLines } from "@/features/auth/components/BookExtras";
+import { AuthLayout } from "@/features/auth/components/AuthLayout";
+import { GuestPanel, OwnerPanel } from "@/features/auth/components/AuthPanels";
 import { GoogleSignIn } from "@/features/auth/components/GoogleSignIn";
-import { OpenBook } from "@/features/auth/components/OpenBook";
 import { SignUpForm } from "@/features/auth/components/SignUpForm";
 import type { SignUpDraft } from "@/features/auth/components/SignUpForm";
 import type { GoogleSignInRequest } from "@/features/auth/hooks/useGoogleSignIn";
@@ -22,8 +22,8 @@ interface SignUpScreenProps {
 }
 
 /**
- * Create an account, as an open book. The heading stays put whichever role is chosen, while the
- * sentence and the left page follow the choice: a guest sees their name written into the book.
+ * Create an account, beside the dark panel. The heading stays put whichever role is chosen, while
+ * the panel follows the choice: a guest sees their name written on a booking.
  */
 export function SignUpScreen({
   defaultRole,
@@ -36,14 +36,10 @@ export function SignUpScreen({
   const guest = draft.role === "CUSTOMER";
 
   return (
-    <OpenBook
+    <AuthLayout
       heading="Create an account"
-      description={
-        guest
-          ? "Book tables and keep your reservations in one place."
-          : "Add your restaurant and publish it when you’re ready."
-      }
-      extra={guest ? <GuestBookLines name={draft.name} /> : <RestaurantLines />}
+      current="signUp"
+      panel={guest ? <GuestPanel name={draft.name} /> : <OwnerPanel />}
     >
       <SignUpForm
         defaultRole={defaultRole}
@@ -60,6 +56,6 @@ export function SignUpScreen({
           )
         }
       />
-    </OpenBook>
+    </AuthLayout>
   );
 }

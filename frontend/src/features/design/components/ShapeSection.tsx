@@ -61,26 +61,18 @@ export function ShapeSection(): ReactElement {
           ))}
         </div>
       </Group>
-      <Group title="Rules" note="Not tokens, but the lines that give Seghan its printed feel.">
-        <div className="flex flex-col gap-6">
+      <Group title="Lines" note="Not tokens, but the two lines Seghan draws everywhere.">
+        <div className="flex max-w-120 flex-col gap-6">
           <div>
-            <div className="border-t-3 border-double border-line-rule" />
+            <div className="border-t border-line" />
             <p className="mt-2 text-meta text-ink-muted">
-              The double rule, at the top and foot of every page
+              A hairline, under the header, between rows and above the footer
             </p>
           </div>
           <div>
-            <div className="border-t border-line" />
-            <p className="mt-2 text-meta text-ink-muted">A hairline, between rows</p>
-          </div>
-          <div>
-            <div className="flex items-baseline gap-2">
-              <span className="font-display text-title-xs">Monday</span>
-              <span aria-hidden="true" className="menu-leader" />
-              <span className="text-meta text-ink-muted">12:00–23:00</span>
-            </div>
+            <div className="h-16 rounded-band border border-line bg-surface-raised" />
             <p className="mt-2 text-meta text-ink-muted">
-              A menu line, joining a name to its value
+              A soft line around a white card or panel
             </p>
           </div>
         </div>

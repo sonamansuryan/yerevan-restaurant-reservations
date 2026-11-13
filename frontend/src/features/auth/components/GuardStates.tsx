@@ -8,7 +8,7 @@ import { Spinner } from "@/components/Spinner";
 // What a guarded page shows instead of itself. These hold only the content, so /design can show
 // them as they are. RequireAuth sets each one in a page, with its title and heading.
 
-/** While the app asks who's signed in: the logo's breathing dot, and nothing decided yet. */
+/** While the app asks who's signed in: the breathing wine dot, and nothing decided yet. */
 export function CheckingAccount(): ReactElement {
   return <Spinner label="Checking your account" />;
 }

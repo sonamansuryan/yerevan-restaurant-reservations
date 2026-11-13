@@ -1,8 +1,8 @@
 // The booking widget's rules that need no server: the choices kept in the address, the day's times
-// in courses, and the booking said back before it's sent.
+// in courses, the row of days, the best table, and the words on the booking's button.
 import type { ReturnState } from "@/features/auth/returnTo";
-import { formatDayHeading, isCalendarDate } from "@/lib/time";
-import type { AvailabilitySlot, TableZone } from "@/types/api";
+import { daysFrom, formatWeekdayDate, isCalendarDate, shiftDate } from "@/lib/time";
+import type { AvailableTable, AvailabilitySlot } from "@/types/api";
 
 /** What the guest has chosen. The address keeps it, so a reload or a shared link brings it back. */
 export interface BookingChoices {
@@ -74,30 +74,35 @@ function courseName(starts: string): string {
   return starts < "16:00" ? "Lunch" : "Dinner";
 }
 
-const PARTIES = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
-const PLACES: Record<TableZone, string> = {
-  INDOOR: "indoors",
-  TERRACE: "on the terrace",
-  VIP: "in the VIP room",
-  BAR_COUNTER: "at the bar",
-};
-
-/**
- * The booking said back before it's sent, as a host does on the phone: "A table for two on
- * Saturday 14 November at 19:00, indoors." It helps people catch a mistake.
- */
-export function readBack(
-  guests: number,
-  date: string,
-  time: string,
-  zone: TableZone,
-  today?: string,
-): string {
-  const party = PARTIES[guests] ?? String(guests);
-  return `A table for ${party} on ${formatDayHeading(date, today)} at ${time}, ${PLACES[zone]}.`;
-}
-
 export const guestsLabel = (guests: number): string =>
   `${guests} ${guests === 1 ? "guest" : "guests"}`;
 
 export const seatsLabel = (seats: number): string => `${seats} ${seats === 1 ? "seat" : "seats"}`;
+
+/** The booking button's words, as the export has them: "Reserve for 2 · Fri 13 Nov, 19:30". */
+export function reserveLabel(guests: number, date: string, time: string): string {
+  return `Reserve for ${guests} · ${formatWeekdayDate(date)}, ${time}`;
+}
+
+/**
+ * The table that fits the party best: the smallest of the free ones, so bigger tables stay free for
+ * bigger parties. Of two the same size, the first by name. Null when none is free.
+ */
+export function bestFit(tables: AvailableTable[]): string | null {
+  const [best] = [...tables].sort(
+    (a, b) => a.capacity - b.capacity || a.label.localeCompare(b.label, "en", { numeric: true }),
+  );
+  return best?.id ?? null;
+}
+
+/** How many days the booking's row of dates shows at once, as the export has it. */
+export const DAYS_SHOWN = 5;
+
+/**
+ * The first of the five days shown, for a date: the rows run on from today, five days at a time,
+ * so a date always shows in the same row.
+ */
+export function rowStartFor(date: string, today: string): string {
+  const offset = Math.max(0, daysFrom(today, date));
+  return shiftDate(today, offset - (offset % DAYS_SHOWN));
+}

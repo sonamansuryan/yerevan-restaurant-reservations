@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { ReactElement } from "react";
 import { useLocation } from "react-router";
 
+import { PartHeader } from "@/components/PartHeader";
 import { JustAddedNotice } from "@/features/dashboard/components/JustAddedNotice";
 import { PublishPanel } from "@/features/dashboard/components/PublishPanel";
 import { RestaurantForm } from "@/features/dashboard/components/RestaurantForm";
@@ -22,9 +23,13 @@ export function DashboardInformationPage(): ReactElement {
 
   return (
     <>
-      <title>{`Information · ${restaurant.name} · Seghan`}</title>
-      <h2 className="sr-only">Information</h2>
-      <div className="flex flex-col gap-12">
+      <title>{`Restaurant info · ${restaurant.name} · Seghan`}</title>
+      <PartHeader
+        title="Restaurant info"
+        description="What guests see on your page, and whether they can find it."
+        className="mb-6"
+      />
+      <div className="flex flex-col gap-6">
         {wasJustAdded(state) && <JustAddedNotice restaurantId={restaurant.id} />}
         <PublishPanel
           isPublished={restaurant.isPublished}

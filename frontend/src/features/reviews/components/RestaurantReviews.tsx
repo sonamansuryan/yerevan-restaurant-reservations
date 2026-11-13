@@ -28,25 +28,35 @@ interface RestaurantReviewsProps {
   list?: ReviewListState;
 }
 
-/** One review, as a line in the book: the guest's first name, the rating, then their words. */
+/**
+ * One review: the guest's initial in a small circle, their first name and the month, the rating,
+ * then their words.
+ */
 function ReviewLine({ review }: { review: PublicReview }): ReactElement {
   return (
-    <li className="border-b border-line py-5">
-      <div className="flex items-baseline gap-3">
-        <p className="min-w-0 font-display text-title-xs break-words">{review.author}</p>
-        <span aria-hidden="true" className="menu-leader" />
-        <p className="text-ui font-medium whitespace-nowrap tabular-nums">
-          <span aria-hidden="true">{review.rating}/5</span>
-          <span className="sr-only">{ratingWords(review.rating)}</span>
-        </p>
+    <li className="flex gap-4 border-b border-line py-5">
+      <span
+        aria-hidden="true"
+        className="grid size-10 flex-none place-items-center rounded-pill bg-surface-blush font-semibold"
+      >
+        {review.author.slice(0, 1)}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="min-w-0 font-semibold break-words">{review.author}</p>
+          <p className="text-ui font-semibold whitespace-nowrap tabular-nums">
+            <span aria-hidden="true">{review.rating}/5</span>
+            <span className="sr-only">{ratingWords(review.rating)}</span>
+          </p>
+        </div>
+        <p className="text-meta text-ink-muted">{formatMonth(review.date)}</p>
+        {review.comment && (
+          // The guest's own line breaks are kept.
+          <p className="mt-2 max-w-160 text-ui text-pretty break-words whitespace-pre-line text-ink-secondary">
+            {review.comment}
+          </p>
+        )}
       </div>
-      <p className="mt-0.5 text-meta text-ink-muted">{formatMonth(review.date)}</p>
-      {review.comment && (
-        // The guest's own line breaks are kept.
-        <p className="mt-3 max-w-160 text-ui text-pretty break-words whitespace-pre-line text-ink-secondary">
-          {review.comment}
-        </p>
-      )}
     </li>
   );
 }
@@ -68,11 +78,17 @@ export function RestaurantReviews({
     );
   }
 
+  // The large average is for the eye. The sentence beside it says the same in words.
   const summary = (
-    <p className="text-ui text-ink-secondary">
-      Rated <span className="font-medium text-ink">{averageWords(avgRating)}</span> out of 5{" "}
-      {reviewersWords(reviewCount)}.
-    </p>
+    <div className="flex items-center gap-5 rounded-band border border-line bg-surface-raised p-5">
+      <p aria-hidden="true" className="font-grotesque text-page-title font-bold tabular-nums">
+        {averageWords(avgRating)}
+      </p>
+      <p className="text-ui text-ink-secondary">
+        Rated <span className="font-semibold text-ink">{averageWords(avgRating)}</span> out of 5{" "}
+        {reviewersWords(reviewCount)}.
+      </p>
+    </div>
   );
   if (!list) return summary;
 
@@ -96,7 +112,7 @@ export function RestaurantReviews({
   } else {
     reviews = (
       <div className="flex flex-col gap-6">
-        <ul className="border-t border-line">
+        <ul>
           {list.reviews.map((review) => (
             <ReviewLine key={review.id} review={review} />
           ))}

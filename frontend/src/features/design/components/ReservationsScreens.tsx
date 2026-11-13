@@ -3,8 +3,14 @@ import type { ReactElement } from "react";
 import type { To } from "react-router";
 
 import { Group, Specimens } from "@/features/design/components/parts";
-import { guestPast, guestUpcoming } from "@/features/design/samples";
+import {
+  dolmamaListing,
+  guestPast,
+  guestUpcoming,
+  sampleRestaurants,
+} from "@/features/design/samples";
 import type { screenStates } from "@/features/design/tokens";
+import { SavedRestaurants } from "@/features/favorites/components/SavedRestaurants";
 import { MyReservations } from "@/features/reservations/components/MyReservations";
 import type {
   MyReservationsProps,
@@ -52,6 +58,12 @@ const noReview: ReviewFlowState = {
   onPost: ignore,
 };
 
+/** Each restaurant's photo and map link, as the page fetches them: Dolmama has a photo. */
+const placeFor = (slug: string): { cover: string | null; mapsUrl: string } => ({
+  cover: slug === dolmamaListing.slug ? dolmamaListing.coverPhotoUrl : null,
+  mapsUrl: "https://www.google.com/maps",
+});
+
 /** My reservations on one list, as the page shows it, with anything changed for a state. */
 function screen(when: ReservationsWhen, change: Partial<MyReservationsProps> = {}): ReactElement {
   return (
@@ -60,6 +72,8 @@ function screen(when: ReservationsWhen, change: Partial<MyReservationsProps> = {
       page={1}
       today={TODAY}
       list={loaded(when === "upcoming" ? guestUpcoming : guestPast)}
+      counts={{ upcoming: guestUpcoming.length, past: guestPast.length }}
+      placeFor={placeFor}
       hrefFor={marking(when)}
       cancellingId={null}
       cancelled={null}
@@ -95,12 +109,36 @@ function LiveUpcoming(): ReactElement {
     setCancelled(done);
   }
 
-  return screen("upcoming", {
-    list: loaded(bookings),
-    cancelled,
-    onCancel: cancel,
-    hrefFor: (when) => (when === "upcoming" ? "/design" : "/reservations/past"),
-  });
+  // The latest visit to review, under the list, as the page shows it, with the saved ones beside.
+  const [later, setLater] = useState(false);
+  const visit = guestPast.find((booking) => booking.canReview);
+  return (
+    <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_21rem]">
+      {screen("upcoming", {
+        list: loaded(bookings),
+        cancelled,
+        onCancel: cancel,
+        hrefFor: (when) => (when === "upcoming" ? "/design" : "/reservations/past"),
+        visit:
+          visit && !later
+            ? {
+                booking: visit,
+                sending: false,
+                error: null,
+                onPost: () => setLater(true),
+                onLater: () => setLater(true),
+              }
+            : null,
+      })}
+      <SavedRestaurants
+        saved={{
+          data: { data: sampleRestaurants.slice(0, 4), meta: { page: 1, pageSize: 12, total: 6 } },
+          failed: false,
+        }}
+        headingLevel={4}
+      />
+    </div>
+  );
 }
 
 const reviewedBy = (booking: GuestReservation, review: NewReview): GuestReservation => ({
@@ -193,7 +231,7 @@ export function ReservationsScreens(): ReactElement {
   return (
     <Group
       title="My reservations"
-      note="For guests only; an owner is told the page is for guests (see the route guard's states). Upcoming bookings aren't over yet, soonest first, and past ones are, latest first. Each day is under its name, and each booking is a ruled line, as in the restaurant's book. A cancelled booking stays, crossed out, with who cancelled it and why. Cancel booking asks first: in the live one, the question opens over the page, and confirming crosses the booking out here without sending anything. A visit the restaurant marked as arrived offers Review your visit once; in the live past list, the form opens over the page, and posting it shows the review on its line here."
+      note="For guests only; an owner is told the page is for guests (see the route guard's states). Upcoming bookings aren't over yet, soonest first, and past ones are, latest first. Each day is under its name, and each booking is a white card, its time on a small tile. A cancelled booking stays, crossed out, with who cancelled it and why. Cancel booking asks first: in the live one, the question opens over the page, and confirming crosses the booking out here without sending anything. A visit the restaurant marked as arrived offers Review your visit once; in the live past list, the form opens over the page, and posting it shows the review on its line here."
     >
       <Specimens wide specimens={myReservations} />
     </Group>

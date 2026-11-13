@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { OwnerReservation, RestaurantChange } from "@/types/api";
+import type { OwnerReservation, ReservationStatus, RestaurantChange } from "@/types/api";
 
 /** The order a booking's changes are offered in: the usual next step first, cancelling last. */
 export const CHANGE_ORDER: readonly RestaurantChange[] = [
@@ -15,8 +15,13 @@ export const CHANGE_LABELS: Record<RestaurantChange, string> = {
   CONFIRMED: "Confirm",
   ARRIVED: "Mark arrived",
   NO_SHOW: "Mark no-show",
-  CANCELLED: "Cancel booking",
+  CANCELLED: "Cancel",
 };
+
+/** A change's button for one booking: cancelling one still waiting is declining it, as the export says. */
+export function changeLabel(change: RestaurantChange, status: ReservationStatus): string {
+  return change === "CANCELLED" && status === "PENDING" ? "Decline" : CHANGE_LABELS[change];
+}
 
 /** A change to send: the status, and for a cancellation, an optional reason the guest sees. */
 export interface BookingChange {

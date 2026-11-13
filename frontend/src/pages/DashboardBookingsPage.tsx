@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 import { useNavigate } from "react-router";
 
+import { Figures } from "@/components/Figures";
 import { Pagination } from "@/components/Pagination";
+import { PartHeader } from "@/components/PartHeader";
 import { BookingChangeNotice } from "@/features/dashboard/components/BookingChangeNotice";
 import { DayBookings } from "@/features/dashboard/components/DayBookings";
 import { DayNav } from "@/features/dashboard/components/DayNav";
@@ -17,12 +19,15 @@ import {
   useChangeBooking,
   useDayReservations,
 } from "@/features/dashboard/hooks/useDayReservations";
-import { daySummary } from "@/features/dashboard/labels";
-import { yerevanToday } from "@/lib/time";
+import { useOpeningHours } from "@/features/dashboard/hooks/useOpeningHours";
+import { dayFigures, dayHoursWords } from "@/features/dashboard/labels";
+import { formatDayHeading, weekdayOf, yerevanToday } from "@/lib/time";
 
 /**
- * A restaurant's bookings for one day, today unless the address names another, asked for again every
- * 30 seconds. Each booking offers the changes the server allows now.
+ * A restaurant's reservations for one day, as the export's dashboard has them: the day and its
+ * hours, the days on either side, the day at a glance in four figures, then the bookings. It's
+ * today unless the address names another day, asked for again every 30 seconds. Each booking offers
+ * the changes the server allows now.
  */
 export function DashboardBookingsPage(): ReactElement {
   const restaurant = useDashboardRestaurant();
@@ -31,6 +36,8 @@ export function DashboardBookingsPage(): ReactElement {
   const [today] = useState(() => yerevanToday());
   const { date, page, dayHref, pageHref } = useDayParams(today);
   const day = useDayReservations(restaurant.id, date, page);
+  // The week's hours, to say the day's under its name. The Opening hours part asks the same.
+  const hours = useOpeningHours(restaurant.id);
   const retrying = day.isFetching && day.errorUpdateCount > 0;
   const change = useChangeBooking(restaurant.id);
   const { reset } = change;
@@ -51,14 +58,15 @@ export function DashboardBookingsPage(): ReactElement {
     const pageCount = Math.ceil(meta.total / meta.pageSize);
     body = (
       <>
-        {/* The tally needs every booking of the day, so it waits for a day that fits one page. */}
+        {/* The figures need every booking of the day, so they wait for a day on one page. */}
         {pageCount === 1 && (
-          <p className="mb-4 text-ui text-ink-secondary">{daySummary(bookings)}</p>
+          <Figures figures={dayFigures(bookings, date === today)} className="mb-6" />
         )}
         <DayBookings
           reservations={bookings}
           onChange={(reservation, next) => change.mutate({ reservation, ...next })}
           changing={changing}
+          narrowing={pageCount === 1}
         />
         <Pagination page={page} pageCount={pageCount} hrefFor={pageHref} className="mt-8" />
       </>
@@ -79,14 +87,25 @@ export function DashboardBookingsPage(): ReactElement {
 
   return (
     <>
-      <title>{`Bookings · ${restaurant.name} · Seghan`}</title>
-      <DayNav
-        date={date}
-        today={today}
-        hrefFor={dayHref}
-        onGoTo={(chosen) => void navigate(dayHref(chosen))}
+      <title>{`Reservations · ${restaurant.name} · Seghan`}</title>
+      <PartHeader
+        title="Reservations"
+        description={
+          hours.data
+            ? `${formatDayHeading(date, today)} · ${dayHoursWords(hours.data, weekdayOf(date))}`
+            : formatDayHeading(date, today)
+        }
+        action={
+          <DayNav
+            date={date}
+            today={today}
+            hrefFor={dayHref}
+            onGoTo={(chosen) => void navigate(dayHref(chosen))}
+          />
+        }
+        className="mb-6"
       />
-      <div className="mt-8">
+      <div>
         <BookingChangeNotice
           changed={change.data ?? null}
           refusal={change.error}

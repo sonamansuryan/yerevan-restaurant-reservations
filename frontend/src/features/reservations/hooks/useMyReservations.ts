@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router";
 
 import type { MyReservationsProps } from "@/features/reservations/components/MyReservations";
 import { useCancelReservation } from "@/features/reservations/hooks/useCancelReservation";
+import { useBookedPlaces } from "@/features/reservations/hooks/useBookedPlaces";
 import { useReservationList } from "@/features/reservations/hooks/useReservationList";
 import { pageFrom, reservationsPath } from "@/features/reservations/reservations";
 import type { ReservationsWhen } from "@/features/reservations/reservations";
@@ -22,6 +23,15 @@ export function useMyReservations(when: ReservationsWhen): MyReservationsProps {
   const [today] = useState(() => yerevanToday());
   const page = pageFrom(params);
   const list = useReservationList(when, page);
+  // The other list's first page, for its count on its tab, and for the latest visit to review.
+  // It's the page that list opens on, so switching to it is instant.
+  const otherWhen: ReservationsWhen = when === "upcoming" ? "past" : "upcoming";
+  const other = useReservationList(otherWhen, 1);
+  const placeFor = useBookedPlaces(
+    (list.data?.data ?? []).map(({ restaurant }) => restaurant.slug),
+  );
+  // Visits put away with Later, for as long as the page is open.
+  const [later, setLater] = useState<string[]>([]);
   const cancel = useCancelReservation();
   const post = usePostReview();
   const [writing, setWriting] = useState<GuestReservation | null>(null);
@@ -37,6 +47,14 @@ export function useMyReservations(when: ReservationsWhen): MyReservationsProps {
   // A retry clears the error while it runs. Staying on the error keeps Try again in its place.
   const retrying = list.isFetching && list.errorUpdateCount > 0;
 
+  // Past bookings come latest first, so the first that can be reviewed is the latest visit.
+  const visit =
+    when === "upcoming"
+      ? (other.data?.data.find((booking) => booking.canReview && !later.includes(booking.id)) ??
+        null)
+      : null;
+  const postingVisit = visit !== null && post.variables?.booking.id === visit.id;
+
   return {
     when,
     page,
@@ -46,6 +64,18 @@ export function useMyReservations(when: ReservationsWhen): MyReservationsProps {
       failed: list.isError || retrying,
       retrying,
       onRetry: () => void list.refetch(),
+    },
+    counts: { [when]: list.data?.meta.total, [otherWhen]: other.data?.meta.total },
+    placeFor,
+    visit: visit && {
+      booking: visit,
+      sending: postingVisit && post.isPending,
+      error: postingVisit ? post.error : null,
+      onPost: (review) => {
+        resetCancel();
+        post.mutate({ booking: visit, review });
+      },
+      onLater: () => setLater((ids) => [...ids, visit.id]),
     },
     hrefFor: reservationsPath,
     cancellingId: cancel.isPending ? (cancel.variables?.id ?? null) : null,

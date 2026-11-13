@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import type { To } from "react-router";
 
 import { Button } from "@/components/Button";
@@ -28,6 +28,10 @@ interface BrowseResultsProps {
   hrefFor: (page: number) => To;
   /** The cards' heading level: h2 under the page's title. */
   cardHeading?: "h2" | "h3" | "h4";
+  /** Each card's free times for the table looked for. The page wires them: FreeTimes. */
+  timesFor?: (restaurant: RestaurantSummary) => ReactNode;
+  /** Each card's heart. The page wires them: RestaurantHeart. */
+  saveFor?: (restaurant: RestaurantSummary) => ReactNode;
   className?: string;
 }
 
@@ -46,6 +50,8 @@ export function BrowseResults({
   onFirstPage,
   hrefFor,
   cardHeading = "h2",
+  timesFor,
+  saveFor,
   className,
 }: BrowseResultsProps): ReactElement {
   if (!results) {
@@ -102,7 +108,7 @@ export function BrowseResults({
     <section aria-label="Restaurants" aria-busy={updating || undefined} className={className}>
       <div className="flex flex-wrap items-baseline gap-x-4">
         {/* Read out when the filters change, so screen reader users hear what they found. */}
-        <p role="status" className="text-ui text-ink-secondary">
+        <p role="status" className="text-ui font-semibold">
           {restaurantsCount(meta.total)}
         </p>
         {filtered && (
@@ -114,13 +120,15 @@ export function BrowseResults({
       <RestaurantGrid
         restaurants={data}
         cardHeading={cardHeading}
-        className={cx("mt-6 transition-opacity duration-button", updating && "opacity-60")}
+        actionFor={timesFor}
+        saveFor={saveFor}
+        className={cx("mt-5 transition-opacity duration-button", updating && "opacity-60")}
       />
       <Pagination
         page={meta.page}
         pageCount={Math.ceil(meta.total / meta.pageSize)}
         hrefFor={hrefFor}
-        className="mt-14"
+        className="mt-12"
       />
     </section>
   );

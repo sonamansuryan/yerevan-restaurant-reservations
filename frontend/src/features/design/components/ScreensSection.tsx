@@ -1,7 +1,7 @@
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import type { ReactElement, ReactNode } from "react";
 
-import { GuestBookLines, RestaurantLines } from "@/features/auth/components/BookExtras";
+import { GuestPanel, OwnerPanel, SignInPanel } from "@/features/auth/components/AuthPanels";
 import { GoogleBlock } from "@/features/auth/components/GoogleSignIn";
 import {
   AccountCheckFailed,
@@ -66,7 +66,7 @@ const googleTokenInvalid = new ApiError(
 const typed = { email: "lilit@example.com", password: "a long password" };
 
 // One specimen per state in tokens.ts. A missing one is a type error. The live one shows the
-// whole right page, with Google's button when there's a Client ID.
+// whole form, with Google's button when there's a Client ID.
 const signIn = (google?: ReactNode): Record<StateOf<"signIn">, ReactElement> => ({
   "Ready (live)": <SignInForm onSubmit={ignore} google={google} />,
   "Field errors": (
@@ -104,11 +104,12 @@ const signUp = (google?: ReactNode): Record<StateOf<"signUp">, ReactElement> => 
   ),
 });
 
-const leftPage: Record<StateOf<"leftPage">, ReactElement> = {
-  "A guest, before typing": <GuestBookLines name="" />,
-  "A guest, with a name": <GuestBookLines name="Lilit Harutyunyan" />,
-  "A long name": <GuestBookLines name="Հովհաննեսյանց Մկրտչյան-Շահումյան" />,
-  "A restaurant": <RestaurantLines />,
+const authPanel: Record<StateOf<"authPanel">, ReactElement> = {
+  "Sign in": <SignInPanel />,
+  "A guest, before typing": <GuestPanel name="" />,
+  "A guest, with a name": <GuestPanel name="Lilit Harutyunyan" />,
+  "A long name": <GuestPanel name="Հովհաննեսյանց Մկրտչյան-Շահումյան" />,
+  "A restaurant": <OwnerPanel />,
 };
 
 // Google's part of the page, on Sign in. Google draws the button itself, so these need its script,
@@ -170,21 +171,21 @@ export function ScreensSection(): ReactElement {
     <>
       <Group
         title="Sign in"
-        note="The right page of /login. The live one includes Google's button, and its states are under Sign in with Google."
+        note="The form on /login, beside the dark panel. The live one includes Google's button, and its states are under Sign in with Google."
       >
         <Specimens specimens={signIn(googleButton)} rightPage />
       </Group>
       <Group
         title="Create an account"
-        note="The right page of /register. Switching between guest and restaurant keeps what's typed."
+        note="The form on /register. Switching between guest and restaurant keeps what's typed."
       >
         <Specimens specimens={signUp(googleSignUp)} rightPage />
       </Group>
       <Group
-        title="Create an account, the left page"
-        note="Under the sentence. A guest's name is written into the book as it's typed, and a restaurant sees what its dashboard holds."
+        title="The dark panel"
+        note="Beside the form from 1024px, and after it on a phone. Sign in welcomes guests. Create an account follows the choice: a guest's name is written on a booking as it's typed, and a restaurant sees what its dashboard holds."
       >
-        <Specimens specimens={leftPage} />
+        <Specimens specimens={authPanel} />
       </Group>
       <Group
         title="Sign in with Google"

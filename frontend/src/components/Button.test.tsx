@@ -6,7 +6,7 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { Button, LinkButton } from "@/components/Button";
-import type { ButtonVariant } from "@/components/Button";
+import type { ButtonSize, ButtonVariant } from "@/components/Button";
 
 afterEach(cleanup);
 
@@ -66,7 +66,7 @@ describe("disabled", () => {
     expect(document.activeElement).not.toBe(button);
   });
 
-  test.each<ButtonVariant>(["primary", "accent", "ghost", "light"])(
+  test.each<ButtonVariant>(["primary", "accent", "ghost", "danger", "success", "light"])(
     "the %s variant's colors are replaced, not stacked",
     (variant) => {
       render(
@@ -77,7 +77,10 @@ describe("disabled", () => {
 
       const classes = screen.getByRole("button").className.split(" ");
 
-      expect(classes.filter((name) => name.startsWith("bg-"))).toEqual(["bg-fill-slot"]);
+      expect(classes.filter((name) => name.startsWith("bg-"))).toEqual(["bg-fill-disabled"]);
+      expect(classes.filter((name) => name.startsWith("text-ink"))).toEqual(["text-ink-muted"]);
+      expect(classes).toContain("border-transparent");
+      expect(classes).toContain("cursor-not-allowed");
       expect(classes.some((name) => name.startsWith("hover:"))).toBe(false);
       expect(classes.some((name) => name.startsWith("active:"))).toBe(false);
     },
@@ -130,12 +133,127 @@ describe("the link variant", () => {
 
     expect(screen.getByRole("button").querySelector("svg")).toBeNull();
   });
+
+  test("it's wine and bold, as every link is, and its underline darkens on hover", () => {
+    render(<Button variant="link">Keep it</Button>);
+
+    const classes = screen.getByRole("button").className.split(" ");
+
+    expect(classes).toEqual(
+      expect.arrayContaining([
+        "font-semibold",
+        "text-accent",
+        "decoration-accent/40",
+        "hover:text-accent-hover",
+        "hover:decoration-current",
+      ]),
+    );
+  });
 });
 
-test("primary warms to the accent on hover", () => {
-  render(<Button>Book</Button>);
+describe("the look", () => {
+  const classesOf = (button: HTMLElement): string[] => button.className.split(" ");
 
-  expect(screen.getByRole("button").className).toContain("hover:bg-accent");
+  test("it rounds the corners and bolds the label, and keeps the variant's colors", () => {
+    render(<Button variant="accent">Book this table</Button>);
+
+    const classes = classesOf(screen.getByRole("button"));
+    expect(classes).toEqual(
+      expect.arrayContaining(["h-11", "rounded-control", "font-semibold", "bg-accent"]),
+    );
+  });
+
+  test.each<[ButtonSize, string]>([
+    ["default", "h-11 rounded-control px-5 text-ui"],
+    ["large", "h-13 rounded-cta px-6 text-body"],
+    ["small", "h-9.5 rounded-control px-4 text-ui any-pointer-coarse:h-11"],
+    ["compact", "h-9 rounded-chip px-3 text-meta any-pointer-coarse:h-11"],
+  ])("the %s size is %s", (size, look) => {
+    render(<Button size={size}>Confirm</Button>);
+
+    expect(classesOf(screen.getByRole("button"))).toEqual(expect.arrayContaining(look.split(" ")));
+  });
+
+  test.each<ButtonSize>(["small", "compact"])(
+    "%s is shorter with a mouse, and still tall enough to tap on a touch screen",
+    (size) => {
+      render(<Button size={size}>Cancel booking</Button>);
+
+      expect(classesOf(screen.getByRole("button"))).toContain("any-pointer-coarse:h-11");
+    },
+  );
+
+  test("primary is ink, and darkens on hover", () => {
+    render(<Button>Book</Button>);
+
+    expect(classesOf(screen.getByRole("button"))).toEqual(
+      expect.arrayContaining(["bg-ink", "text-on-dark", "hover:bg-fill-primary-hover"]),
+    );
+  });
+
+  test("an outline button is white, with a softer line", () => {
+    render(<Button variant="ghost">Keep it</Button>);
+
+    expect(classesOf(screen.getByRole("button"))).toEqual(
+      expect.arrayContaining(["bg-surface-raised", "border-line-strong", "text-ink"]),
+    );
+  });
+
+  test("danger is a white outline in wine, so cancelling is never mistaken for the way forward", () => {
+    render(<Button variant="danger">Cancel reservation</Button>);
+
+    const classes = classesOf(screen.getByRole("button"));
+    expect(classes).toEqual(
+      expect.arrayContaining([
+        "border-line-danger",
+        "bg-surface-raised",
+        "text-accent",
+        "hover:border-accent",
+      ]),
+    );
+    expect(classes).not.toContain("bg-accent");
+  });
+
+  test("success is filled green", () => {
+    render(<Button variant="success">Mark arrived</Button>);
+
+    expect(classesOf(screen.getByRole("button"))).toEqual(
+      expect.arrayContaining(["bg-success-strong", "text-on-accent", "hover:bg-success"]),
+    );
+  });
+
+  test("a LinkButton takes the same look", () => {
+    render(
+      <MemoryRouter>
+        <Button>A button</Button>
+        <LinkButton to="/">A link</LinkButton>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link").className).toBe(screen.getByRole("button").className);
+  });
+
+  test("the classic look is left as it was, for the protected states", () => {
+    render(
+      <Button variant="ghost" look="classic" size="small">
+        Try again
+      </Button>,
+    );
+
+    // It ignores the sizes and the new weight, which belong to the default look.
+    const classes = classesOf(screen.getByRole("button"));
+    expect(classes).toEqual(
+      expect.arrayContaining([
+        "h-11.5",
+        "rounded-control",
+        "px-5",
+        "font-medium",
+        "bg-transparent",
+      ]),
+    );
+    expect(classes).not.toContain("font-semibold");
+    expect(classes).not.toContain("h-9.5");
+  });
 });
 
 test("a loading button has a thin ring, unlike the classic look", () => {
@@ -217,7 +335,7 @@ describe("LinkButton", () => {
     expect(screen.getByText("The next page")).toBeDefined();
   });
 
-  test.each<ButtonVariant>(["primary", "accent", "ghost", "light", "link"])(
+  test.each<ButtonVariant>(["primary", "accent", "ghost", "danger", "success", "light", "link"])(
     "the %s variant looks exactly like the same Button",
     (variant) => {
       render(

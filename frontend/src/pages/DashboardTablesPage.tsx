@@ -1,24 +1,41 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactElement } from "react";
 
 import { Button } from "@/components/Button";
+import { PlusIcon } from "@/components/icons";
 import { Modal } from "@/components/Modal";
+import { PartHeader } from "@/components/PartHeader";
 import {
   DashboardLoadFailed,
   DashboardLoading,
   NoTablesYet,
 } from "@/features/dashboard/components/DashboardStates";
-import { PartIntro } from "@/features/dashboard/components/PartIntro";
+import { FloorPlan } from "@/features/dashboard/components/FloorPlan";
 import { TableForm } from "@/features/dashboard/components/TableForm";
 import { TableList } from "@/features/dashboard/components/TableList";
+import { useBlocks } from "@/features/dashboard/hooks/useBlocks";
 import { useDashboardRestaurant } from "@/features/dashboard/hooks/useDashboardRestaurant";
+import { useDayReservations } from "@/features/dashboard/hooks/useDayReservations";
 import { useAddTable, useTables, useUpdateTable } from "@/features/dashboard/hooks/useTables";
-import { NEW_TABLE, tableFields, tablesSummary } from "@/features/dashboard/tables";
+import { NEW_TABLE, tableFields, tableNow, tablesSummary } from "@/features/dashboard/tables";
+import { yerevanClock, yerevanToday } from "@/lib/time";
 
-/** A restaurant's tables: add one, change one, switch one off or back on. */
+/**
+ * A restaurant's tables, as the export has them: the floor plan, each table as it stands now, beside
+ * the list of every table, where one is added, changed, or switched off or back on. Now moves on
+ * each minute, and today's bookings are asked for again every 30 seconds, as on Reservations.
+ */
 export function DashboardTablesPage(): ReactElement {
   const restaurant = useDashboardRestaurant();
   const tables = useTables(restaurant.id);
+  const [today] = useState(() => yerevanToday());
+  const day = useDayReservations(restaurant.id, today, 1);
+  const blocks = useBlocks(restaurant.id);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(tick);
+  }, []);
   const add = useAddTable(restaurant.id);
   const save = useUpdateTable(restaurant.id);
   // Switching tables on and off from their lines, apart from the form, so each has its own state.
@@ -39,19 +56,25 @@ export function DashboardTablesPage(): ReactElement {
   let body: ReactElement;
   if (list && list.length > 0) {
     body = (
-      <TableList
-        tables={list}
-        onEdit={(table) => openForm(table.id)}
-        onSwitch={(table) =>
-          switching.mutate({ tableId: table.id, change: { isActive: !table.isActive } })
-        }
-        switchingId={switching.isPending ? switching.variables.tableId : null}
-        refusal={
-          switching.error && switching.variables
-            ? { tableId: switching.variables.tableId, error: switching.error }
-            : null
-        }
-      />
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <FloorPlan
+          tables={list}
+          statusFor={(table) => tableNow(table, day.data?.data ?? [], blocks.data?.data ?? [], now)}
+        />
+        <TableList
+          tables={list}
+          onEdit={(table) => openForm(table.id)}
+          onSwitch={(table) =>
+            switching.mutate({ tableId: table.id, change: { isActive: !table.isActive } })
+          }
+          switchingId={switching.isPending ? switching.variables.tableId : null}
+          refusal={
+            switching.error && switching.variables
+              ? { tableId: switching.variables.tableId, error: switching.error }
+              : null
+          }
+        />
+      </div>
     );
   } else if (list) {
     body = <NoTablesYet onAdd={() => openForm("new")} />;
@@ -70,12 +93,24 @@ export function DashboardTablesPage(): ReactElement {
   return (
     <>
       <title>{`Tables · ${restaurant.name} · Seghan`}</title>
-      <h2 className="sr-only">Tables</h2>
-      {list && list.length > 0 && (
-        <PartIntro action={<Button onClick={() => openForm("new")}>Add a table</Button>}>
-          {tablesSummary(list)}
-        </PartIntro>
-      )}
+      <PartHeader
+        title="Tables"
+        description={
+          list && list.length > 0
+            ? `${tablesSummary(list)} · As they stand at ${yerevanClock(new Date(now))}`
+            : undefined
+        }
+        action={
+          list &&
+          list.length > 0 && (
+            <Button onClick={() => openForm("new")}>
+              <PlusIcon />
+              Add a table
+            </Button>
+          )
+        }
+        className="mb-6"
+      />
       {body}
 
       <Modal

@@ -25,7 +25,7 @@ function Chip({ kind, token }: ChipProps): ReactElement {
       {kind === "text" && (
         <span
           style={{ color: color(token.name) }}
-          className="absolute inset-0 grid place-items-center font-display text-section"
+          className="absolute inset-0 grid place-items-center font-grotesque text-heading font-bold"
         >
           Aa
         </span>

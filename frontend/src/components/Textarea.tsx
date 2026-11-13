@@ -40,7 +40,7 @@ export function Textarea({
           rows={rows}
           disabled={disabled}
           className={cx(
-            "block field-sizing-content min-h-11 resize-none py-2",
+            "block field-sizing-content min-h-12 resize-none py-3 pr-3.5",
             controlClass({ invalid: Boolean(error), disabled }),
           )}
         />

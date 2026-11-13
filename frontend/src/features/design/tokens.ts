@@ -23,7 +23,10 @@ export const colorGroups: ColorGroup[] = [
       { name: "surface-page", role: "The page" },
       { name: "surface-raised", role: "Cards and modals" },
       { name: "surface-tinted", role: "Tinted bands" },
-      { name: "surface-dark", role: "Dark bands" },
+      { name: "surface-dark", role: "Dark bands and the dark menu" },
+      { name: "surface-dark-raised", role: "The open link in the dark menu", on: "surface-dark" },
+      { name: "surface-blush", role: "The owners' band, avatars and tags" },
+      { name: "surface-office", role: "The dashboard's and admin's page" },
     ],
   },
   {
@@ -31,11 +34,14 @@ export const colorGroups: ColorGroup[] = [
     kind: "text",
     tokens: [
       { name: "ink", role: "Primary" },
+      { name: "ink-body", role: "Long text, such as About" },
       { name: "ink-secondary", role: "Secondary" },
       { name: "ink-muted", role: "Muted" },
       { name: "on-dark", role: "On a dark band", on: "surface-dark" },
       { name: "on-dark-secondary", role: "Secondary, on dark", on: "surface-dark" },
+      { name: "on-dark-muted", role: "Small print, on dark", on: "surface-dark" },
       { name: "on-accent", role: "On wine", on: "accent" },
+      { name: "accent-on-dark", role: "The home page's eyebrow, on dark", on: "surface-dark" },
     ],
   },
   {
@@ -58,6 +64,7 @@ export const colorGroups: ColorGroup[] = [
       { name: "line-underline", role: "Link underline" },
       { name: "line-rule", role: "The double rule" },
       { name: "line-on-dark", role: "On a dark band", on: "surface-dark" },
+      { name: "line-danger", role: "A cancelling button's outline" },
     ],
   },
   {
@@ -65,7 +72,8 @@ export const colorGroups: ColorGroup[] = [
     kind: "fill",
     tokens: [
       { name: "fill-slot", role: "Slot button" },
-      { name: "fill-hover", role: "Field hover" },
+      { name: "fill-hover", role: "Field hover, the stepper's buttons" },
+      { name: "fill-disabled", role: "A button that waits" },
       { name: "fill-primary-hover", role: "Protected button hover" },
       { name: "fill-overlay", role: "Icon button on a photo", on: "tone-1" },
     ],
@@ -76,6 +84,7 @@ export const colorGroups: ColorGroup[] = [
     tokens: [
       { name: "success", role: "Success" },
       { name: "success-soft", role: "Success, soft" },
+      { name: "success-strong", role: "A green button, and Open now" },
       { name: "warning", role: "Warning" },
       { name: "warning-soft", role: "Warning, soft" },
       { name: "error", role: "Error" },
@@ -83,6 +92,7 @@ export const colorGroups: ColorGroup[] = [
       { name: "info", role: "Info" },
       { name: "info-soft", role: "Info, soft" },
       { name: "neutral-soft", role: "Neutral, soft" },
+      { name: "star", role: "A rating's star" },
     ],
   },
   {
@@ -95,11 +105,11 @@ export const colorGroups: ColorGroup[] = [
     kind: "fill",
     tokens: [
       { name: "tone-1", role: "Clay" },
-      { name: "tone-2", role: "Plum" },
-      { name: "tone-3", role: "Walnut" },
+      { name: "tone-2", role: "Pine" },
+      { name: "tone-3", role: "Plum" },
       { name: "tone-4", role: "Slate" },
-      { name: "tone-5", role: "Olive" },
-      { name: "tone-6", role: "Char" },
+      { name: "tone-5", role: "Ochre" },
+      { name: "tone-6", role: "Olive" },
     ],
   },
 ];
@@ -116,6 +126,16 @@ export const displaySizes = [
   { name: "title-xs", sample: "Discover" },
 ];
 
+/** Every page's headings, in Bricolage Grotesque. */
+export const guestSizes = [
+  { name: "headline", sample: "Find a table in Yerevan" },
+  { name: "display", sample: "Dolmama" },
+  { name: "page-title", sample: "My reservations" },
+  { name: "part", sample: "Reservations" },
+  { name: "heading", sample: "Available tonight for 2" },
+  { name: "subheading", sample: "Opening hours" },
+];
+
 export const uiSizes = [
   { name: "lead", sample: "See real availability and book in seconds." },
   { name: "body", sample: "A table for four on Friday at 20:00." },
@@ -128,8 +148,9 @@ export const uiSizes = [
 ];
 
 export const fontTokens = [
-  { name: "font-display", role: "Names and big moments" },
-  { name: "font-sans", role: "Controls and data" },
+  { name: "font-display", role: "The protected states' titles only" },
+  { name: "font-sans", role: "Everything you read or press" },
+  { name: "font-grotesque", role: "The logo and every heading" },
 ];
 
 export const typeDetails = [
@@ -152,18 +173,23 @@ export const pageWidthToken = { name: "container-page", role: "The page's full w
 
 export const radiusTokens = [
   { name: "radius-check", role: "Checkbox" },
+  { name: "radius-chip", role: "A card's time, a row's button" },
   { name: "radius-slot", role: "Slot" },
   { name: "radius-control", role: "Button" },
-  { name: "radius-cta", role: "Search button" },
-  { name: "radius-media", role: "Photo" },
-  { name: "radius-card", role: "Card and modal" },
-  { name: "radius-hero", role: "Hero photo" },
-  { name: "radius-band", role: "Dark band" },
+  { name: "radius-cta", role: "The page's big button" },
+  { name: "radius-media", role: "Small photo" },
+  { name: "radius-card", role: "Field, time and notice" },
+  { name: "radius-hero", role: "Search, choice and day" },
+  { name: "radius-band", role: "Card, panel and modal" },
+  { name: "radius-sheet", role: "Booking panel and photos" },
+  { name: "radius-feature", role: "Owners' band and phone sheet" },
   { name: "radius-pill", role: "Pill and dot" },
 ];
 
 export const shadowTokens = [
-  { name: "shadow-search", role: "Search bar" },
+  { name: "shadow-search", role: "Search bar on the page" },
+  { name: "shadow-panel", role: "The booking panel" },
+  { name: "shadow-tab", role: "The open half of a switch" },
   { name: "shadow-float", role: "Floating card and modal" },
 ];
 
@@ -206,6 +232,7 @@ export const shownComponents: ShownComponent[] = [
   { name: "PasswordField", file: "PasswordField", section: "forms" },
   { name: "ChoiceLines", file: "ChoiceLines", section: "forms" },
   { name: "OrDivider", file: "OrDivider", section: "forms" },
+  { name: "PillSelect", file: "PillSelect", section: "forms" },
   { name: "Pagination", file: "Pagination", section: "actions" },
   { name: "SectionNav", file: "SectionNav", section: "actions" },
   { name: "SlotButton", file: "SlotButton", section: "actions" },
@@ -223,7 +250,12 @@ export const shownComponents: ShownComponent[] = [
   { name: "MobileMenu", file: "MobileMenu", section: "brand" },
   { name: "SiteFooter", file: "SiteFooter", section: "brand" },
   { name: "PageContainer", file: "PageContainer", section: "brand" },
+  { name: "SideNav", file: "SideNav", section: "brand" },
+  { name: "PartHeader", file: "PartHeader", section: "brand" },
+  { name: "Panel", file: "Panel", section: "brand" },
   { name: "AppLayout", file: "AppLayout", section: "brand" },
+  { name: "OfficeLayout", file: "OfficeLayout", section: "brand" },
+  { name: "OfficeAccount", file: "OfficeAccount", section: "brand" },
   { name: "EmptyState", file: "EmptyState", section: "protected" },
   { name: "ErrorState", file: "ErrorState", section: "protected" },
 ];
@@ -242,7 +274,13 @@ export const screenStates = {
     "No connection",
   ],
   signUp: ["A guest (live)", "A restaurant", "Field errors", "Sending", "Email taken"],
-  leftPage: ["A guest, before typing", "A guest, with a name", "A long name", "A restaurant"],
+  authPanel: [
+    "Sign in",
+    "A guest, before typing",
+    "A guest, with a name",
+    "A long name",
+    "A restaurant",
+  ],
   google: [
     "Ready (live)",
     "Loading",
@@ -275,9 +313,14 @@ export const screenStates = {
     "A cover shown whole",
   ],
   home: [
-    "Evening over Yerevan, beside the headline",
-    "The search",
-    "A few places to start",
+    "The opening, with the search",
+    "Available tonight",
+    "Tonight’s times loading",
+    "No tables free tonight",
+    "Tonight’s times didn’t load",
+    "Explore by neighborhood",
+    "Neighborhoods, still counting",
+    "For restaurant owners",
     "Loading",
     "Nothing yet",
     "Couldn’t load",
@@ -484,7 +527,12 @@ export const contents = [
   {
     id: "type",
     title: "Type",
-    items: displaySizes.length + uiSizes.length + fontTokens.length + typeDetails.length,
+    items:
+      displaySizes.length +
+      guestSizes.length +
+      uiSizes.length +
+      fontTokens.length +
+      typeDetails.length,
   },
   { id: "space", title: "Space", items: spaceTokens.length + 1 },
   {

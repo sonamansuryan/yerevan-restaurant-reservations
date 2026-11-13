@@ -50,3 +50,17 @@ test("a part at its parent's own address isn't marked on the other parts", () =>
     "page",
   );
 });
+
+test("as tabs, the part you're on is still marked as the current page, without the logo's dot", () => {
+  const router = createMemoryRouter(
+    [{ path: "*", element: <SectionNav label="Your reservations" links={links} /> }],
+    { initialEntries: ["/dashboard/r-1/hours"] },
+  );
+  render(<RouterProvider router={router} />);
+
+  const nav = within(screen.getByRole("navigation", { name: "Your reservations" }));
+  const current = nav.getByRole("link", { name: "Opening hours" });
+  expect(current.getAttribute("aria-current")).toBe("page");
+  expect(current.textContent).toBe("Opening hours");
+  expect(nav.getByRole("link", { name: "Bookings" }).getAttribute("aria-current")).toBeNull();
+});

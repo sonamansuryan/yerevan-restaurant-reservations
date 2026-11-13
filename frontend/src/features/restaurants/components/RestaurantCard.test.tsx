@@ -35,6 +35,9 @@ test("once guests have reviewed it, a line says how they rate it", () => {
   const card = renderCard({ ...lori, avgRating: 4.36, reviewCount: 18 });
 
   expect(card.textContent).toContain("Rated 4.4 by 18 guests");
+  // The star is drawn, and screen readers skip it: "Rated" says what the number is.
+  expect(card.textContent).not.toContain("★");
+  expect(screen.getByText("4.4").querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
   cleanup();
 
   expect(renderCard({ ...lori, avgRating: 5, reviewCount: 1 }).textContent).toContain(
@@ -99,6 +102,50 @@ test("no description leaves no empty line, and the heading level can change", ()
   expect(screen.getByRole("article").querySelector(".line-clamp-2")).toBeNull();
 });
 
+test("the home page's cards can leave out the description, to keep tonight's times close", () => {
+  render(
+    <MemoryRouter>
+      <RestaurantCard restaurant={lori} description={false} />
+    </MemoryRouter>,
+  );
+
+  expect(screen.queryByText(lori.description ?? "")).toBeNull();
+  expect(screen.getByText(/^Armenian · Steakhouse · Arabkir/)).toBeDefined();
+});
+
+test("its footer sits above the card's link, so what's in it can be pressed", () => {
+  render(
+    <MemoryRouter>
+      <RestaurantCard
+        restaurant={lori}
+        footer={<a href="/restaurants/lori-smokehouse?time=19%3A00">19:00</a>}
+      />
+    </MemoryRouter>,
+  );
+
+  const wrapper = screen.getByRole("link", { name: "19:00" }).parentElement;
+  expect(wrapper?.className).toContain("relative");
+  expect(wrapper?.className).toContain("z-10");
+});
+
+test("saving it sits on the photo, above the card's link, so it can be pressed", () => {
+  render(
+    <MemoryRouter>
+      <RestaurantCard
+        restaurant={lori}
+        save={<button type="button">Save Lori Smokehouse</button>}
+      />
+    </MemoryRouter>,
+  );
+
+  const save = screen.getByRole("button", { name: "Save Lori Smokehouse" });
+  expect(save.parentElement?.className).toContain("z-10");
+  // On the photo, before the name.
+  expect(save.compareDocumentPosition(screen.getByRole("heading"))).toBe(
+    Node.DOCUMENT_POSITION_FOLLOWING,
+  );
+});
+
 test("a cover a crop would spoil (covers.ts) is shown whole on the paper tint, any other fills the card", () => {
   const listings = "https://res.cloudinary.com/seghan/image/upload/v1/seghan/demo-listings";
   const whole = renderCard({
@@ -124,7 +171,9 @@ test("a cover a crop would spoil (covers.ts) is shown whole on the paper tint, a
 test("a demo listing (9.7) has no price, which no source gives, and no badge saying it's a demo", () => {
   const card = renderCard({ ...lori, priceLevel: null, isDemoListing: true });
 
-  expect(card.querySelector("p.text-meta")?.textContent).toBe("Armenian · Steakhouse · Arabkir");
+  expect(screen.getByText(/^Armenian · Steakhouse · Arabkir/).textContent).toBe(
+    "Armenian · Steakhouse · Arabkir",
+  );
   expect(card.textContent).not.toContain("֏");
   expect(card.textContent).not.toMatch(/demo/i);
 });

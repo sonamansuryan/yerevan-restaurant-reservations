@@ -116,10 +116,25 @@ test("the fields are named for password managers and phone keyboards", () => {
   expect(password().getAttribute("autocomplete")).toBe("current-password");
 });
 
-test("it offers to create an account instead", () => {
+test("Google's way in comes before the form", () => {
+  render(
+    <MemoryRouter>
+      <SignInForm onSubmit={vi.fn()} google={<button type="button">Continue with Google</button>} />
+    </MemoryRouter>,
+  );
+
+  const google = screen.getByRole("button", { name: "Continue with Google" });
+  expect(google.compareDocumentPosition(email())).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  // It isn't part of what the form sends.
+  expect(google.closest("form")).toBeNull();
+});
+
+test("an owner is told they sign in here too, and a new one is offered to list a restaurant", () => {
   renderForm();
 
-  expect(screen.getByRole("link", { name: "Create an account" }).getAttribute("href")).toBe(
-    "/register",
+  const listYours = screen.getByRole("link", { name: "List your restaurant" });
+  expect(listYours.getAttribute("href")).toBe("/register?role=owner");
+  expect(listYours.closest("p")?.textContent).toBe(
+    "Restaurant owner? You sign in here too. New to Seghan? List your restaurant",
   );
 });

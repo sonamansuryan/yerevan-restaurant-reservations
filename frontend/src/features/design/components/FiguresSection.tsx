@@ -17,7 +17,7 @@ export function FiguresSection(): ReactElement {
     >
       <Group
         title="Figures"
-        note="Each number under a hairline, like a column in a ledger, in the sans, whose figures read more plainly than the serif's. As many share a row as fit, two at least. A figure with nothing to count yet shows a dash, and screen readers hear a word instead."
+        note="Each number on its own white card, in bold, with what it counts above and a note below. As many share a row as fit, two at least. A figure with nothing to count yet shows a dash, and screen readers hear a word instead."
       >
         <div className="grid gap-10">
           <Specimen label="Five across, as the analytics have them" frozen>
@@ -30,7 +30,7 @@ export function FiguresSection(): ReactElement {
       </Group>
       <Group
         title="BarList"
-        note="Thin wine bars on one baseline, with the number in a column of figures. As parts of a whole, a full bar is the whole and the share sits beside each number; otherwise the largest is the full bar. A count too small to see still shows a sliver. The bar is only a picture of its number, so screen readers skip it. On a phone it drops under the name."
+        note="Wine bars filling soft tracks, with the number in a column of figures. As parts of a whole, a full bar is the whole and the share sits beside each number; otherwise the largest is the full bar. A count too small to see still shows a sliver. The bar is only a picture of its number, so screen readers skip it. On a phone it drops under the name."
       >
         <div className="grid max-w-180 gap-10">
           <Specimen label="Parts of a whole: a month's bookings by status" frozen>
@@ -40,7 +40,7 @@ export function FiguresSection(): ReactElement {
             <BarList
               bars={seghanAnalytics.restaurants.map(({ id, name, bookings }) => ({
                 key: id,
-                label: <span className="font-display text-title-xs">{name}</span>,
+                label: <span className="font-semibold">{name}</span>,
                 value: bookings,
               }))}
               className="w-full"

@@ -58,20 +58,6 @@ function LiveSave(): ReactElement {
   return <SaveButton saved={saved} name="Lori Smokehouse" onClick={() => setSaved(!saved)} />;
 }
 
-const PARTS = ["Bookings", "Information", "Opening hours", "Tables", "Blocked times", "Photos"];
-
-/**
- * The links lead nowhere real, so these are frozen. The open part's link is this page's own
- * address, which is how a real one is marked: NavLink compares it with the address in the bar.
- */
-function sectionsWith(open: string): { to: string; label: string; end: boolean }[] {
-  return PARTS.map((label) => ({
-    to: label === open ? "/design" : `/design/${label.toLowerCase().replace(" ", "-")}`,
-    label,
-    end: true,
-  }));
-}
-
 export function ActionSection(): ReactElement {
   return (
     <Section
@@ -82,10 +68,13 @@ export function ActionSection(): ReactElement {
       <Group title="Primary" note="One clear next step on each screen.">
         <ButtonStates variant="primary" />
       </Group>
-      <Group title="Accent" note="Wine, for what matters most on a screen.">
+      <Group
+        title="Accent"
+        note="Wine, the color of booking: what matters most on a guest's screen."
+      >
         <ButtonStates variant="accent" />
       </Group>
-      <Group title="Ghost" note="A quieter choice beside a primary button.">
+      <Group title="Ghost" note="A white outline, a quieter choice beside a filled button.">
         <ButtonStates variant="ghost" />
       </Group>
       <Group title="Link" note="A quiet action, at least 44px tall on phones.">
@@ -101,6 +90,14 @@ export function ActionSection(): ReactElement {
       <Group title="Light" note="For dark bands, where the focus ring turns light too.">
         <div className="surface-dark rounded-band p-6">
           <ButtonStates variant="light" onDark />
+        </div>
+      </Group>
+      <Group title="Small" note="44px tall, still enough to tap: for actions in a card or a row.">
+        <div className="flex flex-wrap gap-2">
+          <Button size="small">Confirm</Button>
+          <Button variant="ghost" size="small">
+            Cancel booking
+          </Button>
         </div>
       </Group>
       <Group
@@ -119,24 +116,24 @@ export function ActionSection(): ReactElement {
       </Group>
       <Group
         title="Section links"
-        note="The parts of one place, such as a restaurant's dashboard, in the header's own style: the open part is in ink with the logo's dot. On a phone the row wraps."
+        note="The parts of one page as tabs, such as Upcoming and Past: the open part is in ink, underlined on the rule. On a phone the row wraps."
       >
         <div className="grid max-w-180 gap-6">
-          <Specimen label="Bookings open" frozen>
+          <Specimen label="Upcoming open" frozen>
             <SectionNav
-              label="Lori Smokehouse"
-              links={sectionsWith("Bookings")}
+              label="Your reservations"
+              links={[
+                { to: "/design", label: "Upcoming", end: true },
+                { to: "/design/past", label: "Past", end: true },
+              ]}
               className="w-full"
             />
-          </Specimen>
-          <Specimen label="Photos open" frozen>
-            <SectionNav label="Lori Smokehouse" links={sectionsWith("Photos")} className="w-full" />
           </Specimen>
         </div>
       </Group>
       <Group
         title="Times"
-        note="A time to book, in a hairline outline that fills with ink once chosen. A time with no free table keeps its place, struck through."
+        note="A time to book, in a white box that fills with wine once chosen, wine being the guest pages' color for booking. A time with no free table keeps its place, dashed and struck through."
       >
         <SpecimenRow>
           <Specimen label="Default">
@@ -161,7 +158,7 @@ export function ActionSection(): ReactElement {
       </Group>
       <Group
         title="Save"
-        note="Saves a restaurant to a guest's favorites, or takes it out. It says Save, or Saved once it is, and screen readers hear it as pressed. The ring takes the logo's dot when saved, as a chosen line does, and turns while the change is sent."
+        note="Saves a restaurant to a guest's favorites, or takes it out: a white pill with a heart. It says Save, or Saved once it is, with the heart filled in wine, and screen readers hear it as pressed. A ring turns in the heart's place while the change is sent."
       >
         <SpecimenRow>
           <Specimen label="Not saved (live)">

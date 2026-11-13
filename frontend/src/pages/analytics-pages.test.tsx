@@ -75,19 +75,19 @@ const main = (): ReturnType<typeof within> => within(screen.getByRole("main"));
 const period = (): string | null => main().getByRole("status").textContent;
 
 describe("on the dashboard", () => {
-  test("the owner opens Analytics beside Bookings, and sees the last 30 days", async () => {
+  test("the owner opens Analytics, the last of the restaurant's parts, and sees the last 30 days", async () => {
     const fetch = fakeApi(ani);
     const router = renderAt(LORI);
 
     const parts = within(await main().findByRole("navigation", { name: "Lori Smokehouse" }));
     expect(parts.getAllByRole("link").map((link) => link.textContent)).toEqual([
-      "Bookings",
-      "Analytics",
-      "Information",
-      "Opening hours",
+      "Reservations",
       "Tables",
+      "Opening hours",
       "Blocked times",
+      "Restaurant info",
       "Photos",
+      "Analytics",
     ]);
     await userEvent.click(parts.getByRole("link", { name: "Analytics" }));
 

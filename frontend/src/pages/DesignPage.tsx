@@ -28,7 +28,7 @@ export function DesignPage(): ReactElement {
       <title>House style · Seghan</title>
       <div>
         <Badge tone="warning">Development only</Badge>
-        <h1 className="mt-4 font-display text-feature md:text-hero">The house style</h1>
+        <h1 className="mt-4 font-grotesque text-headline font-bold">The house style</h1>
         <p className="mt-4 max-w-140 text-lead text-ink-secondary">
           Every token and shared component, exactly as the app renders them. This page never reaches
           the production build.

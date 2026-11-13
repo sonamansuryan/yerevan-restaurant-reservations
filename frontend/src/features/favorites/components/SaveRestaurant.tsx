@@ -1,7 +1,8 @@
 import type { ReactElement } from "react";
+import { Link } from "react-router";
 
-import { LinkButton } from "@/components/Button";
-import { SaveButton } from "@/components/SaveButton";
+import { HeartIcon } from "@/components/icons";
+import { SaveButton, savePillClass } from "@/components/SaveButton";
 import type { ReturnState } from "@/features/auth/returnTo";
 import type { ApiError } from "@/lib/api";
 import { cx } from "@/lib/cx";
@@ -30,13 +31,14 @@ interface SaveRestaurantProps {
   className?: string;
 }
 
-/** Saving a restaurant from its page, at the top beside the way back to all restaurants. */
+/** Saving a restaurant from its page, beside its name. Signed out, the same pill asks to sign in. */
 export function SaveRestaurant({ name, viewer, className }: SaveRestaurantProps): ReactElement {
   if (viewer.kind === "signedOut") {
     return (
-      <LinkButton variant="link" to="/login" state={viewer.signIn} className={className}>
+      <Link to="/login" state={viewer.signIn} className={cx(savePillClass, className)}>
+        <HeartIcon className="flex-none" />
         Sign in to save
-      </LinkButton>
+      </Link>
     );
   }
   return (

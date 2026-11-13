@@ -37,10 +37,10 @@ export function Field({
   const errorId = error ? `${controlId}-error` : undefined;
 
   return (
-    <div className={cx("flex flex-col gap-0.5", className)}>
+    <div className={cx("flex flex-col gap-1.5", className)}>
       <label
         htmlFor={controlId}
-        className={cx("text-meta font-medium", disabled ? "text-ink-muted" : "text-ink-secondary")}
+        className={cx("text-ui font-semibold", disabled ? "text-ink-muted" : "text-ink")}
       >
         {label}
       </label>

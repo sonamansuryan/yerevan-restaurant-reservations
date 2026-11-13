@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 
+import { PartHeader } from "@/components/PartHeader";
 import {
   DashboardLoadFailed,
   DashboardLoading,
@@ -44,7 +45,7 @@ export function DashboardPhotosPage(): ReactElement {
   return (
     <>
       <title>{`Photos · ${restaurant.name} · Seghan`}</title>
-      <h2 className="sr-only">Photos</h2>
+      <PartHeader title="Photos" className="mb-6" />
       {body}
     </>
   );

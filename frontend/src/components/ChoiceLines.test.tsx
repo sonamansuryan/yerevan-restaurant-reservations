@@ -74,3 +74,14 @@ test("other props, such as register's name, reach every radio", () => {
   expect(radio(/A guest/).name).toBe("role");
   expect(radio(/A restaurant/).name).toBe("role");
 });
+
+test("boxed, it's still one radio group, and a tap anywhere on a box chooses it", async () => {
+  render(<ChoiceLines legend="I’m joining as" name="role" options={roles} />);
+
+  const group = screen.getByRole("group", { name: "I’m joining as" });
+  expect(within(group).getAllByRole("radio")).toHaveLength(2);
+  await userEvent.click(screen.getByText("Manage bookings"));
+
+  expect(radio(/A restaurant/).checked).toBe(true);
+  expect(radio(/A restaurant/).closest("label")?.className).toContain("has-checked:border-accent");
+});

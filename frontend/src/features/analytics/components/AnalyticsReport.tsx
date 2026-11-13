@@ -3,7 +3,8 @@ import type { ReactElement, ReactNode } from "react";
 import { BarList } from "@/components/BarList";
 import { EmptyState } from "@/components/EmptyState";
 import { Figures } from "@/components/Figures";
-import { Select } from "@/components/Select";
+import { Panel } from "@/components/Panel";
+import { PillSelect } from "@/components/PillSelect";
 import {
   ANALYTICS_DAYS,
   PERIOD_CHOICES,
@@ -56,14 +57,12 @@ interface PartProps {
   children: ReactNode;
 }
 
-/** One part of the report: a functional heading in serif, and its lines. */
+/** One part of the report: a white panel with its title, and its lines. */
 export function ReportPart({ title, headingLevel, children }: PartProps): ReactElement {
-  const Heading = headingLevel === 3 ? "h3" : "h4";
   return (
-    <section className="min-w-0">
-      <Heading className="font-display text-title">{title}</Heading>
-      <div className="mt-4">{children}</div>
-    </section>
+    <Panel title={title} headingLevel={headingLevel}>
+      {children}
+    </Panel>
   );
 }
 
@@ -77,11 +76,11 @@ function Report<T extends Analytics>({
   headingLevel: 3 | 4;
 }): ReactElement {
   return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-6">
       <Figures figures={analyticsFigures(analytics)} />
       {/* Two parts to a row on a wide screen, anything more included, so every bar has the
           same room to grow. */}
-      <div className="grid gap-x-16 gap-y-12 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <ReportPart title="Bookings by status" headingLevel={headingLevel}>
           <BarList bars={statusBars(analytics)} max={analytics.bookings} />
         </ReportPart>
@@ -89,7 +88,7 @@ function Report<T extends Analytics>({
           {analytics.ratings.count > 0 ? (
             <BarList bars={ratingBars(analytics)} max={analytics.ratings.count} />
           ) : (
-            <p className="border-t border-line pt-3 text-ui text-ink-secondary">
+            <p className="text-ui text-ink-secondary">
               No reviews of these bookings yet. Guests can leave one after a visit marked arrived.
             </p>
           )}
@@ -151,28 +150,24 @@ export function AnalyticsReport<T extends Analytics>({
   }
 
   return (
-    <div className={cx("flex flex-col gap-10", className)}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
-        <Select
+    <div className={cx("flex flex-col gap-6", className)}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+        <PillSelect
           label="Period"
           value={String(days)}
-          onChange={(event) =>
-            onDaysChange(
-              ANALYTICS_DAYS.find((choice) => String(choice) === event.target.value) ?? days,
-            )
+          options={ANALYTICS_DAYS.map((choice) => ({
+            value: String(choice),
+            label: PERIOD_CHOICES[choice],
+          }))}
+          onChange={(value) =>
+            onDaysChange(ANALYTICS_DAYS.find((choice) => String(choice) === value) ?? days)
           }
-          className="sm:w-60"
-        >
-          {ANALYTICS_DAYS.map((choice) => (
-            <option key={choice} value={choice}>
-              {PERIOD_CHOICES[choice]}
-            </option>
-          ))}
-        </Select>
+          className="self-start"
+        />
         {data && (
           // The days of the numbers on screen, which may still be the last period's while the
           // next loads. Read out when they change, so screen reader users hear the new period.
-          <p role="status" className="text-ui text-ink-secondary sm:pb-3 sm:text-right">
+          <p role="status" className="text-ui text-ink-secondary sm:text-right">
             {formatDayRange(data.period.from, data.period.to)}, by the day each booking is for
           </p>
         )}

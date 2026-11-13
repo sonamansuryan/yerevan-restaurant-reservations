@@ -51,10 +51,12 @@ test("the average to one decimal, and how many guests gave it", () => {
   expect(screen.getByText(/^Rated/).textContent).toBe("Rated 4.3 out of 5 by 23 guests.");
 });
 
-test("one guest is a guest", () => {
+test("one guest is a guest, and the large average is for the eye only", () => {
   render(<RestaurantReviews avgRating={5} reviewCount={1} />);
 
-  expect(document.body.textContent).toBe("Rated 5.0 out of 5 by 1 guest.");
+  expect(screen.getByText(/^Rated/).textContent).toBe("Rated 5.0 out of 5 by 1 guest.");
+  const large = screen.getByText("5.0", { selector: "p" });
+  expect(large.getAttribute("aria-hidden")).toBe("true");
 });
 
 test("each review: the first name, the rating out of 5, the month, and the words with their line breaks", () => {
@@ -67,8 +69,11 @@ test("each review: the first name, the rating out of 5, the month, and the words
   const words = within(first!).getByText(/The trout was perfect/);
   expect(words.textContent).toBe("The trout was perfect.\nWe sat by the window.");
   expect(words.className).toContain("whitespace-pre-line");
-  // A review without words is the name, the rating and the month alone.
-  expect(second!.textContent).toBe("Aram3/53 out of 5October 2026");
+  // A review without words is the name, the rating and the month alone, after an initial that
+  // screen readers skip.
+  const initial = second!.querySelector('[aria-hidden="true"]');
+  expect(initial?.textContent).toBe("A");
+  expect(second!.textContent).toBe("AAram3/53 out of 5October 2026");
 });
 
 test("while the reviews load, the summary stays and says it's loading them", () => {

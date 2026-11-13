@@ -10,7 +10,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { Mock } from "vitest";
 
 import { routes } from "@/router";
-import type { District, RestaurantSummary } from "@/types/api";
+import type { AvailabilitySlot, District, RestaurantSummary } from "@/types/api";
 
 type TestRouter = ReturnType<typeof createMemoryRouter>;
 
@@ -37,14 +37,38 @@ const threeRestaurants = [
 const json = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), { status });
 
+// Every restaurant's evening: a full 18:00, then a free table every half hour until 21:00.
+const slot = (starts: string, free: boolean): AvailabilitySlot => ({
+  startsAt: "2026-11-13T15:00:00.000Z",
+  endsAt: "2026-11-13T17:00:00.000Z",
+  starts,
+  ends: starts,
+  tables: free ? [{ id: "table-t1", label: "T1", zone: "INDOOR", capacity: 4 }] : [],
+});
+const evening = [
+  slot("18:00", false),
+  ...["18:30", "19:00", "19:30", "20:00", "20:30", "21:00"].map((starts) => slot(starts, true)),
+];
+
 /**
  * Answers like the API: nobody is signed in, and /api/restaurants filters by district and search,
  * and sorts by name or rating, 12 to a page. `failures` makes that many list requests fail first, as with no connection.
+ * Each restaurant has the same evening, on any day and for any party.
  */
 function fakeApi(list: RestaurantSummary[] = threeRestaurants, failures = 0): Mock {
   let failuresLeft = failures;
   const fetch = vi.fn((url: string) => {
     const { pathname, searchParams } = new URL(url, "http://seghan.test");
+    if (/^\/api\/restaurants\/[^/]+\/availability$/.test(pathname)) {
+      return Promise.resolve(
+        json({
+          date: searchParams.get("date"),
+          partySize: Number(searchParams.get("partySize")),
+          bookingWindow: { first: "2026-11-13", last: "2027-01-12" },
+          slots: evening,
+        }),
+      );
+    }
     if (pathname === "/api/restaurants") {
       if (failuresLeft > 0) {
         failuresLeft -= 1;
@@ -83,17 +107,31 @@ function fakeApi(list: RestaurantSummary[] = threeRestaurants, failures = 0): Mo
   return fetch;
 }
 
-/** The addresses Browse asked the API for, in order. */
+/** The addresses Browse asked the API for its list, in order. Each card's times are apart. */
 const listRequests = (fetch: Mock): string[] =>
-  fetch.mock.calls.map(([url]) => String(url)).filter((url) => url.startsWith("/api/restaurants"));
+  fetch.mock.calls
+    .map(([url]) => String(url))
+    .filter((url) => url === "/api/restaurants" || url.startsWith("/api/restaurants?"));
+
+/** The cards' own requests for their free times. */
+const timesRequests = (fetch: Mock): string[] =>
+  fetch.mock.calls.map(([url]) => String(url)).filter((url) => url.includes("/availability"));
+
+/** The address's query, as plain values: URLSearchParams writes 19:30 as 19%3A30. */
+const queryOf = (router: TestRouter): Record<string, string> =>
+  Object.fromEntries(new URLSearchParams(router.state.location.search));
 
 beforeEach(() => {
+  // Friday 13 November 2026, 14:00 in Yerevan, so a table is looked for today at 19:30. Only the
+  // date is fixed: timers stay real.
+  vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-13T10:00:00Z") });
   // jsdom has no scrollTo(), which ScrollRestoration calls.
   window.scrollTo = vi.fn();
 });
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -121,6 +159,56 @@ test("lists the restaurants from the API, each linking to its own page", async (
   expect(cardNames()).toEqual(["Kond House", "Lori Smokehouse", "Nurr"]);
   expect(main().getByRole("link", { name: "Nurr" }).getAttribute("href")).toBe("/restaurants/nurr");
   expect(document.title).toBe("Restaurants · Seghan");
+  // Each card has a heart, which asks someone signed out to sign in first.
+  expect(main().getByRole("link", { name: "Sign in to save Nurr" }).getAttribute("href")).toBe(
+    "/login",
+  );
+});
+
+test("each card shows its free times nearest the time looked for, each opening the booking at it", async () => {
+  const fetch = fakeApi();
+  renderAt("/restaurants");
+
+  // Today at 19:30 for two, until another table is looked for.
+  const times = await main().findByRole("list", { name: "Free today at Kond House" });
+  expect(
+    within(times)
+      .getAllByRole("link")
+      .map((link) => link.textContent),
+  ).toEqual(["19:00", "19:30", "20:00"]);
+  const at1930 = within(times).getByRole("link", { name: "Book Kond House today at 19:30" });
+  expect(at1930.getAttribute("href")).toBe(
+    "/restaurants/kond-house?date=2026-11-13&guests=2&time=19%3A30",
+  );
+  expect(timesRequests(fetch)).toEqual([
+    "/api/restaurants/kond-house/availability?date=2026-11-13&partySize=2",
+    "/api/restaurants/lori-smokehouse/availability?date=2026-11-13&partySize=2",
+    "/api/restaurants/nurr/availability?date=2026-11-13&partySize=2",
+  ]);
+});
+
+test("another day, time and party in the address change every card's times", async () => {
+  const fetch = fakeApi();
+  renderAt("/restaurants?date=2026-11-14&time=20:00&guests=4");
+
+  const times = await main().findByRole("list", { name: "Free on Saturday 14 November at Nurr" });
+  expect(
+    within(times)
+      .getAllByRole("link")
+      .map((link) => link.textContent),
+  ).toEqual(["19:30", "20:00", "20:30"]);
+  expect(
+    within(times)
+      .getByRole("link", { name: "Book Nurr on Saturday 14 November at 20:00" })
+      .getAttribute("href"),
+  ).toBe("/restaurants/nurr?date=2026-11-14&guests=4&time=20%3A00");
+  expect(timesRequests(fetch)).toContain(
+    "/api/restaurants/nurr/availability?date=2026-11-14&partySize=4",
+  );
+  // The bar shows the table looked for.
+  expect((main().getByLabelText("Date") as HTMLSelectElement).value).toBe("2026-11-14");
+  expect((main().getByLabelText("Time") as HTMLSelectElement).value).toBe("20:00");
+  expect((main().getByLabelText("Guests") as HTMLSelectElement).value).toBe("4");
 });
 
 test("choosing a district puts it in the address and asks the API for it", async () => {
@@ -145,19 +233,25 @@ test("a link with a district, such as the footer's, opens the list already filte
   expect(listRequests(fetch)).toEqual(["/api/restaurants?district=ARABKIR"]);
 });
 
-test("a search runs when it's sent, and Back undoes it", async () => {
-  fakeApi();
+test("a search runs when it's sent, with the table looked for, and Back undoes it", async () => {
+  const fetch = fakeApi();
   const router = renderAt("/restaurants");
   await main().findByText("3 restaurants");
 
-  await userEvent.type(main().getByLabelText("Search"), "lori{Enter}");
+  const box = main().getByLabelText("Restaurant, dish or street");
+  expect(box.getAttribute("placeholder")).toBe("Name, dish or street");
+  await userEvent.type(box, "lori");
+  await userEvent.click(main().getByRole("button", { name: "Search" }));
   expect(await main().findByText("1 restaurant")).toBeDefined();
-  expect(router.state.location.search).toBe("?q=lori");
+  // The day, time and party always go along, as their choices always have a value.
+  expect(queryOf(router)).toEqual({ q: "lori", date: "2026-11-13", time: "19:30", guests: "2" });
+  const asked = new URL(listRequests(fetch).at(-1) ?? "", "http://seghan.test");
+  expect(asked.searchParams.get("q")).toBe("lori");
 
   await router.navigate(-1);
   expect(await main().findByText("3 restaurants")).toBeDefined();
   // The search box follows the address back.
-  expect((main().getByLabelText("Search") as HTMLInputElement).value).toBe("");
+  expect((main().getByLabelText("Restaurant, dish or street") as HTMLInputElement).value).toBe("");
 });
 
 test("nothing found has one way out: clearing the filters", async () => {
@@ -204,6 +298,19 @@ test("clearing the filters keeps the order", async () => {
   expect(await main().findByText("3 restaurants")).toBeDefined();
   expect(router.state.location.search).toBe("?sort=rating");
   expect((main().getByLabelText("Sort by") as HTMLSelectElement).value).toBe("rating");
+});
+
+test("clearing the filters keeps the table looked for: its day, time and party", async () => {
+  fakeApi();
+  const router = renderAt(
+    "/restaurants?q=pizza&district=KENTRON&date=2026-11-14&time=20:00&guests=4",
+  );
+
+  expect(await main().findByText("No restaurants match")).toBeDefined();
+  await userEvent.click(main().getByRole("button", { name: "Clear filters" }));
+
+  expect(await main().findByText("3 restaurants")).toBeDefined();
+  expect(queryOf(router)).toEqual({ date: "2026-11-14", time: "20:00", guests: "4" });
 });
 
 test("a filter the server would refuse, from a hand-edited link, is ignored", async () => {

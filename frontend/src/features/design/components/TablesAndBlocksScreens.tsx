@@ -1,8 +1,10 @@
 import type { ReactElement } from "react";
 
 import { Button } from "@/components/Button";
+import { PartHeader } from "@/components/PartHeader";
 import { newBlock } from "@/features/dashboard/blocks";
 import type { BlockFields } from "@/features/dashboard/blocks";
+import { BlockCalendar } from "@/features/dashboard/components/BlockCalendar";
 import { BlockForm } from "@/features/dashboard/components/BlockForm";
 import { BlockList } from "@/features/dashboard/components/BlockList";
 import {
@@ -11,10 +13,10 @@ import {
   NoBlocksYet,
   NoTablesYet,
 } from "@/features/dashboard/components/DashboardStates";
-import { PartIntro } from "@/features/dashboard/components/PartIntro";
+import { FloorPlan } from "@/features/dashboard/components/FloorPlan";
 import { TableForm } from "@/features/dashboard/components/TableForm";
 import { TableList } from "@/features/dashboard/components/TableList";
-import { NEW_TABLE, tableFields, tablesSummary } from "@/features/dashboard/tables";
+import { NEW_TABLE, tableFields, tableNow, tablesSummary } from "@/features/dashboard/tables";
 import { Group, Specimens } from "@/features/design/components/parts";
 import { fridayBookings, ownedTables, sampleBlocks } from "@/features/design/samples";
 import { screenStates } from "@/features/design/tokens";
@@ -83,13 +85,27 @@ const blockHasBookings = new ApiError(
   { reservations: [sampleBooking("booking-3"), sampleBooking("booking-4")] },
 );
 
+// The floor plan's moment: Friday 13 November at 19:45 in Yerevan, which is 15:45 UTC.
+const AT_19_45 = Date.parse("2026-11-13T15:45:00Z");
+
 const tables: Record<StateOf<"tables">, ReactElement> = {
   "Every area (live)": (
     <div>
-      <PartIntro action={<Button onClick={ignore}>Add a table</Button>}>
-        {tablesSummary(ownedTables)}
-      </PartIntro>
-      <TableList tables={ownedTables} onEdit={ignore} onSwitch={ignore} headingLevel={4} />
+      <PartHeader
+        title="Tables"
+        headingLevel={4}
+        description={`${tablesSummary(ownedTables)} · As they stand at 19:45`}
+        action={<Button onClick={ignore}>Add a table</Button>}
+        className="mb-6"
+      />
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <FloorPlan
+          tables={ownedTables}
+          statusFor={(table) => tableNow(table, fridayBookings, sampleBlocks, AT_19_45)}
+          headingLevel={4}
+        />
+        <TableList tables={ownedTables} onEdit={ignore} onSwitch={ignore} headingLevel={4} />
+      </div>
     </div>
   ),
   "No tables yet": <NoTablesYet onAdd={ignore} />,
@@ -152,10 +168,17 @@ const tableForm: Record<StateOf<"tableForm">, ReactElement> = {
 const blockedTimes: Record<StateOf<"blockedTimes">, ReactElement> = {
   "Coming up (live)": (
     <div>
-      <PartIntro action={<Button onClick={ignore}>Block a time</Button>}>
-        Guests can’t book these times.
-      </PartIntro>
-      <BlockList blocks={sampleBlocks} today={FRIDAY} onRemove={ignore} />
+      <PartHeader
+        title="Blocked times"
+        headingLevel={4}
+        description="Guests can’t book these times."
+        action={<Button onClick={ignore}>Block a time</Button>}
+        className="mb-6"
+      />
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <BlockList blocks={sampleBlocks} today={FRIDAY} onRemove={ignore} />
+        <BlockCalendar blocks={sampleBlocks} today={FRIDAY} headingLevel={4} />
+      </div>
     </div>
   ),
   "No blocked times": <NoBlocksYet onAdd={ignore} />,
@@ -206,7 +229,7 @@ export function TablesAndBlocksScreens(): ReactElement {
     <>
       <Group
         title="Tables"
-        note="By area, each table a menu line with the parties it takes. An inactive table stays in its area, greyed, so it can be switched back on. Switching one off is refused while bookings need it, or when it's a published restaurant's last one: the refusal shows under its line."
+        note="By area, each area in a white panel, each table a row with the parties it takes. An inactive table stays in its area, greyed, so it can be switched back on. Switching one off is refused while bookings need it, or when it's a published restaurant's last one: the refusal shows under its line."
       >
         <Specimens wide specimens={tables} />
       </Group>

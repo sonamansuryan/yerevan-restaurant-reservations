@@ -2,20 +2,27 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import { Group, Section, TokenLine } from "@/features/design/components/parts";
-import { displaySizes, fontTokens, typeDetails, uiSizes } from "@/features/design/tokens";
+import {
+  displaySizes,
+  fontTokens,
+  guestSizes,
+  typeDetails,
+  uiSizes,
+} from "@/features/design/tokens";
 import { tokenValue } from "@/features/design/tools";
 import { cx } from "@/lib/cx";
 
 interface TypeRowProps {
   name: string;
   sample: string;
-  display: boolean;
+  /** The home page's headings, in Bricolage Grotesque. */
+  grotesque?: boolean;
   upper?: boolean;
 }
 
 const rounded = (value: string): number => Math.round(parseFloat(value) * 10) / 10;
 
-function TypeRow({ name, sample, display, upper = false }: TypeRowProps): ReactElement {
+function TypeRow({ name, sample, grotesque = false, upper = false }: TypeRowProps): ReactElement {
   const sampleRef = useRef<HTMLParagraphElement>(null);
   const [size, setSize] = useState("");
 
@@ -39,7 +46,7 @@ function TypeRow({ name, sample, display, upper = false }: TypeRowProps): ReactE
       </div>
       <p
         ref={sampleRef}
-        className={cx("min-w-0", display && "font-display", upper && "uppercase")}
+        className={cx("min-w-0", grotesque && "font-grotesque", upper && "uppercase")}
         style={{
           fontSize: `var(--text-${name})`,
           lineHeight: `var(--text-${name}--line-height)`,
@@ -69,16 +76,24 @@ export function TypeSection(): ReactElement {
     <Section
       id="type"
       title="Type"
-      intro="Serif for names and big moments, sans for controls and data. Sizes are measured live, so narrow the window to watch the largest ones change."
+      intro="Bricolage Grotesque, bold, for the logo and every heading, and Inter for everything you read or press. Instrument Serif is left only in the protected states, under Protected designs. Sizes are measured live, so narrow the window to watch the largest ones change."
     >
-      <Group title="Display sizes" note="Instrument Serif, for names and headings.">
+      <Group
+        title="Display sizes"
+        note="Bricolage Grotesque, bold: the logo's sizes, and names and tiles. The protected states keep their own serif title at the title size."
+      >
         {displaySizes.map((size) => (
-          <TypeRow key={size.name} {...size} display />
+          <TypeRow key={size.name} {...size} grotesque />
         ))}
       </Group>
-      <Group title="Interface sizes" note="Instrument Sans, for everything you read or press.">
+      <Group title="Headings" note="Bricolage Grotesque, bold, for every page's headings.">
+        {guestSizes.map((size) => (
+          <TypeRow key={size.name} {...size} grotesque />
+        ))}
+      </Group>
+      <Group title="Interface sizes" note="Inter, for everything you read or press.">
         {uiSizes.map((size) => (
-          <TypeRow key={size.name} {...size} display={false} />
+          <TypeRow key={size.name} {...size} />
         ))}
       </Group>
       <Group title="Fonts and details">
@@ -101,7 +116,7 @@ export function TypeSection(): ReactElement {
       </Group>
       <Group
         title="Three languages"
-        note="Armenian comes from Noto, and Russian from Geist in the sans. Russian display text falls back to the device's serif, which was accepted in Task 2."
+        note="Armenian comes from Noto Sans Armenian in both, and Russian from Inter, which has Cyrillic. Bricolage Grotesque has none, so a Russian heading falls back to the device's sans."
       >
         {languages.map(({ language, lang, text }) => (
           <div
@@ -110,7 +125,7 @@ export function TypeSection(): ReactElement {
           >
             <span className="text-ui font-medium">{language}</span>
             <div lang={lang} className="min-w-0">
-              <p className="font-display text-title">{text}</p>
+              <p className="font-grotesque text-title font-bold">{text}</p>
               <p className="mt-1 text-body text-ink-secondary">{text} · ֏֏֏</p>
             </div>
           </div>

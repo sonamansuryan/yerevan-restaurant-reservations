@@ -12,34 +12,28 @@ import { Spinner } from "@/components/Spinner";
 afterEach(cleanup);
 
 describe("Badge", () => {
-  const dotOf = (text: string): string =>
-    screen.getByText(text).querySelector("span")?.className ?? "";
-
-  test.each<[BadgeTone, string]>([
-    ["neutral", "bg-ink-muted"],
-    ["success", "bg-success"],
-    ["warning", "bg-warning"],
-    ["error", "bg-error"],
-    ["info", "bg-info"],
-  ])("the %s tone colors the dot", (tone, color) => {
+  test.each<[BadgeTone, string, string]>([
+    ["neutral", "bg-neutral-soft", "text-ink-secondary"],
+    ["success", "bg-success-soft", "text-success"],
+    ["warning", "bg-warning-soft", "text-warning"],
+    ["error", "bg-error-soft", "text-error"],
+    ["info", "bg-info-soft", "text-info"],
+  ])("the %s tone sets the word on its soft fill", (tone, fill, text) => {
     render(<Badge tone={tone}>Confirmed</Badge>);
 
-    expect(dotOf("Confirmed")).toContain(color);
+    const pill = screen.getByText("Confirmed");
+    expect(pill.className).toContain(fill);
+    expect(pill.className).toContain(text);
   });
 
-  test("it's neutral unless told otherwise", () => {
-    render(<Badge>Cancelled</Badge>);
-
-    expect(dotOf("Cancelled")).toContain("bg-ink-muted");
-  });
-
-  test("the word carries the meaning, and screen readers skip the dot", () => {
+  test("it's neutral unless told otherwise, and the word alone carries the meaning", () => {
     render(<Badge tone="success">Confirmed</Badge>);
 
-    const badge = screen.getByText("Confirmed");
+    expect(screen.getByText("Confirmed").querySelector("span")).toBeNull();
+    cleanup();
 
-    expect(badge.textContent).toBe("Confirmed");
-    expect(badge.querySelector("span")?.getAttribute("aria-hidden")).toBe("true");
+    render(<Badge>Cancelled</Badge>);
+    expect(screen.getByText("Cancelled").className).toContain("bg-neutral-soft");
   });
 });
 

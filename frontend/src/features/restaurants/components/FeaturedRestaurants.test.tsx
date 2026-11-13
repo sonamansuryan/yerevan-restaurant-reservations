@@ -31,6 +31,17 @@ test("shows the restaurants as cards, each named under the section's heading", (
   expect(screen.getByRole("link", { name: "Nurr" }).getAttribute("href")).toBe("/restaurants/nurr");
 });
 
+test("each card carries the times the page gives it for that restaurant", () => {
+  renderFeatured({
+    results: three,
+    timesFor: (restaurant) => <p>{`Tonight at ${restaurant.name}`}</p>,
+  });
+
+  const cards = screen.getAllByRole("article");
+  expect(cards.map((card) => card.textContent?.includes(`Tonight at`))).toEqual([true, true, true]);
+  expect(screen.getByText("Tonight at Nurr").closest("article")).toBe(cards[2]);
+});
+
 test("while loading, the breathing dot shows", () => {
   renderFeatured();
 

@@ -25,17 +25,12 @@ export function Contents(): ReactElement {
             <a
               href={`#${id}`}
               aria-current={current === id ? "location" : undefined}
-              className="group flex min-h-touch items-baseline gap-2 pt-2.5 lg:min-h-0 lg:pt-1.5"
+              className="group flex min-h-touch items-baseline justify-between gap-2 pt-2.5 lg:min-h-0 lg:pt-1.5"
             >
-              <span className="inline-flex items-baseline gap-1 font-display text-title-xs">
+              {/* Where you are is in wine. */}
+              <span className="text-ui font-semibold text-ink-secondary group-hover:text-ink group-aria-[current=location]:text-accent">
                 {title}
-                {/* The logo's dot, as in the header, marks where you are. */}
-                <span
-                  aria-hidden="true"
-                  className="size-1 rounded-pill bg-accent opacity-0 group-aria-[current=location]:opacity-100"
-                />
               </span>{" "}
-              <span aria-hidden="true" className="menu-leader" />
               <span className="text-meta text-ink-muted">{items}</span>
             </a>
           </li>

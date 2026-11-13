@@ -17,7 +17,7 @@ const VISIT = "Lori Smokehouse on Friday 6 November";
 function Sheet({ children }: { children: ReactNode }): ReactElement {
   return (
     <div className="rounded-card bg-surface-raised p-8 text-ink shadow-float">
-      <h4 className="font-display text-logo">Review your visit</h4>
+      <h4 className="font-grotesque text-subheading font-bold">Review your visit</h4>
       <div className="mt-3 text-body text-ink-secondary">{children}</div>
     </div>
   );
@@ -100,7 +100,7 @@ export function ReviewScreens(): ReactElement {
       </Group>
       <Group
         title="Reviews, on a restaurant's page"
-        note="Under the description, beside the practical details. The average and the count come with the restaurant; the reviews load ten at a time, newest first. Each is a ruled line: the first name, a dotted leader, the rating out of 5, the month, then the guest's words with their line breaks."
+        note="Under the description, beside the practical details. The average and the count come with the restaurant; the reviews load ten at a time, newest first. Each starts with the guest's initial in a circle, then the first name, the rating out of 5, the month, and the guest's words with their line breaks."
       >
         <Specimens specimens={restaurantReviews} />
       </Group>

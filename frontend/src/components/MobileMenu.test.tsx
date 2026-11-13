@@ -96,14 +96,16 @@ test("it closes when the parent says so", () => {
 
 describe("its contents", () => {
   test.each([
-    ["Discover All of Yerevan", "/restaurants"],
+    ["Explore All of Yerevan", "/restaurants"],
+    ["Neighborhoods Kentron, Arabkir and more", "/#neighborhoods"],
+    ["My reservations Your bookings", "/reservations"],
     ["For restaurants List yours", "/register?role=owner"],
     ["Sign in Your reservations", "/login"],
     ["Kentron", "/restaurants?district=KENTRON"],
     ["Arabkir", "/restaurants?district=ARABKIR"],
     ["Nor Nork", "/restaurants?district=NOR_NORK"],
     ["Malatia-Sebastia", "/restaurants?district=MALATIA_SEBASTIA"],
-    ["Reserve a table", "/restaurants"],
+    ["Find a table", "/restaurants"],
     ["Seghan, home", "/"],
   ])("%s goes to %s", (name, href) => {
     renderMenu();
@@ -111,13 +113,16 @@ describe("its contents", () => {
     expect(screen.getByRole("link", { name }).getAttribute("href")).toBe(href);
   });
 
-  test("screen readers skip the dotted lines", () => {
+  test("screen readers skip the arrows at the end of each line", () => {
     renderMenu();
 
-    const lines = screen.getByRole("dialog").querySelectorAll(".menu-leader");
+    const arrows = within(screen.getByRole("navigation", { name: "Main" })).getAllByRole("link");
 
-    expect(lines).toHaveLength(3);
-    lines.forEach((line) => expect(line.getAttribute("aria-hidden")).toBe("true"));
+    // Explore, Neighborhoods, My reservations, For restaurants and Sign in.
+    expect(arrows).toHaveLength(5);
+    arrows.forEach((link) =>
+      expect(link.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true"),
+    );
   });
 
   test("the neighborhoods have a heading that names their group", () => {
@@ -132,11 +137,17 @@ describe("its contents", () => {
     const current = screen.getAllByRole("link", { current: "page" });
 
     expect(current).toHaveLength(1);
-    expect(current[0]?.textContent).toContain("Discover");
+    expect(current[0]?.textContent).toContain("Explore");
   });
 
   test("For restaurants isn't marked on the plain sign-up page", () => {
     renderMenu(true, vi.fn(), "/register");
+
+    expect(screen.queryAllByRole("link", { current: "page" })).toHaveLength(0);
+  });
+
+  test("Neighborhoods isn't marked on the home page it points into", () => {
+    renderMenu(true, vi.fn(), "/");
 
     expect(screen.queryAllByRole("link", { current: "page" })).toHaveLength(0);
   });
@@ -148,11 +159,30 @@ describe("its main lines, by who's signed in", () => {
       .getAllByRole("link")
       .map((one) => one.textContent ?? "");
 
+  test("anyone signed out finds My reservations, then For restaurants, then Sign in", () => {
+    renderMenu();
+
+    expect(lines()).toEqual([
+      "Explore All of Yerevan",
+      "Neighborhoods Kentron, Arabkir and more",
+      "My reservations Your bookings",
+      "For restaurants List yours",
+      "Sign in Your reservations",
+    ]);
+  });
+
+  test("while the app is still checking, only Explore and Neighborhoods show", () => {
+    renderMenu(true, vi.fn(), "/", account({ user: undefined }));
+
+    expect(lines()).toEqual(["Explore All of Yerevan", "Neighborhoods Kentron, Arabkir and more"]);
+  });
+
   test("a guest finds My reservations and My favorites, not For restaurants", () => {
     renderMenu(true, vi.fn(), "/", account({ user: lilit }));
 
     expect(lines()).toEqual([
-      "Discover All of Yerevan",
+      "Explore All of Yerevan",
+      "Neighborhoods Kentron, Arabkir and more",
       "My reservations Your bookings",
       "My favorites Places you saved",
     ]);
@@ -161,27 +191,38 @@ describe("its main lines, by who's signed in", () => {
   test("an owner finds their Dashboard", () => {
     renderMenu(true, vi.fn(), "/", account({ user: { ...lilit, role: "OWNER" } }));
 
-    expect(lines()).toEqual(["Discover All of Yerevan", "Dashboard Your restaurants"]);
+    expect(lines()).toEqual([
+      "Explore All of Yerevan",
+      "Neighborhoods Kentron, Arabkir and more",
+      "Dashboard Your restaurants",
+    ]);
   });
 
   test.each([
     ["an admin finds Admin", "ADMIN" as const, "Admin Restaurants and bookings"],
     ["an owner finds their Dashboard", "OWNER" as const, "Dashboard Your restaurants"],
-  ])("%s, and the sign-off has no Reserve a table, as in the header", (_who, role, theirs) => {
+  ])("%s, and the sign-off has no Find a table, as they never book", (_who, role, theirs) => {
     renderMenu(true, vi.fn(), "/", account({ user: { ...lilit, role } }));
 
-    expect(lines()).toEqual(["Discover All of Yerevan", theirs]);
-    expect(screen.queryByRole("link", { name: "Reserve a table" })).toBeNull();
-    expect(screen.getByText("See you at the", { exact: false })).toBeDefined();
+    expect(lines()).toEqual([
+      "Explore All of Yerevan",
+      "Neighborhoods Kentron, Arabkir and more",
+      theirs,
+    ]);
+    expect(screen.queryByRole("link", { name: "Find a table" })).toBeNull();
+    expect(screen.getByText("See you at the", { exact: false }).textContent).toBe(
+      "See you at the table.",
+    );
   });
 
   test.each([
     ["a guest", account({ user: lilit })],
     ["anyone signed out", account()],
-  ])("%s keeps Reserve a table", (_who, shown) => {
+    ["while the app is still checking", account({ user: undefined })],
+  ])("%s keeps Find a table", (_who, shown) => {
     renderMenu(true, vi.fn(), "/", shown);
 
-    expect(screen.getByRole("link", { name: "Reserve a table" }).getAttribute("href")).toBe(
+    expect(screen.getByRole("link", { name: "Find a table" }).getAttribute("href")).toBe(
       "/restaurants",
     );
   });
@@ -196,16 +237,19 @@ describe("ways to close it", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  test.each(["Discover All of Yerevan", "Kentron", "Reserve a table", "Seghan, home"])(
-    "the link %s, as the page behind it changes",
-    async (name) => {
-      const onClose = renderMenu();
+  test.each([
+    "Explore All of Yerevan",
+    "Neighborhoods Kentron, Arabkir and more",
+    "Kentron",
+    "Find a table",
+    "Seghan, home",
+  ])("the link %s, as the page behind it changes", async (name) => {
+    const onClose = renderMenu();
 
-      await userEvent.click(screen.getByRole("link", { name }));
+    await userEvent.click(screen.getByRole("link", { name }));
 
-      expect(onClose).toHaveBeenCalledOnce();
-    },
-  );
+    expect(onClose).toHaveBeenCalledOnce();
+  });
 
   test("the browser closing it, as Esc does", () => {
     const onClose = renderMenu();
@@ -268,7 +312,6 @@ describe("the account line", () => {
     expect(screen.getByText("Lilit Harutyunyan").textContent).toBe(
       "Signed in as Lilit Harutyunyan",
     );
-    expect(screen.getByRole("dialog").querySelectorAll(".menu-leader")).toHaveLength(4);
   });
 
   test("Sign out asks to sign out, and the menu waits until that's done", async () => {
@@ -317,7 +360,7 @@ describe("the account line", () => {
   });
 });
 
-test("its top row repeats the header's left side, so Close lands where Menu was", () => {
+test("its top row has the logo on the left and Close on the right, where Menu was", () => {
   renderMenu();
 
   const dialog = screen.getByRole("dialog", { name: "Menu" });
@@ -325,4 +368,8 @@ test("its top row repeats the header's left side, so Close lands where Menu was"
     .slice(0, 2)
     .map((item) => item.getAttribute("aria-label") ?? item.textContent);
   expect(firstTwo).toEqual(["Seghan, home", "Close"]);
+  // The two ends of one row, as in the header.
+  const row = screen.getByRole("button", { name: "Close" }).parentElement;
+  expect(row?.firstElementChild?.getAttribute("aria-label")).toBe("Seghan, home");
+  expect(row?.lastElementChild?.textContent).toBe("Close");
 });

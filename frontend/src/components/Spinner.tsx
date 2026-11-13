@@ -8,7 +8,7 @@ interface SpinnerProps {
   className?: string;
 }
 
-/** Page-level loading: the dot from the seghan logo, gently breathing. Buttons have their own ring. */
+/** Page-level loading: a wine dot, gently breathing. Buttons have their own ring. */
 export function Spinner({ label = "Loading", className }: SpinnerProps): ReactElement {
   return (
     <span

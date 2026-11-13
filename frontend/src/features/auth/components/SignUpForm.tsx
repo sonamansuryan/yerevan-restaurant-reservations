@@ -2,9 +2,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { useLocation } from "react-router";
 
-import { Button, LinkButton } from "@/components/Button";
+import { Button } from "@/components/Button";
 import { ChoiceLines } from "@/components/ChoiceLines";
 import { Input } from "@/components/Input";
 import { PasswordField } from "@/components/PasswordField";
@@ -38,7 +37,7 @@ interface SignUpFormProps {
   /** For /design: values to start with, and showing their problems at once. */
   defaultValues?: Partial<SignUpFields>;
   validateOnMount?: boolean;
-  /** Another way in, shown under the button: the "or" divider and Google's button. */
+  /** Another way in, shown above the form: Google's button and the "or with email" divider. */
   google?: ReactNode;
 }
 
@@ -68,8 +67,6 @@ export function SignUpForm({
     defaultValues: { role: defaultRole, name: "", email: "", password: "", ...defaultValues },
   });
 
-  // Where a guard sent this person from, if it did, passed on to Sign in so they still come back.
-  const { state: returnState } = useLocation();
   const role = useWatch({ control, name: "role" });
   const name = useWatch({ control, name: "name" });
   useEffect(() => {
@@ -83,9 +80,10 @@ export function SignUpForm({
 
   return (
     // Google's part sits outside the <form>, because it isn't part of what the form sends.
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
+      {google}
       {/* noValidate: the browser's own bubbles would come before these messages, in its own words. */}
-      <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <ServerNotice error={error} />
         <ChoiceLines
           legend="I’m joining as"
@@ -120,17 +118,10 @@ export function SignUpForm({
           error={errors.password?.message}
           {...register("password")}
         />
-        <Button type="submit" loading={pending} className="mt-2 w-full">
+        <Button type="submit" variant="accent" size="large" loading={pending} className="w-full">
           Create account
         </Button>
       </form>
-      {google}
-      <p className="text-ui text-ink-secondary">
-        Already have an account?{" "}
-        <LinkButton variant="link" to="/login" state={returnState}>
-          Sign in
-        </LinkButton>
-      </p>
     </div>
   );
 }

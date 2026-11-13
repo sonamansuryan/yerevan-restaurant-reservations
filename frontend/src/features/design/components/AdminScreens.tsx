@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { ReactElement } from "react";
 
 import type { AdminRestaurantFilters } from "@/features/admin/admin";
-import { AdminHeader } from "@/features/admin/components/AdminHeader";
+import { AdminNav } from "@/features/admin/components/AdminNav";
 import type { AdminListState } from "@/features/admin/components/AdminListBody";
 import { AdminReservations } from "@/features/admin/components/AdminReservations";
 import type { AdminReservationsProps } from "@/features/admin/components/AdminReservations";
@@ -191,7 +191,7 @@ const userStates: Record<StateOf<"adminUsers">, ReactElement> = {
 
 // The parts' links start at this page's address, so the first, Restaurants, shows as open.
 const header: Record<StateOf<"adminHeader">, ReactElement> = {
-  "Restaurants open": <AdminHeader headingLevel={4} sectionsBase="/design" />,
+  "Restaurants open": <AdminNav headingLevel={4} sectionsBase="/design" specimen />,
 };
 
 /** Seghan's admin area, /admin, for admins only: everyone else is told it's for Seghan's team. */
@@ -200,7 +200,7 @@ export function AdminScreens(): ReactElement {
     <>
       <Group
         title="The admin area"
-        note="For Seghan's team only, from the Admin link in the main links. Anyone else signed in is told the page is for Seghan's team, and the API refuses them too. The back room of the same house: the same ruled lines as the dashboard, denser, with the search and filters in the address, as on Browse, so Back and shared links work."
+        note="For Seghan's team only, from the Admin link in the main links. Anyone else signed in is told the page is for Seghan's team, and the API refuses them too. The same back office as the dashboard: the dark menu beside each part, and its rows in white panels, with the search and filters in the address, as on Browse, so Back and shared links work."
       >
         <Specimens wide specimens={header} />
       </Group>

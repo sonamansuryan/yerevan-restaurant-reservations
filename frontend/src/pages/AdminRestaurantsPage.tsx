@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 
+import { PartHeader } from "@/components/PartHeader";
 import { AdminRestaurants } from "@/features/admin/components/AdminRestaurants";
 import { useAdminRestaurants } from "@/features/admin/hooks/useAdminRestaurants";
 
@@ -9,7 +10,11 @@ export function AdminRestaurantsPage(): ReactElement {
   return (
     <>
       <title>Restaurants · Admin · Seghan</title>
-      <h2 className="sr-only">Restaurants</h2>
+      <PartHeader
+        title="Restaurants"
+        description="Every restaurant on Seghan, drafts and hidden ones too."
+        className="mb-6"
+      />
       <AdminRestaurants {...restaurants} />
     </>
   );

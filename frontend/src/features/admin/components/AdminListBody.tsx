@@ -4,6 +4,7 @@ import type { To } from "react-router";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { Pagination } from "@/components/Pagination";
+import { Panel } from "@/components/Panel";
 import {
   DashboardLoadFailed,
   DashboardLoading,
@@ -104,7 +105,7 @@ export function AdminListBody<T>({
     <section aria-label={words.label} aria-busy={list.updating || undefined}>
       <div className="flex flex-wrap items-baseline gap-x-4">
         {/* Read out when the filters change, so screen reader users hear what they found. */}
-        <p role="status" className="text-ui text-ink-secondary">
+        <p role="status" className="text-ui font-semibold">
           {words.count(meta.total)}
         </p>
         {filtered && (
@@ -113,9 +114,12 @@ export function AdminListBody<T>({
           </Button>
         )}
       </div>
-      <div className={cx("mt-4 transition-opacity duration-button", list.updating && "opacity-60")}>
+      <Panel
+        flush
+        className={cx("mt-3 transition-opacity duration-button", list.updating && "opacity-60")}
+      >
         {children(data)}
-      </div>
+      </Panel>
       <Pagination
         page={meta.page}
         pageCount={Math.ceil(meta.total / meta.pageSize)}

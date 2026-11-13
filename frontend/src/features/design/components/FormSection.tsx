@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { Checkbox } from "@/components/Checkbox";
@@ -5,6 +6,7 @@ import { ChoiceLines } from "@/components/ChoiceLines";
 import { Input } from "@/components/Input";
 import { OrDivider } from "@/components/OrDivider";
 import { PasswordField } from "@/components/PasswordField";
+import { PillSelect } from "@/components/PillSelect";
 import { Select } from "@/components/Select";
 import { Textarea } from "@/components/Textarea";
 import { Group, Section } from "@/features/design/components/parts";
@@ -25,12 +27,32 @@ function Frozen({ children }: { children: ReactNode }): ReactElement {
   return <div inert>{children}</div>;
 }
 
+const cuisines = [
+  { value: "", label: "Any" },
+  { value: "ARMENIAN", label: "Armenian" },
+  { value: "GEORGIAN", label: "Georgian" },
+];
+
+/** A pill as Browse has it: choosing here only changes this example. */
+function LivePill(): ReactElement {
+  const [cuisine, setCuisine] = useState("");
+  return (
+    <PillSelect
+      label="Cuisine"
+      value={cuisine}
+      options={cuisines}
+      active={cuisine !== ""}
+      onChange={setCuisine}
+    />
+  );
+}
+
 export function FormSection(): ReactElement {
   return (
     <Section
       id="forms"
       title="Forms"
-      intro="Fields are ruled lines, like a reservation book. Every field has a visible label, and errors are always in words. Field is the label, hint and error wiring they all share."
+      intro="Fields are white boxes with a bold label above. In focus, the line turns wine and doubles. Every field has a visible label, and errors are always in words. Field is the label, hint and error wiring they all share."
     >
       <Group title="Input">
         <FieldGrid>
@@ -131,7 +153,7 @@ export function FormSection(): ReactElement {
       </Group>
       <Group
         title="ChoiceLines"
-        note="A radio group set as menu lines, with the logo's dot in the chosen ring. Arrow keys move between the lines."
+        note="A radio group, each choice in its own box, which turns wine once chosen, with a wine dot in its ring. Arrow keys move between the choices."
       >
         <div className="grid max-w-220 gap-x-12 gap-y-8 lg:grid-cols-2">
           <ChoiceLines
@@ -161,6 +183,30 @@ export function FormSection(): ReactElement {
             options={roles}
             error="Choose a guest or restaurant account."
           />
+        </div>
+      </Group>
+      <Group
+        title="PillSelect"
+        note="A choice as a pill, as Browse's filters are: its label, then what's chosen. The real select lies over the pill, unseen, so phones open their own picker. A choice that narrows a list turns the pill ink."
+      >
+        <div className="flex flex-wrap items-center gap-4">
+          <LivePill />
+          <PillSelect
+            label="Cuisine"
+            value="GEORGIAN"
+            options={cuisines}
+            active
+            onChange={() => {}}
+          />
+          <Frozen>
+            <PillSelect
+              label="Cuisine"
+              value=""
+              options={cuisines}
+              onChange={() => {}}
+              data-force="focus"
+            />
+          </Frozen>
         </div>
       </Group>
       <Group

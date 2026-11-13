@@ -34,7 +34,7 @@ export function Input({
           {...rest}
           {...control}
           disabled={disabled}
-          className={cx("h-11", controlClass({ invalid: Boolean(error), disabled }))}
+          className={cx("h-12 pr-3.5", controlClass({ invalid: Boolean(error), disabled }))}
         />
       )}
     </Field>

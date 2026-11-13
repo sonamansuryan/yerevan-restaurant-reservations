@@ -8,9 +8,14 @@ import { RouterProvider } from "react-router/dom";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Mock } from "vitest";
 
-import { guestPast, guestUpcoming } from "@/features/design/samples";
+import {
+  armenianName,
+  guestPast,
+  guestUpcoming,
+  sampleRestaurants,
+} from "@/features/design/samples";
 import { routes } from "@/router";
-import type { AuthUser, GuestReservation } from "@/types/api";
+import type { AuthUser, GuestReservation, RestaurantDetail, RestaurantSummary } from "@/types/api";
 
 type TestRouter = ReturnType<typeof createMemoryRouter>;
 
@@ -33,8 +38,27 @@ const loriCancelled: GuestReservation = {
   cancellation: { by: "CUSTOMER", reason: null },
   canCancel: false,
 };
-const LORIS_BUTTON = "Cancel booking, Lori Smokehouse, Saturday 14 November, 19:00";
+const LORIS_BUTTON = "Cancel reservation, Lori Smokehouse, Saturday 14 November, 19:00";
 const lastFriday = guestPast.find(({ id }) => id === "past-lori")!;
+
+// The restaurants Lilit has booked, whose pages give her cards their directions.
+const booked: RestaurantSummary[] = [...sampleRestaurants, armenianName];
+const mapsUrlOf = (slug: string): string =>
+  `https://www.google.com/maps/search/?api=1&query=${slug}`;
+
+/** A restaurant's page, as GET /api/restaurants/:slug answers it. */
+function detailOf(summary: RestaurantSummary): RestaurantDetail {
+  return {
+    ...summary,
+    phone: null,
+    website: null,
+    photos: [],
+    openingHours: [],
+    osmUrl: null,
+    mapsUrl: mapsUrlOf(summary.slug),
+    mapImageUrl: null,
+  };
+}
 
 interface FakeOptions {
   user?: AuthUser;
@@ -42,17 +66,32 @@ interface FakeOptions {
   refusal?: () => Response;
   /** What posting a review answers, if not a success. */
   reviewRefusal?: () => Response;
+  /** The restaurants the guest has saved. Five, unless told. */
+  saved?: RestaurantSummary[];
 }
 
 /**
  * The API, for a signed-in user. A cancel or a review that succeeds shows in the lists asked for
- * after it.
+ * after it. Each booked restaurant's page answers, and so do the guest's favorites.
  */
-function fakeApi({ user = lilit, refusal, reviewRefusal }: FakeOptions = {}): Mock {
+function fakeApi({
+  user = lilit,
+  refusal,
+  reviewRefusal,
+  saved = sampleRestaurants.slice(0, 5),
+}: FakeOptions = {}): Mock {
   let upcoming = guestUpcoming;
   let past = guestPast;
   const fetch = vi.fn((url: string, init?: RequestInit) => {
     if (url === "/api/me") return Promise.resolve(json({ user }));
+    const slug = /^\/api\/restaurants\/([^/?]+)$/.exec(url)?.[1];
+    const restaurant = booked.find((one) => one.slug === slug);
+    if (restaurant) return Promise.resolve(json({ restaurant: detailOf(restaurant) }));
+    if (url === "/api/favorites") {
+      return Promise.resolve(
+        json({ data: saved, meta: { page: 1, pageSize: 12, total: saved.length } }),
+      );
+    }
     if (url.startsWith("/api/reservations?")) {
       const query = new URLSearchParams(url.split("?")[1]);
       const data = query.get("when") === "past" ? past : upcoming;
@@ -91,6 +130,12 @@ const listRequests = (fetch: Mock): string[] =>
     .map(([url]) => String(url))
     .filter((url) => url.startsWith("/api/reservations?"));
 
+/** The requests for one of the two lists. */
+const asked = (fetch: Mock, when: "upcoming" | "past"): string[] =>
+  listRequests(fetch).filter((url) => url.includes(`when=${when}`));
+
+const requests = (fetch: Mock): string[] => fetch.mock.calls.map(([url]) => String(url));
+
 beforeEach(() => {
   // jsdom has no scrollTo(), which ScrollRestoration calls, and no showModal(), which Modal uses.
   window.scrollTo = vi.fn();
@@ -125,15 +170,26 @@ test("a guest sees their upcoming bookings, and Past shows the ones that are ove
 
   expect(await main().findByRole("link", { name: "Lori Smokehouse" })).toBeDefined();
   expect(document.title).toBe("My reservations · Seghan");
+  // Each tab counts its list, so the other list's first page is asked for too.
+  const tabs = within(main().getByRole("navigation", { name: "Your reservations" }));
+  expect(await tabs.findByRole("link", { name: "Past (4)" })).toBeDefined();
+  expect(tabs.getByRole("link", { name: "Upcoming (4)" }).getAttribute("aria-current")).toBe(
+    "page",
+  );
+  expect(listRequests(fetch)).toEqual([
+    "/api/reservations?when=upcoming&page=1",
+    "/api/reservations?when=past&page=1",
+  ]);
 
-  await userEvent.click(main().getByRole("link", { name: "Past" }));
+  await userEvent.click(tabs.getByRole("link", { name: "Past (4)" }));
 
   expect(await main().findByRole("link", { name: "Kond House" })).toBeDefined();
   expect(router.state.location.pathname).toBe("/reservations/past");
   expect(document.title).toBe("Past reservations · Seghan");
-  expect(listRequests(fetch)).toEqual([
-    "/api/reservations?when=upcoming&page=1",
+  // Whichever tab is open, only the two lists' first pages are asked for.
+  expect([...new Set(listRequests(fetch))].sort()).toEqual([
     "/api/reservations?when=past&page=1",
+    "/api/reservations?when=upcoming&page=1",
   ]);
 });
 
@@ -141,7 +197,71 @@ test("the page comes from the address", async () => {
   const fetch = fakeApi();
   renderAt("/reservations/past?page=2");
 
-  await waitFor(() => expect(listRequests(fetch)).toEqual(["/api/reservations?when=past&page=2"]));
+  await waitFor(() =>
+    expect(listRequests(fetch)).toEqual([
+      "/api/reservations?when=past&page=2",
+      // The other list's first page, for its count on its tab.
+      "/api/reservations?when=upcoming&page=1",
+    ]),
+  );
+});
+
+test("each booking is a card under its restaurant's name: the day, the time, the party and the table", async () => {
+  fakeApi();
+  renderAt("/reservations");
+
+  const name = await main().findByRole("heading", { level: 2, name: "Lori Smokehouse" });
+  const card = name.closest("li") as HTMLElement;
+
+  expect(within(name).getByRole("link").getAttribute("href")).toBe("/restaurants/lori-smokehouse");
+  // The short day and time are for the eye. Screen readers hear the whole day, and the end.
+  expect(within(card).getByText("Saturday 14 November").className).toContain("sr-only");
+  expect(within(card).getByText("19:00 to 21:00").className).toContain("sr-only");
+  expect(within(card).getByText("2 guests")).toBeDefined();
+  expect(within(card).getByText("Table T2 · Indoor · until 21:00")).toBeDefined();
+  // The cards follow one another, with no day headings between them.
+  expect(main().queryByRole("heading", { name: "Saturday 14 November" })).toBeNull();
+});
+
+test("a booking still to come has directions, which open its map in a new tab", async () => {
+  const fetch = fakeApi();
+  renderAt("/reservations");
+
+  const directions = await main().findByRole("link", {
+    name: "Directions to Lori Smokehouse, opens in a new tab",
+  });
+
+  expect(directions.getAttribute("href")).toBe(mapsUrlOf("lori-smokehouse"));
+  expect(directions.getAttribute("target")).toBe("_blank");
+  expect(directions.getAttribute("rel")).toBe("noopener noreferrer");
+  expect(requests(fetch)).toContain("/api/restaurants/lori-smokehouse");
+  // A cancelled booking has nowhere to go.
+  const tsiran = main()
+    .getByRole("heading", { name: "Tsiran Wine Room" })
+    .closest("li") as HTMLElement;
+  expect(within(tsiran).queryByRole("link", { name: /^Directions/ })).toBeNull();
+});
+
+test("beside the bookings are the first four restaurants the guest saved, and the way to all of them", async () => {
+  const fetch = fakeApi();
+  renderAt("/reservations");
+
+  const saved = await main().findByRole("complementary", { name: "Saved restaurants" });
+  const all = await within(saved).findByRole("link", { name: "See all 5" });
+
+  expect(all.getAttribute("href")).toBe("/favorites");
+  expect(
+    within(saved)
+      .getAllByRole("link")
+      .map((link) => link.getAttribute("href")),
+  ).toEqual([
+    "/restaurants/kond-house",
+    "/restaurants/lori-smokehouse",
+    "/restaurants/nurr",
+    "/restaurants/sevan-and-salt",
+    "/favorites",
+  ]);
+  expect(requests(fetch)).toContain("/api/favorites");
 });
 
 describe("cancelling", () => {
@@ -150,9 +270,8 @@ describe("cancelling", () => {
     renderAt("/reservations");
 
     await userEvent.click(await main().findByRole("button", { name: LORIS_BUTTON }));
-    await userEvent.click(
-      within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel booking" }),
-    );
+    const question = within(screen.getByRole("dialog", { name: "Cancel this reservation?" }));
+    await userEvent.click(question.getByRole("button", { name: "Cancel reservation" }));
 
     expect((await main().findByRole("status")).textContent).toBe(
       "Your booking at Lori Smokehouse on Saturday 14 November is cancelled.",
@@ -183,19 +302,75 @@ describe("cancelling", () => {
     renderAt("/reservations");
 
     await userEvent.click(await main().findByRole("button", { name: LORIS_BUTTON }));
-    await userEvent.click(
-      within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel booking" }),
-    );
+    const question = within(screen.getByRole("dialog", { name: "Cancel this reservation?" }));
+    await userEvent.click(question.getByRole("button", { name: "Cancel reservation" }));
 
     expect((await main().findByRole("alert")).textContent).toBe(
       "This booking has already started, so it can’t be cancelled.",
     );
-    await waitFor(() => expect(listRequests(fetch)).toHaveLength(2));
+    await waitFor(() => expect(asked(fetch, "upcoming")).toHaveLength(2));
+  });
+
+  test("Keep it closes the question, and nothing is sent", async () => {
+    const fetch = fakeApi();
+    renderAt("/reservations");
+
+    await userEvent.click(await main().findByRole("button", { name: LORIS_BUTTON }));
+    const question = screen.getByRole("dialog", { name: "Cancel this reservation?" });
+    await userEvent.click(within(question).getByRole("button", { name: "Keep it" }));
+
+    expect((question as HTMLDialogElement).open).toBe(false);
+    expect(fetch.mock.calls.some(([, init]) => init?.method === "PATCH")).toBe(false);
+    expect(main().getByRole("button", { name: LORIS_BUTTON })).toBeDefined();
   });
 });
 
 describe("reviewing a visit", () => {
   const REVIEW_BUTTON = "Review your visit, Lori Smokehouse, Friday 6 November, 20:00";
+
+  test("on Upcoming, the latest visit to review waits under Recently visited, rated in stars", async () => {
+    const fetch = fakeApi();
+    renderAt("/reservations");
+
+    const visited = await main().findByRole("region", { name: "Recently visited" });
+    expect(within(visited).getByText("Lori Smokehouse")).toBeDefined();
+    const stars = within(visited).getByRole("group", { name: "How was it?" });
+    expect(
+      within(stars)
+        .getAllByRole("radio")
+        .map((star) => star.getAttribute("aria-label")),
+    ).toEqual([
+      "1 of 5, Poor",
+      "2 of 5, Fair",
+      "3 of 5, Good",
+      "4 of 5, Very good",
+      "5 of 5, Excellent",
+    ]);
+    await userEvent.click(within(stars).getByRole("radio", { name: "5 of 5, Excellent" }));
+    await userEvent.click(within(visited).getByRole("button", { name: "Post review" }));
+
+    expect((await main().findByRole("status")).textContent).toBe(
+      "Thank you. Your review of Lori Smokehouse is posted.",
+    );
+    const sent = fetch.mock.calls.find(([, init]) => init?.method === "POST");
+    expect(sent?.[0]).toBe(`/api/reservations/${lastFriday.id}/review`);
+    expect(JSON.parse(String(sent?.[1]?.body))).toEqual({ rating: 5 });
+    // Reviewed, the visit asks for nothing more, and no other visit waits.
+    await waitFor(() =>
+      expect(main().queryByRole("region", { name: "Recently visited" })).toBeNull(),
+    );
+  });
+
+  test("Later puts the visit away, and nothing is sent", async () => {
+    const fetch = fakeApi();
+    renderAt("/reservations");
+
+    const visited = await main().findByRole("region", { name: "Recently visited" });
+    await userEvent.click(within(visited).getByRole("button", { name: "Later" }));
+
+    expect(main().queryByRole("region", { name: "Recently visited" })).toBeNull();
+    expect(fetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
+  });
 
   test("rated and sent, the form closes, the guest is thanked, and the visit shows the review", async () => {
     const fetch = fakeApi();
@@ -241,7 +416,7 @@ describe("reviewing a visit", () => {
       "You’ve already reviewed this visit.",
     );
     expect(form.getByRole<HTMLInputElement>("radio", { name: /Excellent/ }).checked).toBe(true);
-    await waitFor(() => expect(listRequests(fetch)).toHaveLength(2));
+    await waitFor(() => expect(asked(fetch, "past")).toHaveLength(2));
   });
 });
 
@@ -295,14 +470,16 @@ test("one guest signs out and another signs in: the first one's bookings never s
   await userEvent.type(await main().findByLabelText("Email"), "aram@example.com");
   await userEvent.type(main().getByLabelText("Password"), "a long password");
   await userEvent.click(main().getByRole("button", { name: "Sign in" }));
-  const links = within(screen.getByRole("navigation", { name: "Main" }));
+  // Sign in has no site header of its own, so the links are there once home opens.
+  const links = within(await screen.findByRole("navigation", { name: "Main" }));
   await userEvent.click(await links.findByRole("link", { name: "My reservations" }));
 
   expect(await main().findByRole("status", { name: "Loading your reservations" })).toBeDefined();
   expect(main().queryByRole("link", { name: "Lori Smokehouse" })).toBeNull();
+  // Lilit's two lists, then Aram's two, still on their way.
   expect(
     fetch.mock.calls.filter(([url]) => String(url).startsWith("/api/reservations?")),
-  ).toHaveLength(2);
+  ).toHaveLength(4);
 });
 
 test("an owner is told the page is for guests, and nothing is asked for", async () => {

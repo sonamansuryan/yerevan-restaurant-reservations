@@ -1,63 +1,94 @@
+import { useState } from "react";
 import type { ReactElement } from "react";
 
 import { LinkButton } from "@/components/Button";
 import { PageContainer } from "@/components/PageContainer";
-import { EveningOverYerevan } from "@/features/home/components/EveningOverYerevan";
+import { districts } from "@/components/site-links";
+import { useAccount } from "@/features/auth/hooks/useAccount";
+import { RestaurantHeart } from "@/features/favorites/components/RestaurantHeart";
+import { HomeHero } from "@/features/home/components/HomeHero";
+import { Neighborhoods } from "@/features/home/components/Neighborhoods";
+import { OwnersBand } from "@/features/home/components/OwnersBand";
+import { TonightTimes } from "@/features/home/components/TonightTimes";
+import { useAreaCounts } from "@/features/home/hooks/useAreaCounts";
+import { useHomeRestaurants } from "@/features/home/hooks/useHomeRestaurants";
+import { useTonight } from "@/features/home/hooks/useTonight";
 import { FeaturedRestaurants } from "@/features/restaurants/components/FeaturedRestaurants";
-import { RestaurantSearch } from "@/features/restaurants/components/RestaurantSearch";
-import {
-  FEATURED_COUNT,
-  useFeaturedRestaurants,
-} from "@/features/restaurants/hooks/useFeaturedRestaurants";
+import { tableQuery } from "@/features/restaurants/tableSearch";
+import { yerevanClock, yerevanToday } from "@/lib/time";
 
+/**
+ * The home page, as the export lays it out: the dark opening with the search for a table, two rows
+ * of restaurants with tonight's free times, the neighborhoods to explore, and for anyone signed out,
+ * an invitation to restaurant owners.
+ */
 export function HomePage(): ReactElement {
-  const featured = useFeaturedRestaurants();
-  const total = featured.data?.meta.total ?? 0;
+  const restaurants = useHomeRestaurants();
+  const total = restaurants.data?.meta.total ?? 0;
+  const shown = restaurants.data?.data.length ?? 0;
+  const counts = useAreaCounts(districts.map(({ district }) => district));
+  const { user } = useAccount();
+  // Read once, when the page opens: a page has to render the same way each time.
+  const [today] = useState(() => yerevanToday());
+  const [query] = useState(() => tableQuery({}, today, yerevanClock()));
 
   return (
-    <PageContainer className="py-section-sm">
-      {/* Branding, so the headline may be expressive: wine italic on its last word, and a full stop.
-          Beside it from 1024px, and under the search on narrower screens, an evening over Yerevan
-          shows its second line: the city's restaurants lighting up. */}
-      <section
-        aria-labelledby="home-title"
-        className="md:pt-6 lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center lg:gap-12"
-      >
-        <div>
-          <p className="text-eyebrow text-ink-muted uppercase">Yerevan</p>
-          <h1 id="home-title" className="mt-3 font-display text-hero text-balance">
-            Choose your <em className="text-accent">Seghan.</em>
-          </h1>
-          <p className="mt-5 max-w-130 text-lead text-pretty text-ink-secondary">
-            Seghan means table in Armenian. Find yours at restaurants across the city.
-          </p>
-          <RestaurantSearch className="mt-10 max-w-140" />
-        </div>
-        <EveningOverYerevan className="mx-auto mt-14 w-full max-w-80 lg:mt-0 lg:max-w-100" />
-      </section>
+    <>
+      <HomeHero total={restaurants.data?.meta.total} query={query} today={today} />
+      <PageContainer className="flex flex-col gap-16 pt-14 pb-6">
+        <section aria-labelledby="tonight-title">
+          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+            <div>
+              <h2 id="tonight-title" className="font-grotesque text-heading font-bold">
+                Available tonight for 2
+              </h2>
+              <p className="mt-1.5 text-input text-ink-secondary">
+                Choose a time to book. You only need an account at the last step.
+              </p>
+            </div>
+            {total > 0 && (
+              <LinkButton variant="link" to="/restaurants" className="text-input">
+                {total > shown ? `See all ${total}` : "Browse restaurants"}
+              </LinkButton>
+            )}
+          </div>
+          <FeaturedRestaurants
+            results={restaurants.data}
+            failed={restaurants.isError}
+            retrying={restaurants.retrying}
+            onRetry={restaurants.refetch}
+            timesFor={(restaurant) => <Tonight slug={restaurant.slug} name={restaurant.name} />}
+            saveFor={(restaurant) => (
+              <RestaurantHeart slug={restaurant.slug} name={restaurant.name} />
+            )}
+            className="mt-6"
+          />
+        </section>
 
-      <section
-        aria-labelledby="featured-title"
-        className="mt-section-sm border-t border-line pt-8 lg:mt-section-md"
-      >
-        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-          <h2 id="featured-title" className="font-display text-section">
-            A few places to start
+        {/* The header's Neighborhoods leads here. */}
+        <section id="neighborhoods" aria-labelledby="areas-title">
+          <h2 id="areas-title" className="font-grotesque text-heading font-bold">
+            Explore by neighborhood
           </h2>
-          {total > 0 && (
-            <LinkButton variant="link" to="/restaurants">
-              {total > FEATURED_COUNT ? `See all ${total} restaurants` : "Browse restaurants"}
-            </LinkButton>
-          )}
-        </div>
-        <FeaturedRestaurants
-          results={featured.data}
-          failed={featured.isError}
-          retrying={featured.isFetching && featured.errorUpdateCount > 0}
-          onRetry={() => void featured.refetch()}
-          className="mt-8"
-        />
-      </section>
-    </PageContainer>
+          <Neighborhoods
+            areas={districts.map((area, index) => ({
+              to: area.to,
+              label: area.label,
+              count: counts[index],
+            }))}
+            className="mt-6"
+          />
+        </section>
+
+        {/* As the header's For restaurants: only for someone signed out, never while checking. */}
+        {user === null && <OwnersBand />}
+      </PageContainer>
+    </>
   );
+}
+
+/** One card's times: its own request, which the restaurant's page reuses once it's opened. */
+function Tonight({ slug, name }: { slug: string; name: string }): ReactElement {
+  const { date, state } = useTonight(slug);
+  return <TonightTimes slug={slug} name={name} date={date} state={state} />;
 }

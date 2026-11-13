@@ -12,77 +12,92 @@
  * the comments give the px value.
  */
 @theme static {
-  /* Surfaces */
-  --color-surface-page: #fbfaf7;
+  /* Surfaces. The values follow the design export (Seghan.html, 2026-11-13). */
+  --color-surface-page: #faf7f2;
   --color-surface-raised: #ffffff;
-  --color-surface-tinted: #f3f0ea;
-  --color-surface-dark: #17140f;
+  --color-surface-tinted: #f5f1eb;
+  --color-surface-dark: #1f1a17;
+  --color-surface-dark-raised: #3a322c; /* the open link in the dark side menu */
+  --color-surface-blush: #f3e6dc; /* the owners' band, avatars and small tags */
+  --color-surface-office: #f5f2ed; /* the page behind the dashboard and the admin area */
 
   /* Text */
-  --color-ink: #17140f;
-  --color-ink-secondary: #4a453d;
-  --color-ink-muted: #6f6a60;
+  --color-ink: #1a1714;
+  --color-ink-body: #3a342f; /* long text, such as a restaurant's About and its reviews */
+  --color-ink-secondary: #5e5750;
+  --color-ink-muted: #6b635b;
 
   /* Text on a colored background */
-  --color-on-dark: #fbfaf7;
-  --color-on-dark-secondary: #c9c2b5;
+  --color-on-dark: #ffffff;
+  --color-on-dark-secondary: #d9d2ca;
+  --color-on-dark-muted: #bdb4aa; /* small print in the dark side menu: 8.3:1 */
   --color-on-accent: #ffffff;
+  --color-accent-on-dark: #f2b8b5; /* wine's light tint, for the home page's eyebrow: 10.8:1 */
 
   /* Accent */
-  --color-accent: #7a1e2c;
-  --color-accent-hover: #631823;
+  --color-accent: #9f1d2b;
+  --color-accent-hover: #7a1520;
 
-  /* Lines. Real form inputs use line-control, because the others are too faint for them (§13.6). */
-  --color-line-soft: #ece8e0;
-  --color-line: #e4dfd6;
-  --color-line-strong: #ddd8ce;
+  /*
+   * Lines. Real form inputs keep line-control: the export's field line (#d8d1c6) is 1.4:1 on white,
+   * too faint to find a field by, so fields keep a 3:1 line (§13.6).
+   */
+  --color-line-soft: #f0ebe3;
+  --color-line: #e7e1d8;
+  --color-line-strong: #ddd5ca;
   --color-line-control: #8a8478;
-  --color-line-divider: #efebe4;
+  --color-line-divider: #e7e1d8;
   --color-line-underline: #d3cdc2;
   --color-line-rule: #b9b2a5;
-  --color-line-on-dark: #4a453d;
+  --color-line-on-dark: #4a4038;
+  --color-line-danger: #f0c9cc; /* the outline of a button that cancels or removes */
 
   /* Control fills */
-  --color-fill-slot: #f1eee8;
-  --color-fill-hover: #f6f4ef;
-  --color-fill-primary-hover: #2e2922;
-  --color-fill-overlay: rgb(251 250 247 / 0.92);
+  --color-fill-slot: #f0ebe3;
+  --color-fill-hover: #f5f1eb;
+  --color-fill-disabled: #e7e1d8;
+  --color-fill-primary-hover: #3a322c;
+  --color-fill-overlay: rgb(250 247 242 / 0.92);
 
   /*
-   * Status colors. The mockup has none, so these sit at the same depth as the accent. Error is a
-   * brighter red than the wine accent, so an error never looks like the brand. Each text color
-   * passes 4.5:1 on its soft fill and on every surface.
+   * Status colors, as the export's status pills have them. Each text color passes 4.5:1 on its
+   * soft fill and on every surface. success-strong is the green of a filled button, such as
+   * Arrived, and of short green words, such as Open now: 5.0:1 on the page.
    */
-  --color-success: #346841;
-  --color-success-soft: #e7efe4;
-  --color-warning: #80571a;
-  --color-warning-soft: #f6ecda;
-  --color-error: #9e2b25;
-  --color-error-soft: #f8e9e4;
-  --color-info: #2d6276;
-  --color-info-soft: #e5edee;
-  --color-neutral-soft: #e9e4db;
+  --color-success: #17603c;
+  --color-success-soft: #e3f1e9;
+  --color-success-strong: #1f7a4d;
+  --color-warning: #8a4b06;
+  --color-warning-soft: #fbebd3;
+  --color-error: #8e1b26;
+  --color-error-soft: #f8e1e3;
+  --color-info: #1d4a8c;
+  --color-info-soft: #e1eaf7;
+  --color-neutral-soft: #ece7e0;
+  --color-star: #c9761b; /* a rating's star, which is drawn, never words */
 
   /* The dimmed page behind an open Modal */
-  --color-backdrop: rgb(23 20 15 / 0.45);
+  --color-backdrop: rgb(26 23 20 / 0.45);
 
-  /* Color blocks for restaurants with no photo */
-  --color-tone-1: #5a2e24;
-  --color-tone-2: #4b2b33;
-  --color-tone-3: #3a3027;
-  --color-tone-4: #26363b;
-  --color-tone-5: #6b5a45;
-  --color-tone-6: #2a2622;
+  /* Color blocks for restaurants with no photo, and the home page's neighborhoods */
+  --color-tone-1: #6e2a24;
+  --color-tone-2: #3e5c4a;
+  --color-tone-3: #5b3a5e;
+  --color-tone-4: #2f4b5c;
+  --color-tone-5: #8a5a22;
+  --color-tone-6: #4d4a3a;
 
   /*
-   * Fonts. Instrument Sans has no Cyrillic, so Russian text comes from Geist, next in the list.
-   * Neither sans font nor Instrument Serif has Armenian letters or the ֏ sign, so those come from
-   * the Noto fonts (§13.6). Tailwind also uses --font-sans as the app's default font.
+   * Fonts. Inter has Latin and Cyrillic, but neither it nor Instrument Serif has Armenian letters
+   * or the ֏ sign, so those come from the Noto fonts (§13.6). Tailwind also uses --font-sans as
+   * the app's default font. Instrument Serif is now only the protected states' (state-card).
    */
   --font-sans:
-    "Instrument Sans", "Geist", "Noto Sans Armenian", ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", sans-serif;
+    "Inter", "Noto Sans Armenian", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Instrument Serif", "Noto Serif Armenian", ui-serif, Georgia, serif;
+  /* Every heading. */
+  --font-grotesque:
+    "Bricolage Grotesque", "Noto Sans Armenian", ui-sans-serif, system-ui, sans-serif;
 
   /*
    * UI text. Every size sets a fixed line height, because `line-height: normal` lets a fallback
@@ -95,10 +110,10 @@
   --text-label--font-weight: 500;
   --text-caption: 0.75rem; /* 12px */
   --text-caption--line-height: 1rem;
-  --text-eyebrow: 0.75rem; /* 12px */
-  --text-eyebrow--line-height: 1rem;
+  --text-eyebrow: 0.875rem; /* 14px */
+  --text-eyebrow--line-height: 1.25rem;
   --text-eyebrow--letter-spacing: 0.08em;
-  --text-eyebrow--font-weight: 500;
+  --text-eyebrow--font-weight: 600;
   --text-meta: 0.8125rem; /* 13px */
   --text-meta--line-height: 1.0625rem;
   --text-ui: 0.875rem; /* 14px */
@@ -110,7 +125,10 @@
   --text-lead: 1.125rem; /* 18px */
   --text-lead--line-height: 1.55;
 
-  /* Display text, used with font-display */
+  /*
+   * Display sizes, set in Bricolage Grotesque: the logo, and names and tiles. The protected states
+   * keep their serif title at text-title, frozen in state-card below.
+   */
   --text-title-xs: 1.25rem; /* 20px */
   --text-title-xs--line-height: 1.625rem;
   --text-title-xs--letter-spacing: -0.01em;
@@ -120,15 +138,15 @@
   --text-title: 1.5rem; /* 24px */
   --text-title--line-height: 1.1;
   --text-title--letter-spacing: -0.01em;
-  --text-logo-sm: 1.75rem; /* 28px */
+  --text-logo-sm: 1.125rem; /* 18px, the logo in the dark menu */
   --text-logo-sm--line-height: 1;
-  --text-logo-sm--letter-spacing: -0.01em;
-  --text-logo: 1.875rem; /* 30px */
+  --text-logo-sm--letter-spacing: -0.02em;
+  --text-logo: 1.25rem; /* 20px, the logo on phones */
   --text-logo--line-height: 1;
-  --text-logo--letter-spacing: -0.01em;
-  --text-masthead: 2.125rem; /* 34px, the logo in the desktop header */
+  --text-logo--letter-spacing: -0.02em;
+  --text-masthead: 1.375rem; /* 22px, the logo in the desktop header, as in the export */
   --text-masthead--line-height: 1;
-  --text-masthead--letter-spacing: -0.01em;
+  --text-masthead--letter-spacing: -0.02em;
   --text-section: 2.5rem; /* 40px */
   --text-section--line-height: 1.05;
   --text-section--letter-spacing: -0.01em;
@@ -138,6 +156,32 @@
   --text-hero: clamp(3.25rem, 7vw, 5.75rem); /* 52px to 92px */
   --text-hero--line-height: 0.98;
   --text-hero--letter-spacing: -0.025em;
+
+  /* The guest pages' headings, used with font-grotesque. The dashboard and admin keep the serif. */
+  --text-headline: clamp(2.5rem, 6vw, 4.5rem); /* 40px to 72px, the home page's opening */
+  --text-headline--line-height: 1.02;
+  --text-headline--letter-spacing: -0.03em;
+  --text-headline--font-weight: 700;
+  --text-display: clamp(2.25rem, 1.6rem + 2vw, 3rem); /* 36px to 48px: a restaurant's name */
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.03em;
+  --text-display--font-weight: 700;
+  --text-page-title: clamp(2rem, 1.5rem + 1.6vw, 2.5rem); /* 32px to 40px, every other page's h1 */
+  --text-page-title--line-height: 1.05;
+  --text-page-title--letter-spacing: -0.03em;
+  --text-page-title--font-weight: 700;
+  --text-part: 2.125rem; /* 34px, a part of the dashboard or the admin area */
+  --text-part--line-height: 1.1;
+  --text-part--letter-spacing: -0.02em;
+  --text-part--font-weight: 700;
+  --text-heading: 2rem; /* 32px */
+  --text-heading--line-height: 1.1;
+  --text-heading--letter-spacing: -0.02em;
+  --text-heading--font-weight: 700;
+  --text-subheading: 1.5rem; /* 24px */
+  --text-subheading--line-height: 1.2;
+  --text-subheading--letter-spacing: -0.01em;
+  --text-subheading--font-weight: 700;
 
   /* For the two places that need these without a whole text size: footer headings and intro */
   --tracking-label: 0.06em;
@@ -150,28 +194,33 @@
    */
   --container-page: 84rem; /* 1344px */
   --spacing-gutter: 2rem; /* 32px */
-  --spacing-gutter-sm: 1.25rem; /* 20px, on phones */
-  --spacing-header: 5.25rem; /* 84px */
+  --spacing-gutter-sm: 1.5rem; /* 24px, on phones */
+  --spacing-header: 4.5rem; /* 72px */
   --spacing-header-sm: 4rem; /* 64px, on phones */
   --spacing-section-sm: 4.5rem; /* 72px */
   --spacing-section-md: 5.5rem; /* 88px */
   --spacing-section-lg: 6rem; /* 96px */
   --spacing-touch: 2.75rem; /* 44px, the smallest tap target on phones (§13.6) */
 
-  /* Radii. Tight corners feel tailored, which suits the fine lines of the reservation book. */
+  /* Radii, from the export: soft corners, rounder as things get bigger. */
   --radius-check: 0.1875rem; /* 3px, checkboxes */
-  --radius-slot: 0.375rem; /* 6px */
-  --radius-control: 0.375rem; /* 6px, buttons */
-  --radius-cta: 0.375rem; /* 6px, the search bar's button */
-  --radius-media: 0.5rem; /* 8px */
-  --radius-card: 0.625rem; /* 10px, cards, modals and the search bar */
-  --radius-hero: 0.75rem; /* 12px */
-  --radius-band: 1rem; /* 16px */
+  --radius-chip: 0.5rem; /* 8px, a card's times and the dashboard's small buttons */
+  --radius-slot: 0.625rem; /* 10px */
+  --radius-control: 0.625rem; /* 10px */
+  --radius-cta: 0.75rem; /* 12px */
+  --radius-media: 0.75rem; /* 12px, small photos */
+  --radius-card: 0.625rem; /* 10px, fields, times and notices */
+  --radius-hero: 0.75rem; /* 12px, buttons */
+  --radius-band: 1rem; /* 16px, cards and panels */
+  --radius-sheet: 1.25rem; /* 20px, the booking panel and a restaurant's photos */
+  --radius-feature: 1.5rem; /* 24px, the owners' band and the phone's booking sheet */
   --radius-pill: 999px;
 
   /* Shadows. The rule shadows thicken a field's line without moving the layout. */
-  --shadow-search: 0 1px 2px rgb(23 20 15 / 0.04), 0 12px 32px -16px rgb(23 20 15 / 0.16);
-  --shadow-float: 0 24px 48px -20px rgb(23 20 15 / 0.35);
+  --shadow-search: 0 1px 2px rgb(26 23 20 / 0.04), 0 12px 32px -16px rgb(26 23 20 / 0.16);
+  --shadow-panel: 0 12px 32px rgb(26 23 20 / 0.08); /* the booking panel, lifted off the page */
+  --shadow-tab: 0 1px 2px rgb(0 0 0 / 0.08); /* the chosen half of a two-way switch */
+  --shadow-float: 0 24px 48px -20px rgb(26 23 20 / 0.35);
   --shadow-rule-focus: 0 1px 0 0 var(--color-accent);
   --shadow-rule-error: 0 1px 0 0 var(--color-error);
 
@@ -184,7 +233,7 @@
   --transition-duration-tile: 500ms;
   --ease-tile: cubic-bezier(0.2, 0.7, 0.2, 1);
 
-  /* The logo's dot, breathing, is how a page shows it's loading. */
+  /* A wine dot, breathing, is how a page shows it's loading. */
   --animate-breathe: breathe 1.4s ease-in-out infinite;
 
   @keyframes breathe {

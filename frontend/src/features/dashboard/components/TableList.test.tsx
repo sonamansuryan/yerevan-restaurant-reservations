@@ -23,47 +23,61 @@ const line = (name: string): HTMLElement => {
   if (!item) throw new Error(`No line for ${name}`);
   return item;
 };
+const active = (name: string): HTMLInputElement =>
+  screen.getByRole<HTMLInputElement>("checkbox", { name: `Active, ${name}` });
 
-test("the tables are grouped by area, in a fixed order, each a line with the parties it takes", () => {
+test("all the tables are in one list, by area in a fixed order, each with the parties it takes", () => {
   renderList();
 
-  expect(screen.getAllByRole("heading").map((heading) => heading.textContent)).toEqual([
-    "Indoor",
-    "Terrace",
-    "VIP",
-    "Bar counter",
+  expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("All tables");
+  // Each line is named by its Edit button, so these are the lines in order.
+  expect(screen.getAllByRole("button", { name: /^Edit / }).map((edit) => edit.ariaLabel)).toEqual([
+    "Edit T1",
+    "Edit T2",
+    "Edit T3",
+    "Edit T5",
+    "Edit T6",
+    "Edit T4",
+    "Edit The long table",
+    "Edit Bar 1",
   ]);
-  expect(line("T4").textContent).toContain("3–6 guests");
+  expect(within(line("T4")).getByText("Table T4 ·", { exact: false }).textContent).toBe(
+    "Table T4 · 3–6 guests",
+  );
+  expect(within(line("T4")).getByText("Terrace")).toBeDefined();
   expect(line("Bar 1").textContent).toContain("1 guest");
+  // The short name in the square is for the eye: the line says the whole name.
+  expect(within(line("Bar 1")).getByText("B1").getAttribute("aria-hidden")).toBe("true");
 });
 
-test("an inactive table stays in its area, marked, and can be switched back on", async () => {
+test("a switched-off table stays in its area, marked, and can be switched back on", async () => {
   const { onSwitch } = renderList();
 
-  expect(within(line("T6")).getByText("Inactive")).toBeDefined();
-  expect(within(line("T1")).queryByText("Inactive")).toBeNull();
+  expect(within(line("T6")).getByText("Indoor · switched off")).toBeDefined();
+  expect(within(line("T1")).queryByText(/switched off/)).toBeNull();
+  expect(active("T6").checked).toBe(false);
+  expect(active("T1").checked).toBe(true);
 
-  await userEvent.click(screen.getByRole("button", { name: "Activate T6" }));
+  await userEvent.click(active("T6"));
 
   expect(onSwitch).toHaveBeenCalledWith(expect.objectContaining({ label: "T6", isActive: false }));
 });
 
-test("Edit and Deactivate name their table, for screen readers", async () => {
+test("Edit and the Active switch name their table, for screen readers", async () => {
   const { onEdit, onSwitch } = renderList();
 
   await userEvent.click(screen.getByRole("button", { name: "Edit T4" }));
-  await userEvent.click(screen.getByRole("button", { name: "Deactivate T1" }));
+  await userEvent.click(active("T1"));
 
   expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ label: "T4" }));
   expect(onSwitch).toHaveBeenCalledWith(expect.objectContaining({ label: "T1", isActive: true }));
 });
 
-test("while its switch is sent, the table's button is busy", () => {
+test("while its switch is sent, the table's switch waits, and the others can still be used", () => {
   renderList({ switchingId: "table-t1" });
 
-  expect(screen.getByRole("button", { name: "Deactivate T1" }).getAttribute("aria-busy")).toBe(
-    "true",
-  );
+  expect(active("T1").disabled).toBe(true);
+  expect(active("T2").disabled).toBe(false);
 });
 
 test("a refused switch shows under its table's line, with the bookings in the way", () => {

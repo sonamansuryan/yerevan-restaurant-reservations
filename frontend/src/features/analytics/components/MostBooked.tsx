@@ -12,7 +12,7 @@ interface MostBookedProps {
 
 /**
  * The admin's restaurants with the most bookings for the period, the most first, each bar against
- * the busiest. Names are in serif, as everywhere, and a long one wraps above its bar on a phone.
+ * the busiest. A long name wraps above its bar on a phone.
  */
 export function MostBooked({ restaurants, headingLevel = 3 }: MostBookedProps): ReactElement {
   return (
@@ -20,7 +20,7 @@ export function MostBooked({ restaurants, headingLevel = 3 }: MostBookedProps): 
       <BarList
         bars={restaurants.map(({ id, name, bookings }) => ({
           key: id,
-          label: <span className="font-display text-title-xs">{name}</span>,
+          label: <span className="font-semibold">{name}</span>,
           value: bookings,
         }))}
       />

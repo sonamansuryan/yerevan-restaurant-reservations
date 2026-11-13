@@ -2,7 +2,6 @@ import { useState } from "react";
 import type { ReactElement } from "react";
 import { useParams } from "react-router";
 
-import { LinkButton } from "@/components/Button";
 import { PageContainer } from "@/components/PageContainer";
 import { BookingWidget } from "@/features/booking/components/BookingWidget";
 import { useBooking } from "@/features/booking/hooks/useBooking";
@@ -16,7 +15,7 @@ import {
 import { RestaurantMap } from "@/features/restaurants/components/RestaurantMap";
 import { useRestaurant } from "@/features/restaurants/hooks/useRestaurant";
 import { useRestaurantReviews } from "@/features/reviews/hooks/useRestaurantReviews";
-import { yerevanWeekday } from "@/lib/time";
+import { yerevanClock, yerevanWeekday } from "@/lib/time";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import type { RestaurantDetail } from "@/types/api";
 
@@ -68,23 +67,20 @@ function Booking({ slug }: { slug: string }): ReactElement {
 function LoadedRestaurant({ restaurant }: { restaurant: RestaurantDetail }): ReactElement {
   // Read once, when the page opens: a page has to render the same way each time.
   const [today] = useState(() => yerevanWeekday(new Date()));
+  const [now] = useState(() => yerevanClock());
   const reviews = useRestaurantReviews(restaurant.slug, restaurant.reviewCount);
   const save = useSaveRestaurant(restaurant.slug);
 
   return (
-    <PageContainer className="py-section-sm">
+    // On a phone the photo meets the header, as the export's phone screen has it.
+    <PageContainer className="pb-section-sm lg:pt-8">
       <title>{`${restaurant.name} · Seghan`}</title>
-      {/* The way back on the left, and saving it on the right, on the first baseline of each. */}
-      <div className="flex items-baseline justify-between gap-4">
-        <LinkButton variant="link" to="/restaurants">
-          All restaurants
-        </LinkButton>
-        {save && <SaveRestaurant name={restaurant.name} viewer={save} />}
-      </div>
       <RestaurantDetails
         restaurant={restaurant}
         today={today}
+        now={now}
         booking={<Booking slug={restaurant.slug} />}
+        save={save && <SaveRestaurant name={restaurant.name} viewer={save} />}
         reviews={reviews}
         map={
           // A new map for each restaurant, so one that failed doesn't stay hidden for the next.
@@ -92,10 +88,10 @@ function LoadedRestaurant({ restaurant }: { restaurant: RestaurantDetail }): Rea
             key={restaurant.mapImageUrl}
             src={restaurant.mapImageUrl}
             mapsUrl={restaurant.mapsUrl}
-            className="mt-4"
+            // With no map, or one that couldn't load, the address stands in its place.
+            fallback={<address className="text-input not-italic">{restaurant.address}</address>}
           />
         }
-        className="mt-4"
       />
     </PageContainer>
   );

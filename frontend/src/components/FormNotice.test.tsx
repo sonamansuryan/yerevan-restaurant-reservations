@@ -20,10 +20,11 @@ test("good news is a polite status", () => {
   expect(screen.getByRole("status").textContent).toBe("Password updated.");
 });
 
-test("the dot is decoration, and the words carry the meaning", () => {
+test("the icon is decoration, and the words carry the meaning", () => {
   render(<FormNotice>Incorrect email or password.</FormNotice>);
 
-  const dot = screen.getByRole("alert").querySelector("span");
+  const notice = screen.getByRole("alert");
 
-  expect(dot?.getAttribute("aria-hidden")).toBe("true");
+  expect(notice.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+  expect(notice.textContent).toBe("Incorrect email or password.");
 });

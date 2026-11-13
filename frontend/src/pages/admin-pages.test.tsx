@@ -33,17 +33,25 @@ const nare: AuthUser = {
 const lilit: AuthUser = { ...nare, id: "user-lilit", name: "Lilit Harutyunyan", role: "CUSTOMER" };
 const ani: AuthUser = { ...nare, id: "user-ani", name: "Ani Sargsyan", role: "OWNER" };
 
-/** The API for whoever is signed in, or nobody, remembering what Seghan hides and shows. */
+/**
+ * The API for whoever is signed in, or nobody, remembering what Seghan hides and shows, and who
+ * signs out.
+ */
 function fakeApi(user: AuthUser | null = nare): Mock {
   let restaurants: AdminRestaurant[] = [...adminRestaurants];
+  let signedIn = user;
   const fetch = vi.fn((url: string, init?: RequestInit) => {
     if (url === "/api/me") {
       return Promise.resolve(
-        user ? json({ user }) : json({ error: { code: "UNAUTHORIZED" } }, 401),
+        signedIn ? json({ user: signedIn }) : json({ error: { code: "UNAUTHORIZED" } }, 401),
       );
     }
     if (url === "/api/auth/refresh") {
       return Promise.resolve(json({ error: { code: "UNAUTHORIZED" } }, 401));
+    }
+    if (url === "/api/auth/logout") {
+      signedIn = null;
+      return Promise.resolve(new Response(null, { status: 204 }));
     }
     if (url.startsWith("/api/admin/restaurants?") || url === "/api/admin/restaurants") {
       return Promise.resolve(json(page(restaurants)));
@@ -121,6 +129,25 @@ describe("who may", () => {
     ]);
     expect(await main().findByText("6 restaurants")).toBeDefined();
     expect(adminCalls(fetch)).toEqual(["GET /api/admin/restaurants"]);
+    // The back room has its own menu, in place of the site's header and footer.
+    expect(screen.queryByRole("banner")).toBeNull();
+    expect(screen.queryByRole("contentinfo")).toBeNull();
+  });
+
+  test("Sign out is in the admin's menu, beside the name, and goes home", async () => {
+    const fetch = fakeApi();
+    const router = renderAt("/admin/users");
+
+    const signOut = await main().findByRole("button", { name: "Sign out" });
+    expect(main().getByText("Demo Admin").textContent).toBe("Signed in as Demo Admin");
+    await userEvent.click(signOut);
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+    expect(fetch).toHaveBeenCalledWith("/api/auth/logout", expect.anything());
+    // Home has the site's header again, now offering Sign in.
+    expect(
+      await within(screen.getByRole("banner")).findByRole("link", { name: "Sign in" }),
+    ).toBeDefined();
   });
 
   test.each([
@@ -133,11 +160,9 @@ describe("who may", () => {
     await waitFor(() => expect(document.title).toBe("This page is for Seghan’s team · Seghan"));
     expect(main().getByText(`You’re signed in as ${user.name}.`)).toBeDefined();
     expect(adminCalls(fetch)).toEqual([]);
-    expect(
-      within(screen.getByRole("navigation", { name: "Main" })).queryByRole("link", {
-        name: "Admin",
-      }),
-    ).toBeNull();
+    // The admin's menu stays out, and the way on is home.
+    expect(screen.queryByRole("navigation", { name: "Admin" })).toBeNull();
+    expect(main().getByRole("link", { name: "Back to home" }).getAttribute("href")).toBe("/");
   });
 
   test("someone signed out is sent to Sign in, and comes back afterwards", async () => {

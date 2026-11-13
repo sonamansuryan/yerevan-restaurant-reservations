@@ -39,16 +39,19 @@ test("the picture loads lazily from our own API, and fades in once it has come",
   expect(image.className).toContain("opacity-100");
 });
 
-test("the wine dot marks the place, at the middle, once the picture has come", () => {
+test("a wine pin marks the place, its point at the middle, once the picture has come", () => {
   const container = renderMap();
   expect(container.querySelector("a > span")).toBeNull();
 
   fireEvent.load(container.querySelector("img")!);
 
   const pin = container.querySelector("a > span")!;
-  expect(pin.className).toContain("bg-accent");
   expect(pin.className).toContain("top-1/2");
   expect(pin.className).toContain("left-1/2");
+  // Centred across, and lifted by its whole height, so its point, at its foot, is on the place.
+  expect(pin.className).toContain("-translate-x-1/2");
+  expect(pin.className).toContain("-translate-y-full");
+  expect(pin.querySelector("span")?.className).toContain("bg-accent");
 });
 
 test("a picture that can't load, from no address found or Geoapify failing, takes the frame with it", () => {

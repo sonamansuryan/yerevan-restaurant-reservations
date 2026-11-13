@@ -48,12 +48,12 @@ function ShellCrash(): never {
   throw new Error("The shell broke");
 }
 
-test("the home page leads with Choose your Seghan., in the shell", async () => {
+test("the home page leads with its headline, in the shell", async () => {
   renderRoutes("/");
 
   const heading = await screen.findByRole("heading", { level: 1 });
 
-  expect(heading.textContent).toBe("Choose your Seghan.");
+  expect(heading.textContent).toBe("Find a table in Yerevan, tonight or any night.");
   expect(screen.getByRole("banner")).toBeDefined();
   expect(screen.getByRole("contentinfo")).toBeDefined();
 });
@@ -66,23 +66,28 @@ test("the old name is gone from the home page", async () => {
   expect(document.body.textContent).not.toContain("Yerevan Reservations");
 });
 
-test("/login shows Sign in, in the shell", async () => {
+test("/login welcomes people back in the main area, without the site's header and footer", async () => {
   renderRoutes("/login");
 
   const main = await screen.findByRole("main");
 
-  expect(within(main).getByRole("heading", { level: 1 }).textContent).toBe("Sign in");
+  expect(within(main).getByRole("heading", { level: 1 }).textContent).toBe("Welcome back");
   expect(within(main).getByRole("button", { name: "Sign in" })).toBeDefined();
-  expect(screen.getByRole("banner")).toBeDefined();
+  // Its dark panel carries the logo home instead.
+  expect(within(main).getByRole("link", { name: "Seghan, home" })).toBeDefined();
+  expect(screen.queryByRole("banner")).toBeNull();
+  expect(screen.queryByRole("contentinfo")).toBeNull();
 });
 
-test("/register shows Create an account, with a guest chosen", async () => {
+test("/register shows Create an account, with a guest chosen, without the site's header and footer", async () => {
   renderRoutes("/register");
 
   const main = await screen.findByRole("main");
 
   expect(within(main).getByRole("heading", { level: 1 }).textContent).toBe("Create an account");
   expect(within(main).getByRole<HTMLInputElement>("radio", { name: /A guest/ }).checked).toBe(true);
+  expect(screen.queryByRole("banner")).toBeNull();
+  expect(screen.queryByRole("contentinfo")).toBeNull();
 });
 
 test("/register?role=owner chooses A restaurant, as the header's link expects", async () => {
@@ -104,6 +109,32 @@ test.each(["/reservations", "/dashboard"])(
 
     expect(within(main).getByRole("status", { name: "Checking your account" })).toBeDefined();
     expect(within(main).queryByRole("heading", { level: 1 })).toBeNull();
+  },
+);
+
+test.each(["/dashboard", "/dashboard/new", "/dashboard/r-1/tables", "/admin", "/admin/users"])(
+  "%s is the back room: its own menu, so no site header or footer, on the office's warm page",
+  async (path) => {
+    renderRoutes(path);
+
+    const main = await screen.findByRole("main");
+
+    expect(screen.queryByRole("banner")).toBeNull();
+    expect(screen.queryByRole("contentinfo")).toBeNull();
+    expect(main.parentElement?.className).toContain("bg-surface-office");
+  },
+);
+
+test.each(["/", "/restaurants", "/reservations", "/favorites"])(
+  "%s keeps the site's header and footer, on the usual page",
+  async (path) => {
+    renderRoutes(path);
+
+    const main = await screen.findByRole("main");
+
+    expect(screen.getByRole("banner")).toBeDefined();
+    expect(screen.getByRole("contentinfo")).toBeDefined();
+    expect(main.parentElement?.className).not.toContain("bg-surface-office");
   },
 );
 

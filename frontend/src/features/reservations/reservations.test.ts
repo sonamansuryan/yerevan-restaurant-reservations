@@ -1,9 +1,7 @@
-import { describe, expect, test } from "vitest";
+import { expect, test } from "vitest";
 
-import { guestUpcoming } from "@/features/design/samples";
 import {
   bookingsWords,
-  byDay,
   guestCancellationWords,
   pageFrom,
   reservationsPath,
@@ -23,25 +21,6 @@ test("the page in the address is a whole number from 1, or else the first", () =
   for (const query of ["", "page=", "page=0", "page=-1", "page=1.5", "page=two"]) {
     expect(at(query), query).toBe(1);
   }
-});
-
-describe("byDay", () => {
-  test("bookings on the same day go under it, in the order they came", () => {
-    const days = byDay(guestUpcoming).map(({ date, bookings }) => [
-      date,
-      bookings.map(({ id }) => id),
-    ]);
-
-    expect(days).toEqual([
-      ["2026-11-14", ["upcoming-sevan", "upcoming-lori"]],
-      ["2026-11-20", ["upcoming-tsiran"]],
-      ["2026-11-28", ["upcoming-sardarapat"]],
-    ]);
-  });
-
-  test("nothing to list, no days", () => {
-    expect(byDay([])).toEqual([]);
-  });
 });
 
 test("a cancellation says who cancelled, from the guest's side, with the restaurant's reason", () => {

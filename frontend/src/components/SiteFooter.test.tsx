@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, expect, test } from "vitest";
 
@@ -15,37 +15,33 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-test("it closes with a host's words", () => {
-  expect(screen.getByText("See you at the").textContent).toBe("See you at the table.");
-});
-
 test.each([
-  ["All restaurants", "/restaurants"],
-  ["Kentron", "/restaurants?district=KENTRON"],
-  ["Arabkir", "/restaurants?district=ARABKIR"],
-  ["Nor Nork", "/restaurants?district=NOR_NORK"],
-  ["Malatia-Sebastia", "/restaurants?district=MALATIA_SEBASTIA"],
-  ["Sign in", "/login"],
-  ["Create an account", "/register"],
-  ["My reservations", "/reservations"],
-  ["My favorites", "/favorites"],
-  ["List your restaurant", "/register?role=owner"],
-  ["Owner dashboard", "/dashboard"],
-  ["Seghan, home", "/"],
+  ["Explore", "/restaurants"],
+  ["Neighborhoods", "/#neighborhoods"],
+  ["For restaurants", "/register?role=owner"],
 ])("%s goes to %s", (name, href) => {
   expect(screen.getByRole("link", { name }).getAttribute("href")).toBe(href);
 });
 
-test("the columns have headings", () => {
-  const headings = screen
-    .getAllByRole("heading", { level: 2 })
-    .map((heading) => heading.textContent);
+test("its links are a named landmark, with just the three ways around the site", () => {
+  const footer = within(screen.getByRole("navigation", { name: "Footer" }));
 
-  expect(headings).toEqual(["Explore", "Your table", "For restaurants"]);
+  expect(footer.getAllByRole("link").map((link) => link.textContent)).toEqual([
+    "Explore",
+    "Neighborhoods",
+    "For restaurants",
+  ]);
 });
 
-test("its links are a named landmark", () => {
-  expect(screen.getByRole("navigation", { name: "Footer" })).toBeDefined();
+test("it's one row: the year, then the links, then the word for table", () => {
+  const year = screen.getByText(`© ${new Date().getFullYear()} Seghan`);
+  const links = screen.getByRole("navigation", { name: "Footer" });
+  const word = screen.getByText("սեղան");
+
+  expect(year.compareDocumentPosition(links)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  expect(links.compareDocumentPosition(word)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  // No columns, so no headings to name them.
+  expect(screen.queryAllByRole("heading")).toHaveLength(0);
 });
 
 test("the year stays current", () => {

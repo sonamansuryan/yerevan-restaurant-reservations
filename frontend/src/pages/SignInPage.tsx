@@ -1,7 +1,8 @@
 import type { ReactElement } from "react";
 
+import { AuthLayout } from "@/features/auth/components/AuthLayout";
+import { SignInPanel } from "@/features/auth/components/AuthPanels";
 import { GoogleSignIn } from "@/features/auth/components/GoogleSignIn";
-import { OpenBook } from "@/features/auth/components/OpenBook";
 import { SignInForm } from "@/features/auth/components/SignInForm";
 import { useGoogleSignIn } from "@/features/auth/hooks/useGoogleSignIn";
 import { useSignIn } from "@/features/auth/hooks/useSignIn";
@@ -12,7 +13,7 @@ export function SignInPage(): ReactElement {
 
   // One message at a time: starting one way of signing in clears the other way's old message.
   return (
-    <OpenBook heading="Sign in" description="See your reservations or manage your restaurant.">
+    <AuthLayout heading="Welcome back" current="signIn" panel={<SignInPanel />}>
       <title>Sign in · Seghan</title>
       <SignInForm
         onSubmit={(request) => {
@@ -23,7 +24,7 @@ export function SignInPage(): ReactElement {
         error={signIn.error}
         google={
           <GoogleSignIn
-            text="signin_with"
+            text="continue_with"
             onCredential={(credential) => {
               signIn.reset();
               google.mutate({ credential });
@@ -33,6 +34,6 @@ export function SignInPage(): ReactElement {
           />
         }
       />
-    </OpenBook>
+    </AuthLayout>
   );
 }

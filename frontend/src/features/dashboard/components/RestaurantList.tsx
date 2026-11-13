@@ -7,23 +7,21 @@ import { DISTRICT_LABELS, cuisineLine } from "@/features/restaurants/labels";
 import type { OwnerRestaurant } from "@/types/api";
 
 /**
- * The owner's restaurants as lines in the book: the name in serif, where it is and what it serves,
- * and whether guests can see it. Each whole line opens that restaurant.
+ * The owner's restaurants, a white card each: the name in bold, where it is and what it serves,
+ * and whether guests can see it. Each whole card opens that restaurant's dashboard.
  */
 export function RestaurantList({ restaurants }: { restaurants: OwnerRestaurant[] }): ReactElement {
   return (
-    <ul className="border-t border-line">
+    <ul className="flex flex-col gap-3">
       {restaurants.map((restaurant) => (
-        <li key={restaurant.id} className="border-b border-line">
+        <li key={restaurant.id}>
           <Link
             to={`/dashboard/${restaurant.id}`}
-            className="group flex min-h-touch items-center gap-4 py-5 sm:gap-8"
+            className="group flex min-h-touch items-center gap-4 rounded-band border border-line bg-surface-raised p-4 transition-[border-color] duration-button hover:border-ink sm:gap-6 sm:p-5"
           >
             <span className="min-w-0 flex-1">
-              <span className="block font-display text-title break-words underline decoration-transparent decoration-1 underline-offset-4 transition-[text-decoration-color] duration-button group-hover:decoration-ink">
-                {restaurant.name}
-              </span>
-              <span className="mt-1 block text-meta text-ink-secondary">
+              <span className="block text-lead font-semibold break-words">{restaurant.name}</span>
+              <span className="mt-0.5 block text-meta text-ink-secondary">
                 {DISTRICT_LABELS[restaurant.district]} · {cuisineLine(restaurant.cuisines)}
               </span>
             </span>

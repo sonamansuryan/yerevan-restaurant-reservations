@@ -12,6 +12,7 @@ import {
   durationTokens,
   easingTokens,
   fontTokens,
+  guestSizes,
   pageWidthToken,
   radiusTokens,
   ruleShadowTokens,
@@ -35,7 +36,7 @@ const companions = declared.filter((name) => name.includes("--"));
 
 const listed = [
   ...colorGroups.flatMap((group) => group.tokens).map((token) => `color-${token.name}`),
-  ...[...displaySizes, ...uiSizes].map((size) => `text-${size.name}`),
+  ...[...displaySizes, ...uiSizes, ...guestSizes].map((size) => `text-${size.name}`),
   ...[
     ...fontTokens,
     ...typeDetails,
