@@ -1,4 +1,4 @@
-# Seghan
+# 🍽️ Seghan.
 
 **Find a restaurant in Yerevan, pick a time, and reserve a table, while the restaurant manages every booking from its own dashboard.**
 
