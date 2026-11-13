@@ -45,6 +45,19 @@ const mainLinkStates = [
       },
     },
   },
+  {
+    label: "An admin",
+    account: {
+      ...sampleAccount(null),
+      user: {
+        id: "sample-admin",
+        email: "admin@example.com",
+        name: "Demo Admin",
+        phone: null,
+        role: "ADMIN" as const,
+      },
+    },
+  },
 ];
 
 const shell = [
@@ -80,7 +93,7 @@ export function BrandSection(): ReactElement {
       </Group>
       <Group
         title="The main links"
-        note="Beside the logo, from tablet width up, and first in the menu on phones. A guest reaches My reservations and an owner their Dashboard, where anyone else sees the page for restaurants."
+        note="Beside the logo, from tablet width up, and first in the menu on phones. A guest reaches My reservations and My favorites, an owner their Dashboard and an admin the Admin area, where anyone signed out sees the page for restaurants."
       >
         <SpecimenRow>
           {mainLinkStates.map(({ label, account }) => (
@@ -94,7 +107,7 @@ export function BrandSection(): ReactElement {
       </Group>
       <Group
         title="Account, in the header"
-        note="The corner beside Reserve a table, from tablet width up. Sign out keeps its place, and the first name sits above it."
+        note="The corner beside Reserve a table, from tablet width up. Sign out keeps its place, and the first name sits above it. Owners and admins, who never book, have no Reserve a table, here or in the menu on phones, so Sign out ends the row."
       >
         <SpecimenRow>
           {accountStates.map(({ label, account }) => (

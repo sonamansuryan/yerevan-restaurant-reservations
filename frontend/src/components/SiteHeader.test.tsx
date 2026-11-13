@@ -154,6 +154,39 @@ describe("the main links, by who's signed in", () => {
   });
 });
 
+describe("Reserve a table, by who's signed in", () => {
+  const reserve = (): HTMLElement | null => screen.queryByRole("link", { name: "Reserve a table" });
+
+  test("an admin, who never books, has Admin and Sign out but no Reserve a table", () => {
+    const nare: AuthUser = { ...lilit, name: "Demo Admin", role: "ADMIN" };
+    renderAt("/admin", account({ user: nare }));
+
+    expect(reserve()).toBeNull();
+    expect(link("Admin").getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeDefined();
+  });
+
+  test("an owner, who never books either, has their Dashboard and Sign out but no Reserve a table", () => {
+    const ani: AuthUser = { ...lilit, name: "Ani Sargsyan", role: "OWNER" };
+    renderAt("/dashboard", account({ user: ani }));
+
+    expect(reserve()).toBeNull();
+    expect(link("Dashboard").getAttribute("aria-current")).toBe("page");
+    expect(link("Discover").getAttribute("href")).toBe("/restaurants");
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeDefined();
+  });
+
+  test.each([
+    ["while the app is still checking", undefined],
+    ["signed out", null],
+    ["a guest", lilit],
+  ])("%s keeps it", (_who, user) => {
+    renderAt("/", account({ user }));
+
+    expect(reserve()?.getAttribute("href")).toBe("/restaurants");
+  });
+});
+
 describe("the account corner", () => {
   test("while the app is still checking, it shows neither Sign in nor Sign out", () => {
     renderAt("/", account({ user: undefined }));

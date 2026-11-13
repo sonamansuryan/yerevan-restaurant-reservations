@@ -39,16 +39,23 @@ export function OpeningHoursList({ hours, today }: OpeningHoursListProps): React
             <dd className="text-right tabular-nums">
               {shifts.length === 0
                 ? "Closed"
-                : shifts.map(({ opens, closes }) => (
-                    <span key={opens} className="block">
-                      <span aria-hidden="true">
-                        {opens}–{closes}
+                : shifts.map(({ opens, closes }) =>
+                    // From midnight to midnight would read "00:00–00:00", which says nothing.
+                    opens === "00:00" && closes === "00:00" ? (
+                      <span key={opens} className="block">
+                        Open all day
                       </span>
-                      <span className="sr-only">
-                        {opens} to {closes}
+                    ) : (
+                      <span key={opens} className="block">
+                        <span aria-hidden="true">
+                          {opens}–{closes}
+                        </span>
+                        <span className="sr-only">
+                          {opens} to {closes}
+                        </span>
                       </span>
-                    </span>
-                  ))}
+                    ),
+                  )}
             </dd>
           </div>
         );

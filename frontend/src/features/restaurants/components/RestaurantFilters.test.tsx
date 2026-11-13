@@ -23,6 +23,20 @@ test("choosing a cuisine applies at once, back on page 1", async () => {
   expect(onChange).toHaveBeenCalledWith({ district: "KENTRON", cuisine: "GEORGIAN", page: 1 });
 });
 
+test("Sort by applies at once, back on page 1, and Name puts it back", async () => {
+  const onChange = renderFilters({ price: 2, page: 3 });
+
+  expect((screen.getByLabelText("Sort by") as HTMLSelectElement).value).toBe("name");
+  await userEvent.selectOptions(screen.getByLabelText("Sort by"), "Highest rated");
+  expect(onChange).toHaveBeenLastCalledWith({ price: 2, sort: "rating", page: 1 });
+
+  cleanup();
+  const again = renderFilters({ sort: "rating", page: 1 });
+  expect((screen.getByLabelText("Sort by") as HTMLSelectElement).value).toBe("rating");
+  await userEvent.selectOptions(screen.getByLabelText("Sort by"), "Name");
+  expect(again).toHaveBeenLastCalledWith({ sort: undefined, page: 1 });
+});
+
 test("choosing Any clears that filter", async () => {
   const onChange = renderFilters({ price: 2, page: 1 });
 

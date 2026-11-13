@@ -27,7 +27,10 @@ export function RestaurantList({ restaurants }: { restaurants: OwnerRestaurant[]
                 {DISTRICT_LABELS[restaurant.district]} · {cuisineLine(restaurant.cuisines)}
               </span>
             </span>
-            <PublishedBadge isPublished={restaurant.isPublished} />
+            <PublishedBadge
+              isPublished={restaurant.isPublished}
+              hiddenBySeghan={restaurant.hiddenBySeghan}
+            />
             <ArrowRightIcon
               aria-hidden="true"
               width="16"

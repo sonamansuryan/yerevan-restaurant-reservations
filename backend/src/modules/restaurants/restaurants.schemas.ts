@@ -41,6 +41,11 @@ export const restaurantListSchema = z.object({
       .max(4, "Choose a price from ֏ to ֏֏֏֏.")
       .optional(),
   ),
+  // Name is the default. Rating puts the best rated first, and those with no reviews last.
+  sort: z.preprocess(
+    blankIsMissing,
+    z.enum(["name", "rating"], { error: "Choose to sort by name or rating." }).default("name"),
+  ),
   page: z.preprocess(
     blankIsMissing,
     z.coerce

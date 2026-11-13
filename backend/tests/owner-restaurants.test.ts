@@ -151,6 +151,7 @@ describe("GET /api/owner/restaurants/:restaurantId", () => {
         slotIntervalMin: 30,
         reservationDurationMin: 120,
         isPublished: true,
+        hiddenBySeghan: false,
       },
     });
   });

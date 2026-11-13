@@ -7,7 +7,7 @@ import { LinkButton } from "@/components/Button";
 import { CurrentPageDot, Logo } from "@/components/Logo";
 import { MastheadRow, MastheadStart, MenuToggle } from "@/components/Masthead";
 import { PageContainer } from "@/components/PageContainer";
-import { discover, districts, mainLinks, signIn } from "@/components/site-links";
+import { discover, districts, mainLinks, offersReserve, signIn } from "@/components/site-links";
 import type { SiteLink } from "@/components/site-links";
 
 interface MobileMenuProps {
@@ -164,14 +164,17 @@ export function MobileMenu({ open, onClose, account }: MobileMenuProps): ReactEl
             </ul>
           </nav>
 
-          {/* Pushed to the bottom, within reach of a thumb. */}
+          {/* Pushed to the bottom, within reach of a thumb. Owners and admins, who never book,
+              get the sign-off without the button, as in the header. */}
           <div className="mt-auto pt-10">
-            <p className="mb-4 text-center font-display text-title">
+            <p className="text-center font-display text-title">
               See you at the <em className="text-accent">table.</em>
             </p>
-            <LinkButton to={discover.to} onClick={onClose} className="w-full">
-              Reserve a table
-            </LinkButton>
+            {offersReserve(account.user) && (
+              <LinkButton to={discover.to} onClick={onClose} className="mt-4 w-full">
+                Reserve a table
+              </LinkButton>
+            )}
           </div>
         </PageContainer>
       </div>

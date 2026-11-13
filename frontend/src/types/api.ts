@@ -21,7 +21,11 @@ export interface ApiErrorResponse {
   };
 }
 
-/** A page of a list: GET /api/restaurants and later lists. */
+/**
+ * A page of a list: GET /api/restaurants and later lists. GET /api/restaurants/featured answers the
+ * same way, with the home page's few: those chosen by hand, then the first others by name, and the
+ * total of every published restaurant.
+ */
 export interface ListResponse<T> {
   data: T[];
   meta: { page: number; pageSize: number; total: number };
@@ -53,6 +57,12 @@ export type District =
   | "NUBARASHEN"
   | "SHENGAVIT";
 
+/**
+ * How GET /api/restaurants orders its list: by name (the default), or by rating, the best rated
+ * first, more reviews before fewer at the same rating, and those without reviews last.
+ */
+export type RestaurantSort = "name" | "rating";
+
 /** A restaurant as GET /api/restaurants lists it. */
 export interface RestaurantSummary {
   slug: string;
@@ -61,12 +71,18 @@ export interface RestaurantSummary {
   cuisines: Cuisine[];
   district: District;
   address: string;
-  /** 1 to 4, shown as ֏ to ֏֏֏֏. */
-  priceLevel: number;
+  /** 1 to 4, shown as ֏ to ֏֏֏֏, or null for a demo listing, whose price no source gives. */
+  priceLevel: number | null;
+  /** The average of its reviews, from 1 to 5, or 0 when it has none. */
   avgRating: number;
   reviewCount: number;
   /** The cover photo's Cloudinary address, or null when there's no photo. */
   coverPhotoUrl: string | null;
+  /**
+   * A real Yerevan restaurant listed from public data for the demo (9.7). It isn't on Seghan, so
+   * it can't be booked: it has no tables.
+   */
+  isDemoListing: boolean;
 }
 
 export interface OpeningHours {
@@ -84,9 +100,18 @@ export interface OpeningHours {
 export interface RestaurantDetail extends RestaurantSummary {
   phone: string | null;
   website: string | null;
-  photos: { url: string; isCover: boolean }[];
+  /** A photo from Wikimedia Commons credits its author and license, linking to its page there. */
+  photos: { url: string; isCover: boolean; credit: string | null; creditUrl: string | null }[];
   openingHours: OpeningHours[];
+  /** A demo listing's place at OpenStreetMap, where its details come from. Null for any other. */
+  osmUrl: string | null;
   mapsUrl: string;
+  /**
+   * The picture of its street, from GET /api/restaurants/:slug/map (OpenStreetMap, drawn by
+   * Geoapify), or null when maps aren't set up. That address answers 404 for an address that can't
+   * be found, and 503 when Geoapify fails: then there's simply no map.
+   */
+  mapImageUrl: string | null;
 }
 
 export interface RestaurantResponse {
@@ -139,6 +164,7 @@ export interface Availability {
  * - PATCH /api/reservations/:reservationId with { status: "CANCELLED" } cancels one, and answers it
  *   inside { reservation }. Refusals: 404 RESERVATION_NOT_FOUND (not this guest's), 409
  *   ALREADY_CANCELLED and 409 CANCEL_TOO_LATE (it has started, or the guest has arrived).
+ * - POST /api/reservations/:reservationId/review reviews a visit: see ReviewResponse.
  */
 export interface GuestReservation {
   id: string;
@@ -158,10 +184,60 @@ export interface GuestReservation {
   cancellation: { by: "CUSTOMER" | "RESTAURANT" | null; reason: string | null } | null;
   /** Whether the guest can still cancel it: pending or confirmed, and not started yet. */
   canCancel: boolean;
+  /** The guest's review of this visit, once they've written one. */
+  review: { rating: number; comment: string | null } | null;
+  /** Whether the guest can review it: the restaurant marked them arrived, and there's no review yet. */
+  canReview: boolean;
 }
 
 export interface GuestReservationResponse {
   reservation: GuestReservation;
+}
+
+/**
+ * POST /api/reservations/:reservationId/review, for the guest who made the booking, with
+ * { rating: 1 to 5, comment?: up to 1000 characters }. It answers 201 with the review inside
+ * { review }, and the restaurant's average and count change with it. Refusals: 404
+ * RESERVATION_NOT_FOUND (not this guest's), 409 NOT_VISITED (not marked arrived) and 409
+ * ALREADY_REVIEWED (one review per visit), and 400 with fields.rating or fields.comment.
+ */
+export interface GuestReview {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
+export interface ReviewResponse {
+  review: GuestReview;
+}
+
+/**
+ * A guest's favorites, at /api/favorites, for signed-in guests only (anyone else gets 401 or 403):
+ * - GET /api/favorites?page=&pageSize= answers a ListResponse of RestaurantSummary, the last saved
+ *   first, 12 to a page and at most 48. A restaurant that isn't published isn't listed or counted.
+ * - GET /api/favorites/:slug says whether that restaurant is saved.
+ * - PUT /api/favorites/:slug saves it, and DELETE takes it out. Both can be repeated safely. Saving
+ *   a restaurant that isn't published answers 404 RESTAURANT_NOT_FOUND.
+ */
+export interface FavoriteState {
+  saved: boolean;
+}
+
+/**
+ * A review on a restaurant's page. GET /api/restaurants/:slug/reviews?page=&pageSize= answers a
+ * ListResponse of them, newest first, 10 to a page and at most 50, for anyone. A restaurant that
+ * isn't published answers 404 RESTAURANT_NOT_FOUND.
+ */
+export interface PublicReview {
+  id: string;
+  rating: number;
+  comment: string | null;
+  /** The guest's first name: all anyone else sees of them. */
+  author: string;
+  /** The day it was written, on the restaurant's calendar. */
+  date: string;
+  createdAt: string;
 }
 
 /**
@@ -183,12 +259,15 @@ export interface OwnerRestaurant {
   address: string;
   phone: string | null;
   website: string | null;
-  priceLevel: number;
+  /** 1 to 4. Only a demo listing (9.7), which nobody can sign in to manage, has none. */
+  priceLevel: number | null;
   /** Minutes between the start times guests can choose. */
   slotIntervalMin: number;
   /** How long one booking holds its table, in minutes. */
   reservationDurationMin: number;
   isPublished: boolean;
+  /** Seghan has hidden it: guests can't find or book it, even while it's published. */
+  hiddenBySeghan: boolean;
 }
 
 export interface OwnerRestaurantResponse {
@@ -363,4 +442,112 @@ export interface OwnerBlockResponse {
  */
 export interface NotReadyToPublishDetails {
   missing: PublishBlocker[];
+}
+
+/** Who someone is on Seghan: a guest, a restaurant's owner, or Seghan's own team. */
+export type UserRole = AuthUser["role"];
+
+/**
+ * Seghan's admin area (9.5), for admins only: anyone else gets 401 or 403. Lists take
+ * ?page=&pageSize= (20 to a page, at most 50) and answer a ListResponse:
+ * - GET /api/admin/users?q=&role= lists everyone, the newest first.
+ * - GET /api/admin/restaurants?q=&show=published|draft|hidden lists every restaurant, by name.
+ * - PATCH /api/admin/restaurants/:restaurantId with { hidden } hides it from guests, or shows it
+ *   again, and answers it inside { restaurant }. 404 RESTAURANT_NOT_FOUND if there's no such one.
+ * - GET /api/admin/reservations?q=&status=&date= lists every booking, the latest start first.
+ */
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+  /** Restaurants they own, and bookings they made. */
+  restaurants: number;
+  reservations: number;
+}
+
+export interface AdminRestaurant {
+  id: string;
+  slug: string;
+  name: string;
+  district: District;
+  owner: { name: string; email: string };
+  /** The owner's own choice. */
+  isPublished: boolean;
+  /** When Seghan hid it from guests, or null. */
+  hiddenAt: string | null;
+  /** A real restaurant listed from public data for the demo (9.7), which can't be booked. */
+  isDemoListing: boolean;
+  reservations: number;
+  createdAt: string;
+}
+
+export interface AdminRestaurantResponse {
+  restaurant: AdminRestaurant;
+}
+
+export interface AdminReservation {
+  id: string;
+  status: ReservationStatus;
+  partySize: number;
+  /** On the restaurant's calendar and clock, ready to show. */
+  date: string;
+  starts: string;
+  ends: string;
+  startsAt: string;
+  endsAt: string;
+  restaurant: { id: string; slug: string; name: string };
+  table: { label: string };
+  guest: { name: string; email: string };
+  createdAt: string;
+}
+
+/** How many days the analytics cover: today and the days before it. */
+export type AnalyticsDays = 7 | 30 | 90;
+
+/**
+ * Seghan's analytics (9.6), counted by the day each booking is for:
+ * - GET /api/owner/restaurants/:restaurantId/analytics?days=7|30|90 answers one of the owner's
+ *   restaurants inside { analytics }, on its own calendar. Someone else's is a 404.
+ * - GET /api/admin/analytics?days= answers all of Seghan's, for admins only, with the most booked
+ *   restaurants. Without ?days=, both count the last 30 days. Anything else is a 400 under days.
+ */
+export interface Analytics {
+  /** The days counted, as YYYY-MM-DD. The last is today. */
+  period: { days: AnalyticsDays; from: string; to: string };
+  /** Every booking for those days, whatever became of it. */
+  bookings: number;
+  /** How many have each status. Every status is listed. */
+  statuses: Record<ReservationStatus, number>;
+  /** The people in the bookings marked arrived: the guests who came. */
+  guests: number;
+  /** The reviews of those bookings. */
+  ratings: {
+    count: number;
+    /** Out of 5, unrounded, or null when there are none. */
+    average: number | null;
+    /** How many gave each rating, from 5 down to 1. */
+    byRating: { rating: number; count: number }[];
+  };
+}
+
+export interface AnalyticsResponse {
+  analytics: Analytics;
+}
+
+export interface MostBookedRestaurant {
+  id: string;
+  slug: string;
+  name: string;
+  bookings: number;
+}
+
+export interface SeghanAnalytics extends Analytics {
+  /** The restaurants with the most bookings for those days, the most first: at most 10. */
+  restaurants: MostBookedRestaurant[];
+}
+
+export interface SeghanAnalyticsResponse {
+  analytics: SeghanAnalytics;
 }

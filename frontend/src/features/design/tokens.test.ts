@@ -117,7 +117,7 @@ describe("contents", () => {
   });
 
   test("the component counts add up to every component", () => {
-    const componentSections = contents.slice(5, 10).map((entry) => entry.items);
+    const componentSections = contents.slice(5, 11).map((entry) => entry.items);
     const total = componentSections.reduce<number>((sum, items) => sum + Number(items), 0);
 
     expect(total).toBe(shownComponents.length);

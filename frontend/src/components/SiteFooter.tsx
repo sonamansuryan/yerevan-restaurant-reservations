@@ -61,6 +61,7 @@ export function SiteFooter(): ReactElement {
               <FooterLink to="/login">Sign in</FooterLink>
               <FooterLink to="/register">Create an account</FooterLink>
               <FooterLink to="/reservations">My reservations</FooterLink>
+              <FooterLink to="/favorites">My favorites</FooterLink>
             </FooterColumn>
             <FooterColumn title="For restaurants">
               <FooterLink to="/register?role=owner">List your restaurant</FooterLink>

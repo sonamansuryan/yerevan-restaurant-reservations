@@ -80,6 +80,7 @@ model User {
   reservations  Reservation[]
   reviews       Review[]
   refreshTokens RefreshToken[]
+  favorites     Favorite[]
 }
 
 model RefreshToken {
@@ -108,12 +109,15 @@ model Restaurant {
   address                String
   phone                  String?
   website                String?
-  priceLevel             Int       @default(2) // 1–4, shown as ֏ … ֏֏֏֏
+  priceLevel             Int?      @default(2) // 1–4, shown as ֏ … ֏֏֏֏; null for a demo listing, whose price no source gives
   googlePlaceId          String?   @unique // durable link to Google Places
+  osmRef                 String?   @unique // a demo listing's OpenStreetMap place, such as "node/6566646015"
   timezone               String    @default("Asia/Yerevan")
   slotIntervalMin        Int       @default(30) // granularity of bookable start times
   reservationDurationMin Int       @default(120) // how long one booking holds a table
   isPublished            Boolean   @default(false)
+  hiddenAt               DateTime? // set by Seghan's admin: hidden from guests, whatever the owner chooses
+  isDemoListing          Boolean   @default(false) // a real restaurant listed from public data, not on Seghan: it can't be booked
   avgRating              Float     @default(0) // denormalized, recomputed on every review write
   reviewCount            Int       @default(0)
   createdAt              DateTime  @default(now())
@@ -126,6 +130,7 @@ model Restaurant {
   blockedPeriods BlockedPeriod[]
   reservations   Reservation[]
   reviews        Review[]
+  favorites      Favorite[]
 
   @@index([ownerId])
   @@index([isPublished, district])
@@ -138,6 +143,8 @@ model RestaurantPhoto {
   url          String // Cloudinary secure_url
   isCover      Boolean  @default(false)
   sortOrder    Int      @default(0)
+  credit       String? // who took it, and its license, for a photo from Wikimedia Commons
+  creditUrl    String? // the photo's page at Wikimedia Commons, which the credit links to
   createdAt    DateTime @default(now())
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -231,4 +238,17 @@ model Review {
   user        User        @relation(fields: [userId], references: [id])
 
   @@index([restaurantId, createdAt])
+}
+
+// A restaurant a guest saved. The pair is the key, so each guest saves a restaurant at most once.
+model Favorite {
+  userId       String
+  restaurantId String
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id])
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@id([userId, restaurantId])
+  @@index([userId, createdAt]) // My favorites, newest first
 }

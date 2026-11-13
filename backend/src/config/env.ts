@@ -29,6 +29,12 @@ const envSchema = z.object({
   CLOUDINARY_API_SECRET: z.string().min(1),
   RESEND_API_KEY: z.string().min(1),
   EMAIL_FROM: z.string().min(1),
+  // The map on each restaurant's page (Geoapify, free, no card). Optional: without it, or left
+  // empty, the server starts, and pages show the address and its link without a map.
+  GEOAPIFY_API_KEY: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().min(1).optional(),
+  ),
   // Only the seed reads this: every demo account gets it as its password. It's optional, so the
   // server starts without it, and it follows the sign-up rule of 8 to 128 characters.
   DEMO_PASSWORD: z

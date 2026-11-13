@@ -27,7 +27,7 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | **Customers** | | |
 | Register and log in, by email or Google | 2 | ✅ Email and Google, on the Sign in and Sign up pages |
 | Browse, search and filter restaurants | 3 | ✅ The API and the Browse page |
-| Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | 🟡 The page works and shows photos (4.4), with space for reviews (9.1) |
+| Restaurant details: photos, location, opening hours, reviews | 3, 4, 9 | ✅ The page shows photos (4.4) and reviews (9.1) |
 | Choose a date, time and number of guests; see available tables | 6 | ✅ Guests choose them on each restaurant's page, and see the free tables (6.1–6.6) |
 | Make a reservation; if two people book the same table at once, only one succeeds | 6, 7 | ✅ Guests book on the restaurant's page, in one transaction that locks the table (6.5, 6.6). Of 20 at once for one table, exactly one succeeds (7.1) |
 | View and cancel their reservations | 8 | ✅ Guests see their upcoming and past bookings on My reservations, and cancel them there (8.1, 8.3) |
@@ -39,15 +39,15 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | View, confirm and cancel reservations; mark guests arrived or no-show | 4, 8 | ✅ Owners see a day's bookings on their dashboard, refreshed every 30 seconds, and confirm, cancel or mark guests arrived or no-show there (4.5, 4.6, 8.2, 8.4) |
 | **Restaurant data** | | |
 | A few restaurants added by hand | 3 | ✅ 7 demo restaurants |
-| Import real Yerevan restaurants with Google Places ("later") | 9 | ⬜ Deferred until after Step 8 (task 9.7) |
+| Import real Yerevan restaurants with Google Places ("later") | 9 | ✅ 10 real restaurants as demo listings, from OpenStreetMap instead of Google, which needs billing, with photos from Wikimedia Commons and their own sites (9.7) |
 | Restaurant images with Cloudinary | 4 | ✅ Owners upload photos and choose the cover on their dashboard (4.4, 4.6), and the pages show them |
 | **Final features, after the core works** | | |
-| Reviews: leave them, and see them on the restaurant page | 9 | ⬜ |
-| Favorites | 9 | ⬜ |
-| Email confirmations (Resend or SendGrid) | 9 | ⬜ |
-| Google Maps | 9 | ⬜ |
-| Admin panel | 9 | ⬜ |
-| Basic analytics | 9 | ⬜ |
+| Reviews: leave them, and see them on the restaurant page | 9 | ✅ Guests review visits marked arrived from My reservations, and restaurant pages list the reviews (9.1) |
+| Favorites | 9 | ✅ Guests save restaurants from their pages and find them on My favorites (9.2) |
+| Email confirmations (Resend or SendGrid) | 9 | ✅ Guests are emailed when a booking is requested, confirmed or cancelled (9.3) |
+| Google Maps | 9 | ✅ Each restaurant page shows a map of its street, from OpenStreetMap (9.4) |
+| Admin panel | 9 | ✅ Admins look through every user, restaurant and booking, and hide a restaurant from guests (9.5) |
+| Basic analytics | 9 | ✅ Owners see each restaurant's numbers on its dashboard, and admins all of Seghan's (9.6) |
 | **Delivery** | | |
 | Deployment: Vercel, Render or Railway, Supabase or Neon | 10 | ⬜ |
 
@@ -84,9 +84,9 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 **Out of scope:** payments, combining tables, waitlists, SMS, more languages, staff accounts, floor plans, "near me" search, walk-ins.
 
-## 3. Current state (11 November 2026)
+## 3. Current state (13 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 1709 tests ✅, and 63 database tests on real PostgreSQL ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 2133 tests ✅, and 122 database tests on real PostgreSQL ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
@@ -112,18 +112,26 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - the booking widget on each restaurant's page, with its states and the "Book a table" flow in `/design`
   - My reservations: a guest's upcoming and past bookings, each cancellable until it starts, with its states in `/design`
   - the dashboard's bookings: confirm, cancel with a reason, or mark guests arrived or no-show, refreshed every 30 seconds, with the "Handle a reservation" flow in `/design`
+  - reviews (9.1): a guest reviews each visit marked arrived once, from My reservations. The restaurant's average and count change in the same transaction, restaurant pages list the reviews, and Browse sorts by rating
+  - favorites (9.2): a guest saves a restaurant from its page, and finds it on My favorites, linked from the main links and the footer
+  - booking emails (9.3): the guest is emailed through Resend when a booking is requested, confirmed or cancelled
+  - the map on each restaurant's page (9.4): OpenStreetMap through Geoapify, above its address
+  - the admin area (9.5), for admins only: every user, restaurant and booking to look through, and hiding a restaurant from guests
+  - analytics (9.6): a restaurant's bookings, guests who came, cancellations, no-shows and rating for the last 7, 30 or 90 days, as numbers and simple bars, on its dashboard, and all of Seghan's, with the most booked restaurants, in the admin area
+  - demo listings (9.7): the collector, the importer and how a demo listing shows, with 10 real restaurants imported into `yerevan_dev`
   - the owner's dashboard: their restaurants, adding one, and each restaurant's bookings for a day, information and publishing, opening hours and photos, with their states in `/design`
   - the Home page, the Browse page and each restaurant's page, with their states in `/design`
   - `lib/api.ts`: GET, POST, PUT, PATCH and DELETE, renewing an expired session once
-  - route guards: signed-out visitors go to Sign in and come back afterwards, and owner pages are for owners only
-  - the main links follow who's signed in, on desktop and phones: My reservations for guests, the Dashboard for owners, and For restaurants for everyone else
+  - route guards: signed-out visitors go to Sign in and come back afterwards, owner pages are for owners only, and admin pages for admins
+  - what one person loads for themselves (bookings, favorites, an owner's restaurants, an admin's lists) is forgotten when they sign out, or when someone else signs in, in this tab or another. A new private cache key must start with one of the prefixes in `lib/queryClient.ts`
+  - the main links follow who's signed in, on desktop and phones: My reservations and My favorites for guests, the Dashboard for owners, Admin for admins, and For restaurants for everyone else. Owners and admins, who never book, have no Reserve a table
   - the Seghan foundation and `/design`
 - **Partly built:**
   - the time helpers
 
 ## 4. Data model
 
-`backend/prisma/schema.prisma` is the source of truth. The assignment's tables all exist except `Favorite`, which comes in Step 9. We added three more: `BlockedPeriod` (blocks), `RestaurantPhoto` (photos) and `RefreshToken` (sessions).
+`backend/prisma/schema.prisma` is the source of truth. The assignment's tables all exist, `Favorite` since 9.2. We added three more: `BlockedPeriod` (blocks), `RestaurantPhoto` (photos) and `RefreshToken` (sessions).
 
 **Relationships**
 
@@ -183,7 +191,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - Any other database error stays a `500` and is logged. It's never disguised as a conflict.
 - ✅ Blocks and table deactivation take the same lock: table changes since 5.1, blocks since 5.2.
 - ✅ A status change applies only if the status is still one that change may come from (§5.3): the guest's cancel (8.1) and the restaurant's changes (8.2).
-- ✅ **Lock order, the same everywhere:** table rows first, in ascending `id` order, then the restaurant's row. Whatever holds a restaurant's row (publishing, opening hours, photos, adding a table) never then waits for a table's, so no two changes can wait on each other forever. Switching a table off takes both, table first, so it can't cross publishing (5.1). A whole-restaurant block takes every table, then the restaurant (5.2).
+- ✅ **Lock order, the same everywhere:** table rows first, in ascending `id` order, then the restaurant's row. Whatever holds a restaurant's row (publishing, opening hours, photos, adding a table, a review) never then waits for a table's, so no two changes can wait on each other forever. Switching a table off takes both, table first, so it can't cross publishing (5.1). A whole-restaurant block takes every table, then the restaurant (5.2).
 - ✅ **What a booking must lock (from 5.2):** its table's row, then a shared lock (`FOR KEY SHARE`) on its restaurant's row, before it checks for blocks. The second lock is what keeps a whole-restaurant block from missing a table added at that very moment.
 - ✅ The page says the table was just booked, and shows the free tables again.
 
@@ -198,6 +206,12 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 7. ✅ Status changes that cross never undo or overwrite each other. A confirm and a cancel at the same moment always leave the booking cancelled, since a confirmed booking can still be cancelled. The restaurant's and the guest's cancels, or an arrival and a no-show, never both apply (8.2).
 8. ✅ Publishing a restaurant and switching off its last active table at the same moment never leave it published without one (7.2).
 9. ✅ Of two cancels of one booking at the same moment, only one applies (8.1).
+10. ✅ Reviews posted at the same moment all count in the restaurant's average and count, and two reviews of one visit never both save (9.1).
+11. ✅ Two saves of one favorite at the same moment leave one, and neither fails (9.2).
+12. ✅ A booking's email goes out only after the booking is committed, and an email that fails or never answers never fails or holds up a booking, a cancel or a confirmation (9.3).
+13. ✅ A restaurant Seghan hides leaves every guest route (Browse, its page, times, booking, favorites, reviews, map) whatever its owner does, while its bookings stay; showing it again restores it (9.5).
+14. ✅ The analytics count only the chosen days, as whole days in Yerevan, an owner's only their own restaurant's bookings, and the ratings only those bookings' reviews (9.6).
+15. ✅ Importing demo listings again copies no photo twice and changes only what the file changed, leaving every other restaurant and Seghan's hiding as they were (9.7).
 
 ## 6. UI/UX and `/design`
 
@@ -207,7 +221,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 |---|---|---|
 | Foundations | Color, type, space, shape, motion | ✅ |
 | Components | Actions, forms, feedback, brand and shell, protected designs, responsive | ✅ |
-| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, Sign in with Google, the route guard's states, Home, Browse, the restaurant page, and the owner's dashboard, tables and blocked times included, the booking widget, and My reservations |
+| Screens | Each feature's screens in their key states, added in its step | 🟡 Sign in, Create an account, Sign in with Google, the route guard's states, Home, Browse, the restaurant page, and the owner's dashboard, tables and blocked times included, the booking widget, My reservations, the admin area, the analytics, and demo listings |
 | Flows | "Book a table" (the assignment's final result) and "Handle a reservation" | ✅ Both are built |
 
 **Key states:** loading, empty, error with a retry, field errors, sending, success, not allowed, and each feature's own errors. A step is done only when its screens are in `/design`. `EmptyState` and `ErrorState` keep their approved look.
@@ -257,7 +271,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ✅ Already built: the model, and 7 restaurants added by hand.
 
-The Google Places import, which the assignment leaves for "later", is task 9.7. It was 3.6, and it waits until after Step 8.
+Real Yerevan restaurants, which the assignment leaves for "later" with Google Places, are task 9.7. It was 3.6, and waited until after Step 8.
 
 - [x] **3.1 `GET /api/restaurants`:** published restaurants only, with search, filters (cuisine, district, price) and pages. *Check:* API tests.
 - [x] **3.2 `GET /api/restaurants/:slug`.** *Check:* API tests for a restaurant that exists and one that doesn't.
@@ -367,17 +381,35 @@ The Google Places import, which the assignment leaves for "later", is task 9.7. 
 - [x] **8.4 Dashboard reservations with actions,** refreshing every 30 seconds, and the "Handle a reservation" flow in `/design`. *Check:* in the browser.
 - [x] **Core complete:** the assignment's final result works from start to finish.
 
-### Step 9: Final features, post-MVP ⬜
+### Step 9: Final features, post-MVP ✅
 
 Start only after Step 8, once the core reservation system works, as the assignment says. Each one gets its screens in `/design`.
 
-- [ ] **9.1 Reviews:** one per visit marked arrived, from the guest who made it. The average updates in the same transaction, and Browse can sort by rating. *Check:* tests, then leave a review.
-- [ ] **9.2 Favorites:** the `Favorite` migration, save and unsave, and "My favorites". *Check:* API tests and the browser.
-- [ ] **9.3 Email confirmations** with Resend (free account). Emails are sent after a booking is saved, confirmed or cancelled, and a failed email never fails the booking. *Check:* a test with Resend mocked, and a real email arrives.
-- [ ] **9.4 Google Maps** on the restaurant page, with a key restricted to our address. *Check:* the map shows, and the page still works without it.
-- [ ] **9.5 Admin panel:** users, restaurants and reservations; hiding a restaurant. *Check:* a non-admin gets `403`.
-- [ ] **9.6 Basic analytics:** bookings, guests, cancellations, no-shows and ratings, shown as numbers and simple bars. *Check:* unit tests for the counting.
-- [ ] **9.7 Google Places import (deferred until after Step 8; it was 3.6):** imports into an owner's form, and the key stays on the backend. Who imports is open question 1 (§8). *Check:* tests with Google mocked, plus one real import.
+- [x] **9.1 Reviews:** one per visit marked arrived, from the guest who made it. The average updates in the same transaction, and Browse can sort by rating. *Check:* tests, then leave a review.
+
+  **Decided (9.1):** `POST /api/reservations/:id/review` takes `{ rating: 1–5, comment? }` (up to 1000 characters) for the guest's own visit marked arrived. Anything else is `409 NOT_VISITED`, and a second review is `409 ALREADY_REVIEWED`. It locks the restaurant's row (`FOR NO KEY UPDATE`, which bookings' `FOR KEY SHARE` doesn't wait for), saves the review, then recounts the average and count from the reviews. `GET /api/restaurants/:slug/reviews` lists them newest first, 10 to a page, with the guest's first name only. Browse's `?sort=rating` puts the highest average first, then more reviews before fewer, then the name; a restaurant with no reviews counts as 0.
+- [x] **9.2 Favorites:** the `Favorite` migration, save and unsave, and "My favorites". *Check:* API tests and the browser.
+
+  **Decided (9.2):** a favorite's key is the guest and the restaurant, so each is saved once. For guests only: `GET /api/favorites` lists their own, the last saved first, 12 to a page, published restaurants only. `GET`, `PUT` and `DELETE /api/favorites/:slug` say whether one is saved, save it and take it out. Both changes can be repeated, and a second save is skipped inside the database (`ON CONFLICT DO NOTHING`), so saves that cross never fail.
+- [x] **9.3 Email confirmations** with Resend (free account). Emails are sent after a booking is saved, confirmed or cancelled, and a failed email never fails the booking. *Check:* a test with Resend mocked, and a real email arrives.
+
+  **Decided (9.3):** the guest is emailed when a booking is requested, confirmed, or cancelled by either side; arrivals and no-shows send nothing. Each email goes out in the background once the change is committed, so no request waits for Resend. A refusal, no connection, or no answer within 10 seconds is only logged, by booking and kind, never the address. Each email carries an idempotency key (its kind and booking), so a repeat is never sent twice. No test reaches Resend: `tests/setup/outside-services.ts` replaces it everywhere.
+- [x] **9.4 Maps** on the restaurant page, from OpenStreetMap rather than Google, which needs a billing account. *Check:* the map shows, and the page still works without it.
+
+  **Decided (9.4):** no Google billing, so the map is OpenStreetMap data drawn by Geoapify (free plan: no card, production use allowed, 3,000 credits a day, soft limits, its own and OpenStreetMap's credit printed in the picture). The backend finds each address once, remembering it for 30 days, and serves the picture at `GET /api/restaurants/:slug/map`, which browsers keep for a day, so `GEOAPIFY_API_KEY` stays on the server. It's optional: with no key, an address Geoapify can't find, or Geoapify failing, there's no map, and the address and its Google Maps link stand alone. Light Positron streets, with the logo's wine dot at the place; clicking opens Google Maps.
+- [x] **9.5 Admin panel:** users, restaurants and reservations; hiding a restaurant. *Check:* a non-admin gets `403`.
+
+  **Decided (9.5):** everything under `/api/admin` is for admins only (`401` signed out, `403` for any other role). Three lists, 20 to a page: users (`?q=&role=`, newest first), restaurants (`?q=&show=published|draft|hidden`, by name) and reservations (`?q=&status=&date=`, latest start first, a day in Yerevan). The one change is `PATCH /api/admin/restaurants/:id` with `{ hidden }`. It sets `Restaurant.hiddenAt` (migration `hide_restaurants`), kept apart from the owner's `isPublished`: while set, guests can't find, open, book or save the restaurant, or see its reviews or map, whatever the owner chooses, and the owner's dashboard says Seghan hid it. Its bookings stay. Showing it again clears only `hiddenAt`. Users and reservations are only looked through.
+- [x] **9.6 Basic analytics:** bookings, guests, cancellations, no-shows and ratings, shown as numbers and simple bars. *Check:* unit tests for the counting.
+
+  **Decided (9.6):** for both, as §8 question 3's default. `GET /api/owner/restaurants/:restaurantId/analytics` counts one of the owner's restaurants, and `GET /api/admin/analytics` all of Seghan's, drafts and hidden ones included, with the 10 most booked. `?days=7|30|90` (30 by default) means today and the days before it, on the restaurant's calendar (Yerevan's for the admin), by the day each booking is for. Bookings count every status, guests are the people in bookings marked arrived, and the rating comes from those bookings' reviews. The counting is pure functions in `analytics.rules.ts`. Analytics follows Bookings on the dashboard, and Reservations in the admin area.
+- [x] **9.7 Real Yerevan restaurants, as demo listings:** a reviewed list of real restaurants and their photos, imported by a repeatable script, with sample tables to try booking, each booking clearly marked as a test. *Check:* tests with the outside services mocked, then the approved list imported and checked in the browser.
+
+  **Decided (9.7):** no Google Places, which needs a billing account with a card and doesn't allow storing place details. The assignment names it, so, as with the map (9.4), OpenStreetMap stands in. Details come from OpenStreetMap through our Geoapify key (free plan, storing allowed), and details checked by hand against public listings (the restaurant's own site, Spyur, Visit Yerevan) come first. A listing's page credits its details in one small line under the cover, after its photos' credits: "Details © OpenStreetMap contributors, through Geoapify". A place not in OpenStreetMap needs none.
+  - `prisma/demo-listings/sources.ts` names each place by its OpenStreetMap id when it's there, with any detail checked by hand and the pages that say it, a description in Seghan's own words, and up to five photos. `npm run demo:collect -w backend` only reads, and writes `listings.json` for review. After approval, `npm run demo:import -w backend` uploads the photos under fixed names and adds or updates the listings in `yerevan_dev`, found again by OpenStreetMap id or, for a place not there, by slug, and refuses a slug a restaurant on Seghan already has.
+  - The places are 10 well-known ones with photos, Gustav and PAUL among them (always fewer than 100, so not a substantial extract of OpenStreetMap). Each needs a name, an address with a house number and a district. Anything else no source gives is kept and named for the reviewer, never guessed: the page then shows no cuisine, says the hours aren't listed, or has a color block instead of a photo.
+  - Photos come from Wikimedia Commons (CC0, or CC BY or CC BY-SA 4.0, whose terms a credit linking to the photo's page meets), or from the restaurant's own site, credited to it. Those aren't licensed for reuse, so they're only for Seghan as a private, non-commercial demo, marked `"freeLicense": false` in `listings.json`: before any deployment (Step 10) they're replaced, or the restaurant's permission asked. Visit Yerevan's, TripAdvisor's, Yandex Maps', Instagram's and Facebook's photos are never used: their terms forbid copying them.
+  - A demo listing (`isDemoListing`) belongs to a "Seghan demo listings" account that can't sign in. It has made-up sample tables, sized for the kind of place, so its booking can be tried through Seghan's own booking, checks and locks; one line before its booking says "This is a test booking. The restaurant won't receive it.", with no badge or other note. As nobody can confirm those bookings or mark guests arrived, they stay pending, and its Reviews section, shown as on any restaurant, stays empty. The home page features Gustav, PAUL and Dolmama, chosen by hand (`GET /api/restaurants/featured`, filled up by name), and no restaurant can have the address `featured`. Gustav's square cover, its sign at the top, is shown whole on its cards and its page, on the paper tint: the frontend names it by its public ID (`features/restaurants/covers.ts`), as nothing stored tells it apart from a square cover that crops well. The import changes its tables by an owner's rules: locked first, never deleted, and refused if an upcoming booking needs them. Its price isn't listed, as OpenStreetMap has none, so `priceLevel` becomes optional.
 
 ### Step 10: Deployment ⬜
 
@@ -388,7 +420,7 @@ Start only after Step 8, once the core reservation system works, as the assignme
 
 ## 8. Open Questions
 
-1. **Places import (task 9.7):** does each owner import their own restaurant, or is it one bulk import? *Default: each owner.*
+1. **Places import (task 9.7):** answered in 9.7: neither. Real restaurants are demo listings, imported once from a reviewed list.
 2. **Admin panel:** what can the admin do? *Default: see lists, and hide a restaurant.*
 3. **Analytics:** for restaurants, the admin, or both? *Default: both.*
 4. **Live deployment at the final review?** *Default: yes.*

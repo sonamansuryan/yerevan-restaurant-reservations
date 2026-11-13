@@ -8,7 +8,9 @@ import { isDatabaseReachable } from "./lib/prisma.ts";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.ts";
 import { requireAuth } from "./middleware/requireAuth.ts";
 import { requireRole } from "./middleware/requireRole.ts";
+import { adminRouter } from "./modules/admin/admin.routes.ts";
 import { authRouter, meRouter } from "./modules/auth/auth.routes.ts";
+import { favoritesRouter } from "./modules/favorites/favorites.routes.ts";
 import { reservationsRouter } from "./modules/reservations/reservations.routes.ts";
 import { ownerRestaurantsRouter } from "./modules/restaurants/owner.routes.ts";
 import { restaurantsRouter } from "./modules/restaurants/restaurants.routes.ts";
@@ -32,6 +34,12 @@ app.use("/api/me", meRouter);
 app.use("/api/restaurants", restaurantsRouter);
 // Booking is for signed-in guests: signed out gets 401, and any other role 403.
 app.use("/api/reservations", requireAuth, requireRole("CUSTOMER"), reservationsRouter);
+// Favorites are a guest's too, with the same answers for anyone else.
+app.use("/api/favorites", requireAuth, requireRole("CUSTOMER"), favoritesRouter);
+
+// Seghan's admin area (9.5). As for owners below, this one line makes every route under
+// /api/admin admins only: signed out gets 401, any other role 403.
+app.use("/api/admin", requireAuth, requireRole("ADMIN"), adminRouter);
 
 // The owner area. Every route under /api/owner is for restaurant owners only, and this one line
 // enforces it for all of them: signed out gets 401, any other role 403. The owner routes go below

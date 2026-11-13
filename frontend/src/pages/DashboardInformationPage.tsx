@@ -28,6 +28,7 @@ export function DashboardInformationPage(): ReactElement {
         {wasJustAdded(state) && <JustAddedNotice restaurantId={restaurant.id} />}
         <PublishPanel
           isPublished={restaurant.isPublished}
+          hiddenBySeghan={restaurant.hiddenBySeghan}
           onChange={(isPublished) => publish.mutate({ isPublished })}
           pending={publish.isPending}
           error={publish.error}

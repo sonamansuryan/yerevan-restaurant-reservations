@@ -6,12 +6,15 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { prisma } from "../src/lib/prisma.ts";
 import { createReservation } from "../src/modules/reservations/reservations.service.ts";
+import { emailGuest } from "../src/modules/reservations/reservation-emails.ts";
 import type { CreateReservationInput } from "../src/modules/reservations/reservations.schemas.ts";
 import { tableBlock } from "./fixtures/blocks.ts";
 import { prismaError } from "./fixtures/prisma-errors.ts";
 import { bookingRequest, guestReservation, tableBooking } from "./fixtures/reservations.ts";
 import { loriSlotSettings } from "./fixtures/restaurants.ts";
 import { tableRow } from "./fixtures/tables.ts";
+
+vi.mock("../src/modules/reservations/reservation-emails.ts", () => ({ emailGuest: vi.fn() }));
 
 vi.mock("../src/lib/prisma.ts", () => ({
   prisma: { $transaction: vi.fn() },
@@ -37,6 +40,7 @@ const LORI = {
   slotIntervalMin: 30,
   reservationDurationMin: 120,
   isPublished: true,
+  hiddenAt: null,
 };
 // Wednesday 11 November 2026, 12:00 in Yerevan. The booking is for Saturday at 19:00.
 const NOW = new Date("2026-11-11T08:00:00.000Z");
@@ -223,5 +227,39 @@ describe("createReservation", () => {
     tx.reservation.create.mockRejectedValue(checkViolation);
 
     await expect(book()).rejects.toBe(checkViolation);
+  });
+});
+
+describe("the guest's email", () => {
+  test("is asked for once the booking is saved, after its transaction has finished", async () => {
+    stored();
+    let committed = false;
+    let sentAfterCommit = false;
+    vi.mocked(prisma.$transaction).mockImplementation((async (
+      work: (client: typeof tx) => unknown,
+    ) => {
+      const result = await work(tx);
+      committed = true;
+      return result;
+    }) as never);
+    vi.mocked(emailGuest).mockImplementation(() => {
+      sentAfterCommit = committed;
+    });
+
+    await book();
+
+    expect(emailGuest).toHaveBeenCalledExactlyOnceWith("REQUESTED", guestReservation.id);
+    expect(sentAfterCommit).toBe(true);
+  });
+
+  test("isn't, when the booking is refused or fails", async () => {
+    stored({ reservations: [tableBooking()] });
+    await expect(book()).rejects.toMatchObject({ code: "SLOT_TAKEN" });
+
+    stored();
+    tx.reservation.create.mockRejectedValue(prismaError("P2039", "23P01"));
+    await expect(book()).rejects.toMatchObject({ code: "SLOT_TAKEN" });
+
+    expect(emailGuest).not.toHaveBeenCalled();
   });
 });

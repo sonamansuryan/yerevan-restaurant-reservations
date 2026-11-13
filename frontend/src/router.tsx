@@ -5,6 +5,12 @@ import { AppLayout } from "@/components/AppLayout";
 import { Spinner } from "@/components/Spinner";
 import { RequireAuth } from "@/features/auth/components/RequireAuth";
 import { SignedOutOnly } from "@/features/auth/components/SignedOutOnly";
+import { AdminAnalyticsPage } from "@/pages/AdminAnalyticsPage";
+import { AdminPage } from "@/pages/AdminPage";
+import { AdminReservationsPage } from "@/pages/AdminReservationsPage";
+import { AdminRestaurantsPage } from "@/pages/AdminRestaurantsPage";
+import { AdminUsersPage } from "@/pages/AdminUsersPage";
+import { DashboardAnalyticsPage } from "@/pages/DashboardAnalyticsPage";
 import { DashboardBlocksPage } from "@/pages/DashboardBlocksPage";
 import { DashboardBookingsPage } from "@/pages/DashboardBookingsPage";
 import { DashboardHoursPage } from "@/pages/DashboardHoursPage";
@@ -14,6 +20,7 @@ import { DashboardPhotosPage } from "@/pages/DashboardPhotosPage";
 import { DashboardRestaurantPage } from "@/pages/DashboardRestaurantPage";
 import { DashboardTablesPage } from "@/pages/DashboardTablesPage";
 import { DevErrorPage } from "@/pages/DevErrorPage";
+import { FavoritesPage } from "@/pages/FavoritesPage";
 import { ErrorPage } from "@/pages/ErrorPage";
 import { HomePage } from "@/pages/HomePage";
 import { NewRestaurantPage } from "@/pages/NewRestaurantPage";
@@ -71,12 +78,13 @@ export const routes: RouteObject[] = [
             ],
           },
           {
-            // For guests: their own bookings. A restaurant's are on its dashboard.
+            // For guests: their own bookings and favorites. A restaurant's are on its dashboard.
             element: <RequireAuth roles={["CUSTOMER"]} notAllowedTitle="This page is for guests" />,
             children: [
               { path: "reservations", element: <ReservationsPage key="upcoming" /> },
               // Its own key, so what was said on one list doesn't follow you to the other.
               { path: "reservations/past", element: <ReservationsPage key="past" when="past" /> },
+              { path: "favorites", element: <FavoritesPage /> },
             ],
           },
           {
@@ -94,11 +102,32 @@ export const routes: RouteObject[] = [
                 element: <DashboardRestaurantPage />,
                 children: [
                   { index: true, element: <DashboardBookingsPage /> },
+                  { path: "analytics", element: <DashboardAnalyticsPage /> },
                   { path: "information", element: <DashboardInformationPage /> },
                   { path: "hours", element: <DashboardHoursPage /> },
                   { path: "tables", element: <DashboardTablesPage /> },
                   { path: "blocks", element: <DashboardBlocksPage /> },
                   { path: "photos", element: <DashboardPhotosPage /> },
+                ],
+              },
+            ],
+          },
+          {
+            // For Seghan's own team. The API answers 403 to anyone else (requireRole("ADMIN")).
+            element: (
+              <RequireAuth roles={["ADMIN"]} notAllowedTitle="This page is for Seghan’s team" />
+            ),
+            children: [
+              {
+                // The admin area: its heading and parts, with the open part inside. Restaurants
+                // live at its own address, so they're what opens first.
+                path: "admin",
+                element: <AdminPage />,
+                children: [
+                  { index: true, element: <AdminRestaurantsPage /> },
+                  { path: "reservations", element: <AdminReservationsPage /> },
+                  { path: "analytics", element: <AdminAnalyticsPage /> },
+                  { path: "users", element: <AdminUsersPage /> },
                 ],
               },
             ],

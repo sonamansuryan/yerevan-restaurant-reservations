@@ -23,6 +23,11 @@ import {
 import { forceStates } from "@/features/design/tools";
 import { DesignPage } from "@/pages/DesignPage";
 
+// Every test here renders the whole house style, every screen's states included. That takes about
+// two seconds in jsdom, and more while the other test files run beside it, so Vitest's usual five
+// seconds isn't always enough.
+vi.setConfig({ testTimeout: 20_000 });
+
 // jsdom can't run the rule copying, which is checked in a browser. This checks the page asks for it.
 vi.mock("@/features/design/tools", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/design/tools")>()),

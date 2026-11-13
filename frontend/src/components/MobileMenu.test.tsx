@@ -148,16 +148,42 @@ describe("its main lines, by who's signed in", () => {
       .getAllByRole("link")
       .map((one) => one.textContent ?? "");
 
-  test("a guest finds My reservations, not For restaurants", () => {
+  test("a guest finds My reservations and My favorites, not For restaurants", () => {
     renderMenu(true, vi.fn(), "/", account({ user: lilit }));
 
-    expect(lines()).toEqual(["Discover All of Yerevan", "My reservations Your bookings"]);
+    expect(lines()).toEqual([
+      "Discover All of Yerevan",
+      "My reservations Your bookings",
+      "My favorites Places you saved",
+    ]);
   });
 
   test("an owner finds their Dashboard", () => {
     renderMenu(true, vi.fn(), "/", account({ user: { ...lilit, role: "OWNER" } }));
 
     expect(lines()).toEqual(["Discover All of Yerevan", "Dashboard Your restaurants"]);
+  });
+
+  test.each([
+    ["an admin finds Admin", "ADMIN" as const, "Admin Restaurants and bookings"],
+    ["an owner finds their Dashboard", "OWNER" as const, "Dashboard Your restaurants"],
+  ])("%s, and the sign-off has no Reserve a table, as in the header", (_who, role, theirs) => {
+    renderMenu(true, vi.fn(), "/", account({ user: { ...lilit, role } }));
+
+    expect(lines()).toEqual(["Discover All of Yerevan", theirs]);
+    expect(screen.queryByRole("link", { name: "Reserve a table" })).toBeNull();
+    expect(screen.getByText("See you at the", { exact: false })).toBeDefined();
+  });
+
+  test.each([
+    ["a guest", account({ user: lilit })],
+    ["anyone signed out", account()],
+  ])("%s keeps Reserve a table", (_who, shown) => {
+    renderMenu(true, vi.fn(), "/", shown);
+
+    expect(screen.getByRole("link", { name: "Reserve a table" }).getAttribute("href")).toBe(
+      "/restaurants",
+    );
   });
 });
 
@@ -242,7 +268,7 @@ describe("the account line", () => {
     expect(screen.getByText("Lilit Harutyunyan").textContent).toBe(
       "Signed in as Lilit Harutyunyan",
     );
-    expect(screen.getByRole("dialog").querySelectorAll(".menu-leader")).toHaveLength(3);
+    expect(screen.getByRole("dialog").querySelectorAll(".menu-leader")).toHaveLength(4);
   });
 
   test("Sign out asks to sign out, and the menu waits until that's done", async () => {

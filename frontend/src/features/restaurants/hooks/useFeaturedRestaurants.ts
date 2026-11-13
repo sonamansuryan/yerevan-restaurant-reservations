@@ -9,8 +9,9 @@ import type { ListResponse, RestaurantSummary } from "@/types/api";
 export const FEATURED_COUNT = 3;
 
 /**
- * The few restaurants on the home page: the first by name, until reviews can rank them. The reply's
- * total also says how many there are in all, for "See all 6 restaurants".
+ * The few restaurants on the home page: the ones Seghan features, chosen by hand, filled up with the
+ * first others by name (GET /api/restaurants/featured). The reply's total says how many there are
+ * in all, for "See all 16 restaurants".
  */
 export function useFeaturedRestaurants(): UseQueryResult<
   ListResponse<RestaurantSummary>,
@@ -18,8 +19,7 @@ export function useFeaturedRestaurants(): UseQueryResult<
 > {
   return useQuery({
     queryKey: ["restaurants", "featured"],
-    queryFn: () =>
-      apiGet<ListResponse<RestaurantSummary>>(`/api/restaurants?pageSize=${FEATURED_COUNT}`),
+    queryFn: () => apiGet<ListResponse<RestaurantSummary>>("/api/restaurants/featured"),
     // One quick retry, then the error shows, as on Browse.
     retry: 1,
   });

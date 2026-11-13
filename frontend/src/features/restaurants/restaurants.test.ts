@@ -49,6 +49,20 @@ describe("readFilters", () => {
   });
 });
 
+describe("the order", () => {
+  test("only Highest rated is kept in the address: by name is the default", () => {
+    expect(read("?sort=rating")).toEqual({ sort: "rating", page: 1 });
+    expect(read("?sort=name")).toEqual({ page: 1 });
+    expect(read("?sort=RATING")).toEqual({ page: 1 });
+    expect(filtersToParams({ sort: "rating", page: 2 }).toString()).toBe("sort=rating&page=2");
+    expect(filtersToParams({ sort: "name", page: 1 }).toString()).toBe("");
+  });
+
+  test("it isn't a filter, so it leaves Clear filters with nothing to clear", () => {
+    expect(isFiltered({ sort: "rating", page: 1 })).toBe(false);
+  });
+});
+
 describe("filtersToParams", () => {
   test("writes only what's chosen, and leaves out page 1", () => {
     expect(filtersToParams({ cuisine: "SEAFOOD", page: 1 }).toString()).toBe("cuisine=SEAFOOD");

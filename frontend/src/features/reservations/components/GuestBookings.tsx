@@ -10,6 +10,7 @@ import {
   byDay,
   guestCancellationWords,
 } from "@/features/reservations/reservations";
+import { ratingWords } from "@/features/reviews/reviews";
 import { cx } from "@/lib/cx";
 import { formatDayHeading } from "@/lib/time";
 import type { GuestReservation } from "@/types/api";
@@ -22,6 +23,8 @@ interface GuestBookingsProps {
   cancellingId?: string | null;
   /** Asks to cancel a booking. Without it, no booking offers to be cancelled. */
   onCancel?: (booking: GuestReservation) => void;
+  /** Opens the review of a visit. Without it, no visit offers to be reviewed. */
+  onReview?: (booking: GuestReservation) => void;
   /** The level of the days' headings: 2 on the page, lower inside /design. */
   headingLevel?: 2 | 4;
 }
@@ -31,14 +34,25 @@ function BookingLine({
   day,
   cancelling,
   onCancel,
+  onReview,
 }: {
   booking: GuestReservation;
   day: string;
   cancelling: boolean;
   onCancel?: (booking: GuestReservation) => void;
+  onReview?: (booking: GuestReservation) => void;
 }): ReactElement {
-  const { status, starts, ends, restaurant, table, partySize, specialRequests, cancellation } =
-    booking;
+  const {
+    status,
+    starts,
+    ends,
+    restaurant,
+    table,
+    partySize,
+    specialRequests,
+    cancellation,
+    review,
+  } = booking;
   // Struck through, like a line crossed out in the book. The badge says it in words.
   const crossedOut = status === "CANCELLED" && "text-ink-muted line-through";
   return (
@@ -76,6 +90,22 @@ function BookingLine({
             {guestCancellationWords(cancellation)}
           </p>
         )}
+        {review && (
+          <p className="mt-2 line-clamp-3 text-meta break-words text-ink-secondary">
+            <span className="font-medium text-ink">Your review:</span> {ratingWords(review.rating)}.
+            {review.comment && ` ${review.comment}`}
+          </p>
+        )}
+        {booking.canReview && onReview && (
+          <Button
+            variant="link"
+            className="mt-2"
+            aria-label={`Review your visit, ${restaurant.name}, ${day}, ${starts}`}
+            onClick={() => onReview(booking)}
+          >
+            Review your visit
+          </Button>
+        )}
         {booking.canCancel && onCancel && (
           <Button
             variant="link"
@@ -102,6 +132,7 @@ export function GuestBookings({
   today,
   cancellingId = null,
   onCancel,
+  onReview,
   headingLevel = 2,
 }: GuestBookingsProps): ReactElement {
   const Heading = headingLevel === 2 ? "h2" : "h4";
@@ -120,6 +151,7 @@ export function GuestBookings({
                   day={day}
                   cancelling={cancellingId === booking.id}
                   onCancel={onCancel}
+                  onReview={onReview}
                 />
               ))}
             </ul>

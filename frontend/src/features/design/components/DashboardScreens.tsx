@@ -88,6 +88,13 @@ const mistakes = {
 
 const list: Record<StateOf<"dashboardList">, ReactElement> = {
   "Your restaurants": <RestaurantList restaurants={ownedRestaurants} />,
+  "One hidden by Seghan": (
+    <RestaurantList
+      restaurants={ownedRestaurants.map((one, index) =>
+        index === 1 ? { ...one, hiddenBySeghan: true } : one,
+      )}
+    />
+  ),
   "No restaurants yet": <NoRestaurantsYet onAdd={ignore} />,
   Loading: <DashboardLoading label="Loading your restaurants" />,
   "Couldn’t load": (
@@ -100,6 +107,13 @@ const header: Record<StateOf<"dashboardHeader">, ReactElement> = {
   Published: <RestaurantHeader restaurant={ownedLori} headingLevel={4} sectionsBase="/design" />,
   "A draft, with a long Armenian name": (
     <RestaurantHeader restaurant={ownedDraft} headingLevel={4} sectionsBase="/design" />
+  ),
+  "Hidden by Seghan": (
+    <RestaurantHeader
+      restaurant={{ ...ownedLori, hiddenBySeghan: true }}
+      headingLevel={4}
+      sectionsBase="/design"
+    />
   ),
 };
 
@@ -215,6 +229,9 @@ const publish: Record<StateOf<"publishPanel">, ReactElement> = {
   "Not ready to publish": (
     <PublishPanel isPublished={false} onChange={ignore} error={notReady} headingLevel={4} />
   ),
+  "Hidden by Seghan": (
+    <PublishPanel isPublished hiddenBySeghan onChange={ignore} headingLevel={4} />
+  ),
 };
 
 const form: Record<StateOf<"restaurantForm">, ReactElement> = {
@@ -301,7 +318,7 @@ export function DashboardScreens(): ReactElement {
       </Group>
       <Group
         title="A restaurant's dashboard"
-        note="The top of every part: the name, whether guests can see it, and the parts. Someone else's restaurant gets the not-found page: see it under Responsive."
+        note="The top of every part: the name, whether guests can see it, and the parts. While Seghan hides a restaurant, Hidden by Seghan replaces Published or Draft, and there's no guests' page to link to. Someone else's restaurant gets the not-found page: see it under Responsive."
       >
         <Specimens wide specimens={header} />
       </Group>
@@ -313,7 +330,7 @@ export function DashboardScreens(): ReactElement {
       </Group>
       <Group
         title="Visibility"
-        note="At the top of Information. The server decides whether a restaurant is ready, and its words say what's missing."
+        note="At the top of Information. The server decides whether a restaurant is ready, and its words say what's missing. While Seghan hides a restaurant, the panel says so; Publish and Unpublish still work, and apply again once Seghan shows it."
       >
         <Specimens wide specimens={publish} />
       </Group>

@@ -8,10 +8,13 @@ import type { ReservationStatus } from "../src/generated/prisma/enums.ts";
 import { prisma } from "../src/lib/prisma.ts";
 import type { RestaurantChange } from "../src/modules/reservations/reservations.rules.ts";
 import { changeReservationStatus } from "../src/modules/reservations/reservations.service.ts";
+import { emailGuest } from "../src/modules/reservations/reservation-emails.ts";
 import { dayReservationRow } from "./fixtures/reservations.ts";
 import type { DayReservationRow } from "./fixtures/reservations.ts";
 import { ownedRow } from "./fixtures/restaurants.ts";
 import { ani } from "./fixtures/users.ts";
+
+vi.mock("../src/modules/reservations/reservation-emails.ts", () => ({ emailGuest: vi.fn() }));
 
 vi.mock("../src/lib/prisma.ts", () => ({
   prisma: {
@@ -232,6 +235,35 @@ describe("changeReservationStatus", () => {
       statusCode: 409,
       code: "ALREADY_NO_SHOW",
     });
+  });
+
+  test("the guest is emailed about a confirmation or a cancellation, and nothing else", async () => {
+    stored("PENDING", { status: "CONFIRMED" });
+    await change("CONFIRMED", EARLY);
+    stored("CONFIRMED", { status: "CANCELLED", cancelledBy: "RESTAURANT" });
+    await change("CANCELLED", EARLY, "We’re closed that night.");
+    stored("CONFIRMED", { status: "ARRIVED" });
+    await change("ARRIVED", STARTED);
+    stored("CONFIRMED", { status: "NO_SHOW" });
+    await change("NO_SHOW", STARTED);
+
+    expect(vi.mocked(emailGuest).mock.calls).toEqual([
+      ["CONFIRMED", BOOKING],
+      ["CANCELLED_BY_RESTAURANT", BOOKING],
+    ]);
+  });
+
+  test("a change refused, by the rules or by someone else's first, emails no one", async () => {
+    stored("CONFIRMED", { status: "CONFIRMED" });
+    await expect(change("CONFIRMED", EARLY)).rejects.toMatchObject({ code: "ALREADY_CONFIRMED" });
+    // The refusal came before the read-back, so its second answer is still queued.
+    findFirst.mockReset();
+    // Pending when read, but the guest cancelled it before the update: nothing changes.
+    stored("PENDING", { status: "CANCELLED", cancelledBy: "CUSTOMER" }, 0);
+    await expect(change("CONFIRMED", EARLY)).rejects.toMatchObject({ code: "ALREADY_CANCELLED" });
+    expect(updateMany).toHaveBeenCalledTimes(1);
+
+    expect(emailGuest).not.toHaveBeenCalled();
   });
 
   test("takes no lock and needs no transaction: no change here takes a table", async () => {

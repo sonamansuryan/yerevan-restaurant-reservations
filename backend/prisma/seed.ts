@@ -140,6 +140,7 @@ async function findProblems(demoPassword: string): Promise<string[]> {
     RestaurantPhoto: await prisma.restaurantPhoto.count(),
     BlockedPeriod: await prisma.blockedPeriod.count(),
     RefreshToken: await prisma.refreshToken.count(),
+    Favorite: await prisma.favorite.count(),
   };
   for (const [table, count] of Object.entries(otherRows)) {
     if (count > 0) problems.push(`Unexpected rows in ${table}: ${count}`);

@@ -55,6 +55,10 @@ describe("what's sent", () => {
       reservationDurationMin: ownedLori.reservationDurationMin,
     });
   });
+
+  test("with no price, as only a demo listing has (9.7), the price is still to choose", () => {
+    expect(restaurantFields({ ...ownedLori, priceLevel: null }).priceLevel).toBe("");
+  });
 });
 
 describe("the server's rules, in the server's words", () => {

@@ -72,7 +72,7 @@ describe("getAvailability", () => {
       getAvailability("davtashen-test-kitchen", forTwo(LORI_SATURDAY), NOW),
     ).rejects.toMatchObject({ statusCode: 404, code: "RESTAURANT_NOT_FOUND" });
     expect(prisma.restaurant.findUnique).toHaveBeenCalledWith({
-      where: { slug: "davtashen-test-kitchen", isPublished: true },
+      where: { slug: "davtashen-test-kitchen", isPublished: true, hiddenAt: null },
       select: {
         id: true,
         timezone: true,

@@ -11,12 +11,16 @@ import {
 import { SignInForm } from "@/features/auth/components/SignInForm";
 import { SignUpForm } from "@/features/auth/components/SignUpForm";
 import { googleClientId } from "@/features/auth/google";
+import { AdminScreens } from "@/features/design/components/AdminScreens";
+import { AnalyticsScreens } from "@/features/design/components/AnalyticsScreens";
 import { BookingScreens } from "@/features/design/components/BookingScreens";
 import { BrowseScreens } from "@/features/design/components/BrowseScreens";
+import { FavoritesScreens } from "@/features/design/components/FavoritesScreens";
 import { DashboardScreens } from "@/features/design/components/DashboardScreens";
 import { HomeScreens } from "@/features/design/components/HomeScreens";
 import { ReservationsScreens } from "@/features/design/components/ReservationsScreens";
 import { RestaurantPageScreens } from "@/features/design/components/RestaurantPageScreens";
+import { ReviewScreens } from "@/features/design/components/ReviewScreens";
 import { TablesAndBlocksScreens } from "@/features/design/components/TablesAndBlocksScreens";
 import { Group, Section, Specimens } from "@/features/design/components/parts";
 import { screenStates } from "@/features/design/tokens";
@@ -205,8 +209,12 @@ export function ScreensSection(): ReactElement {
       <RestaurantPageScreens />
       <BookingScreens />
       <ReservationsScreens />
+      <ReviewScreens />
+      <FavoritesScreens />
       <DashboardScreens />
       <TablesAndBlocksScreens />
+      <AdminScreens />
+      <AnalyticsScreens />
     </>
   );
 
