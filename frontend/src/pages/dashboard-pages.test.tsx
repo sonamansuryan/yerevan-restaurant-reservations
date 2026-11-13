@@ -222,6 +222,10 @@ function renderAt(path: string): TestRouter {
   return router;
 }
 
+/** One of the day's four figures: the number under its label. */
+const figure = (label: string): string | null | undefined =>
+  screen.getByText(label, { selector: "dt" }).nextElementSibling?.textContent;
+
 describe("your restaurants", () => {
   test("each of the owner's restaurants opens its own dashboard", async () => {
     fakeApi();
@@ -232,9 +236,31 @@ describe("your restaurants", () => {
     ).toBeDefined();
     const lori = await screen.findByRole("link", { name: /Lori Smokehouse/ });
     expect(lori.getAttribute("href")).toBe(`/dashboard/${ownedLori.id}`);
-    expect(screen.getByRole("link", { name: "Add a restaurant" }).getAttribute("href")).toBe(
+    // The page's own button beside its heading, and the menu's link.
+    const adds = screen.getAllByRole("link", { name: "Add a restaurant" });
+    expect(adds.map((link) => link.getAttribute("href"))).toEqual([
       "/dashboard/new",
+      "/dashboard/new",
+    ]);
+  });
+
+  test("the owner's menu leads to their restaurants and to adding one, with Sign out", async () => {
+    fakeApi();
+    renderAt("/dashboard");
+
+    const menu = within(await screen.findByRole("navigation", { name: "Owner dashboard" }));
+    expect(
+      menu.getAllByRole("link").map((link) => `${link.textContent} ${link.getAttribute("href")}`),
+    ).toEqual(["Your restaurants /dashboard", "Add a restaurant /dashboard/new"]);
+    expect(menu.getByRole("link", { name: "Your restaurants" }).getAttribute("aria-current")).toBe(
+      "page",
     );
+    // The page's heading is beside the menu, so the menu's name isn't one.
+    expect(screen.queryByRole("heading", { name: "Owner dashboard" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeDefined();
+    // The back room has its own menu, in place of the site's header and footer.
+    expect(screen.queryByRole("banner")).toBeNull();
+    expect(screen.queryByRole("contentinfo")).toBeNull();
   });
 
   test("an owner with none is offered to add one", async () => {
@@ -329,19 +355,65 @@ describe("moving a booking on, in the day's bookings", () => {
 });
 
 describe("a restaurant's dashboard", () => {
-  test("it opens on today's bookings, by Yerevan's calendar", async () => {
+  test("it opens on today's reservations, by Yerevan's calendar, with the day's hours", async () => {
     const fetch = fakeApi();
     renderAt(`/dashboard/${ownedLori.id}`);
 
     expect(await screen.findByRole("heading", { level: 1, name: "Lori Smokehouse" })).toBeDefined();
     expect(await screen.findByText("Anahit Petrosyan")).toBeDefined();
     expect(requests(fetch)).toContain(`${LORI}/reservations?date=2026-11-13&page=1`);
-    expect(screen.getByRole("heading", { level: 2, name: "Friday 13 November" })).toBeDefined();
-    expect(screen.getByRole("link", { name: "Bookings" }).getAttribute("aria-current")).toBe(
-      "page",
+    // The part's heading, with the day under it, and the day's hours once they've come.
+    expect(screen.getByRole("heading", { level: 2, name: "Reservations" })).toBeDefined();
+    expect(await screen.findByText("Friday 13 November · Open 18:00 – 02:00")).toBeDefined();
+    expect(requests(fetch)).toContain(`${LORI}/opening-hours`);
+    expect(screen.getByRole("link", { name: "Today" }).getAttribute("aria-current")).toBe("page");
+    // The menu counts today's bookings still to confirm: Aram's.
+    expect(
+      screen.getByRole("link", { name: "Reservations, 1 to confirm" }).getAttribute("aria-current"),
+    ).toBe("page");
+    // The day at a glance: guests expected leave out the cancellation and the no-show.
+    expect(figure("Guests expected")).toBe("14");
+    expect(figure("To confirm")).toBe("1");
+    expect(figure("Seated")).toBe("1");
+    expect(figure("No-shows")).toBe("1");
+    await waitFor(() => expect(document.title).toBe("Reservations · Lori Smokehouse · Seghan"));
+  });
+
+  test("its menu leads back to all the restaurants, then to each part, and has Sign out", async () => {
+    fakeApi();
+    renderAt(`/dashboard/${ownedLori.id}`);
+
+    const parts = within(await screen.findByRole("navigation", { name: "Lori Smokehouse" }));
+    const base = `/dashboard/${ownedLori.id}`;
+    expect(parts.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      base,
+      `${base}/tables`,
+      `${base}/hours`,
+      `${base}/blocks`,
+      `${base}/information`,
+      `${base}/photos`,
+      `${base}/analytics`,
+    ]);
+    expect(screen.getByRole("link", { name: "Your restaurants" }).getAttribute("href")).toBe(
+      "/dashboard",
     );
-    expect(screen.getByText("14 guests", { exact: false })).toBeDefined();
-    await waitFor(() => expect(document.title).toBe("Bookings · Lori Smokehouse · Seghan"));
+    expect(screen.getByText("Owner dashboard")).toBeDefined();
+    // Guests can see Lori, so its own page is a link away.
+    expect(screen.getByRole("link", { name: "See the guests’ page" }).getAttribute("href")).toBe(
+      `/restaurants/${ownedLori.slug}`,
+    );
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeDefined();
+    expect(screen.queryByRole("banner")).toBeNull();
+    expect(screen.queryByRole("contentinfo")).toBeNull();
+  });
+
+  test("a restaurant guests can't see yet has no link to its guests' page", async () => {
+    fakeApi({ lori: { ...ownedLori, isPublished: false } });
+    renderAt(`/dashboard/${ownedLori.id}`);
+
+    await screen.findByRole("navigation", { name: "Lori Smokehouse" });
+
+    expect(screen.queryByRole("link", { name: "See the guests’ page" })).toBeNull();
   });
 
   test("the day is in the address, so Next day moves the book on, and Back returns", async () => {
@@ -351,18 +423,31 @@ describe("a restaurant's dashboard", () => {
     await userEvent.click(await screen.findByRole("link", { name: "Next day" }));
 
     expect(router.state.location.search).toBe("?date=2026-11-14");
-    expect(
-      await screen.findByRole("heading", { level: 2, name: "Saturday 14 November" }),
-    ).toBeDefined();
+    expect(await screen.findByText("Saturday 14 November · Open 18:00 – 02:00")).toBeDefined();
+    expect(screen.getByRole("link", { name: "Today" }).getAttribute("aria-current")).toBeNull();
     await waitFor(() =>
       expect(requests(fetch)).toContain(`${LORI}/reservations?date=2026-11-14&page=1`),
     );
 
     await router.navigate(-1);
 
-    expect(
-      await screen.findByRole("heading", { level: 2, name: "Friday 13 November" }),
-    ).toBeDefined();
+    expect(await screen.findByText("Friday 13 November · Open 18:00 – 02:00")).toBeDefined();
+  });
+
+  test("Go to opens the date chosen, once Show is pressed", async () => {
+    const fetch = fakeApi();
+    const router = renderAt(`/dashboard/${ownedLori.id}`);
+
+    // A date input changes with each digit typed, so nothing opens until Show.
+    fireEvent.change(await screen.findByLabelText("Go to"), { target: { value: "2026-12-31" } });
+    expect(router.state.location.search).toBe("");
+    await userEvent.click(screen.getByRole("button", { name: "Show" }));
+
+    expect(router.state.location.search).toBe("?date=2026-12-31");
+    expect(await screen.findByText("Thursday 31 December · Open 18:00 – 23:00")).toBeDefined();
+    await waitFor(() =>
+      expect(requests(fetch)).toContain(`${LORI}/reservations?date=2026-12-31&page=1`),
+    );
   });
 
   test("a date that doesn't exist means today", async () => {
@@ -384,9 +469,10 @@ describe("a restaurant's dashboard", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Restaurant not found" }),
     ).toBeDefined();
-    expect(screen.getByRole("link", { name: "Your restaurants" }).getAttribute("href")).toBe(
-      "/dashboard",
-    );
+    // The page's own way back, and the owner's menu around it.
+    const ways = screen.getAllByRole("link", { name: "Your restaurants" });
+    expect(ways.map((link) => link.getAttribute("href"))).toEqual(["/dashboard", "/dashboard"]);
+    expect(screen.getByRole("navigation", { name: "Owner dashboard" })).toBeDefined();
   });
 });
 
@@ -401,6 +487,7 @@ describe("the restaurant's parts", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
     expect(await screen.findByText("Changes saved.")).toBeDefined();
+    expect(screen.getByRole("heading", { level: 2, name: "Restaurant info" })).toBeDefined();
     expect(sent(fetch, "PATCH", LORI)).toEqual({
       name: "Lori Grill",
       description: ownedLori.description,
@@ -439,17 +526,25 @@ describe("the restaurant's parts", () => {
     renderAt(`/dashboard/${ownedLori.id}/hours`);
 
     const friday = await screen.findByRole("group", { name: "Friday" });
-    const closes = within(friday).getByLabelText("Closes") as HTMLSelectElement;
+    const closes = within(friday).getByRole<HTMLSelectElement>("combobox", {
+      name: "Friday closes",
+    });
+    // Found by its label's words. jsdom names it "Openon Friday", dropping the space before the
+    // hidden words, which a browser keeps.
+    const open = within(friday).getByLabelText<HTMLInputElement>("Open on Friday");
     expect(closes.selectedOptions[0]?.textContent).toBe("02:00 (next day)");
+    expect(open.checked).toBe(true);
 
     await userEvent.click(screen.getByRole("button", { name: "Remove, Friday 18:00 to 02:00" }));
-    await userEvent.click(screen.getByRole("button", { name: "Save opening hours" }));
+    // Save changes sits in the part's header, outside the form it sends.
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
     expect(await screen.findByText("Opening hours saved.")).toBeDefined();
     const { hours } = sent(fetch, "PUT", `${LORI}/opening-hours`) as { hours: Opening[] };
     expect(hours).toHaveLength(tsiranPage.openingHours.length - 1);
     expect(hours).toContainEqual({ dayOfWeek: 6, opensAt: 1080, closesAt: 1560 });
-    expect(within(friday).getByText("Closed")).toBeDefined();
+    expect(within(friday).getByText("No bookings this day")).toBeDefined();
+    expect(open.checked).toBe(false);
   });
 
   test("Photos shows the cover first", async () => {
@@ -465,16 +560,47 @@ describe("tables and blocked times", () => {
   const tablesPage = `/dashboard/${ownedLori.id}/tables`;
   const blocksPage = `/dashboard/${ownedLori.id}/blocks`;
 
-  test("Tables lists the tables by area, with what can be booked at a glance", async () => {
+  test("Tables shows the floor plan as it stands now, beside every table", async () => {
+    const fetch = fakeApi();
+    renderAt(tablesPage);
+
+    expect(
+      await screen.findByText("7 tables, 37 seats · 1 inactive · As they stand at 14:00"),
+    ).toBeDefined();
+    expect(
+      screen.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent),
+    ).toEqual(["Floor plan", "All tables"]);
+    expect(screen.getByRole("link", { name: "Tables" }).getAttribute("aria-current")).toBe("page");
+    await waitFor(() => expect(document.title).toBe("Tables · Lori Smokehouse · Seghan"));
+    // How each table stands comes from today's bookings and the blocked times.
+    expect(requests(fetch)).toContain(`${LORI}/reservations?date=2026-11-13&page=1`);
+    expect(requests(fetch)).toContain(`${LORI}/blocks`);
+    const plan = screen
+      .getByRole("heading", { name: "Floor plan" })
+      .closest("section") as HTMLElement;
+    // Lilit has been at T1 since 12:30, Anahit has T3 at 19:00, and T6 is switched off.
+    const words = (label: string): string | null | undefined =>
+      within(plan).getByText(label).parentElement?.querySelector(".sr-only")?.textContent;
+    expect(await within(plan).findByText(", 4 seats, seated until 14:30")).toBeDefined();
+    expect(words("T1")).toBe(", 4 seats, seated until 14:30");
+    expect(words("T3")).toBe(", 4 seats, reserved at 19:00");
+    expect(words("T6")).toBe(", 4 seats, switched off");
+    expect(words("T2")).toBe(", 2 seats, free now");
+  });
+
+  test("each table's line has a switch named after it, and a way to change it", async () => {
     fakeApi();
     renderAt(tablesPage);
 
-    expect(await screen.findByText("7 tables, 37 seats · 1 inactive")).toBeDefined();
-    expect(
-      screen.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent),
-    ).toEqual(["Indoor", "Terrace", "VIP", "Bar counter"]);
-    expect(screen.getByRole("link", { name: "Tables" }).getAttribute("aria-current")).toBe("page");
-    await waitFor(() => expect(document.title).toBe("Tables · Lori Smokehouse · Seghan"));
+    const t6 = await screen.findByRole<HTMLInputElement>("checkbox", { name: "Active, T6" });
+    expect(t6.checked).toBe(false);
+    expect(screen.getByRole<HTMLInputElement>("checkbox", { name: "Active, T1" }).checked).toBe(
+      true,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Edit T1" }));
+
+    expect(screen.getByRole("dialog", { name: "Edit T1" })).toBeDefined();
   });
 
   test("adding a table sends it, closes the form, and shows it in its area", async () => {
@@ -510,7 +636,7 @@ describe("tables and blocked times", () => {
     });
     renderAt(tablesPage);
 
-    await userEvent.click(await screen.findByRole("button", { name: "Deactivate T1" }));
+    await userEvent.click(await screen.findByRole("checkbox", { name: "Active, T1" }));
 
     const t1 = screen.getByRole("button", { name: "Edit T1" }).closest("li") as HTMLElement;
     expect((await within(t1).findByRole("alert")).textContent).toContain(
@@ -562,6 +688,16 @@ describe("tables and blocked times", () => {
       within(form).getByRole("list", { name: "Bookings in the way" }).querySelectorAll("li"),
     ).toHaveLength(2);
     expect((form as HTMLDialogElement).open).toBe(true);
+  });
+
+  test("the blocks are listed beside a month's calendar, starting on this month", async () => {
+    fakeApi({ blocks: sampleBlocks });
+    renderAt(blocksPage);
+
+    expect(
+      await screen.findByRole("heading", { level: 3, name: "Blocked dates & tables" }),
+    ).toBeDefined();
+    expect(screen.getByRole("heading", { level: 3, name: "November 2026" })).toBeDefined();
   });
 
   test("removing a block asks first, then removes it", async () => {

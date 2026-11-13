@@ -60,9 +60,9 @@ function RestaurantLine({
   const { name, slug, district, owner, isPublished, hiddenAt, isDemoListing, reservations } =
     restaurant;
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-6 gap-y-1 border-b border-line py-4">
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-6 gap-y-1 px-5 py-4">
       <div className="min-w-0">
-        <p className="font-display text-title-xs break-words">{name}</p>
+        <p className="font-semibold break-words">{name}</p>
         <p className="mt-0.5 text-meta break-words text-ink-secondary">
           {DISTRICT_LABELS[district]} · {owner.name} · {owner.email}
         </p>
@@ -74,11 +74,12 @@ function RestaurantLine({
           {hiddenAt !== null &&
             ` · Hidden on ${formatDayHeading(yerevanToday(new Date(hiddenAt)), today)}`}
         </p>
-        <div className="mt-2 flex flex-wrap gap-x-6">
+        <div className="mt-3 flex flex-wrap gap-2">
           {/* The everyday step first. Hiding is rare, and asks first. */}
           {isPublished && hiddenAt === null && (
             <LinkButton
-              variant="link"
+              variant="ghost"
+              size="small"
               to={`/restaurants/${slug}`}
               aria-label={`See the guests’ page of ${name}`}
             >
@@ -87,7 +88,8 @@ function RestaurantLine({
           )}
           {hiddenAt !== null ? (
             <Button
-              variant="link"
+              variant="ghost"
+              size="small"
               aria-label={`Show ${name} again`}
               loading={changing}
               onClick={() => onShow(restaurant)}
@@ -96,7 +98,8 @@ function RestaurantLine({
             </Button>
           ) : (
             <Button
-              variant="link"
+              variant="ghost"
+              size="small"
               aria-label={`Hide ${name}`}
               loading={changing}
               onClick={() => onHide(restaurant)}
@@ -172,7 +175,6 @@ export function AdminRestaurants({
         q={filters.q}
         placeholder="Name or street"
         onSearch={(q) => change({ q })}
-        choices={1}
       >
         <Select
           label="Show"
@@ -207,7 +209,7 @@ export function AdminRestaurants({
         hrefFor={hrefFor}
       >
         {(restaurants) => (
-          <ul className="border-t border-line">
+          <ul className="divide-y divide-line">
             {restaurants.map((restaurant) => (
               <RestaurantLine
                 key={restaurant.id}

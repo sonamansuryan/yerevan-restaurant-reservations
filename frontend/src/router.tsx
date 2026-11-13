@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 import type { RouteObject } from "react-router";
 
 import { AppLayout } from "@/components/AppLayout";
+import type { ShellHandle } from "@/components/AppLayout";
 import { Spinner } from "@/components/Spinner";
 import { RequireAuth } from "@/features/auth/components/RequireAuth";
 import { SignedOutOnly } from "@/features/auth/components/SignedOutOnly";
@@ -71,7 +72,9 @@ export const routes: RouteObject[] = [
           // through <Outlet />. The API checks every request too, which is the real protection.
           {
             // For people who aren't signed in. Anyone signed in goes on to where they were heading.
+            // Its pages have no site header: their dark panel carries the logo home.
             element: <SignedOutOnly />,
+            handle: { chrome: "bare" } satisfies ShellHandle,
             children: [
               { path: "login", element: <SignInPage /> },
               { path: "register", element: <SignUpPage /> },
@@ -88,10 +91,12 @@ export const routes: RouteObject[] = [
             ],
           },
           {
-            // For restaurant owners only.
+            // For restaurant owners only. The dashboard brings its own dark menu, without the site
+            // header and footer.
             element: (
               <RequireAuth roles={["OWNER"]} notAllowedTitle="This page is for restaurants" />
             ),
+            handle: { chrome: "office" } satisfies ShellHandle,
             children: [
               { path: "dashboard", element: <DashboardPage /> },
               { path: "dashboard/new", element: <NewRestaurantPage /> },
@@ -117,6 +122,7 @@ export const routes: RouteObject[] = [
             element: (
               <RequireAuth roles={["ADMIN"]} notAllowedTitle="This page is for Seghan’s team" />
             ),
+            handle: { chrome: "office" } satisfies ShellHandle,
             children: [
               {
                 // The admin area: its heading and parts, with the open part inside. Restaurants

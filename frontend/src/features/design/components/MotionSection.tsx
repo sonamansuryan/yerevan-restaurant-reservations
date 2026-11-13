@@ -74,7 +74,7 @@ export function MotionSection(): ReactElement {
           />
         ))}
       </Group>
-      <Group title="Breathing" note={`${animationToken.role}: the logo's dot, gently breathing.`}>
+      <Group title="Breathing" note={`${animationToken.role}: a wine dot, gently breathing.`}>
         <div className="flex items-center gap-4">
           <Spinner />
           <code className="font-sans text-meta text-ink-muted">--{animationToken.name}</code>

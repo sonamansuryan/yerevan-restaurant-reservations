@@ -49,10 +49,11 @@ function renderAt(path = "/", shown: Account = account()): void {
 const link = (name: string): HTMLElement => screen.getByRole("link", { name });
 
 test.each([
-  ["Discover", "/restaurants"],
+  ["Explore", "/restaurants"],
+  ["Neighborhoods", "/#neighborhoods"],
+  ["My reservations", "/reservations"],
   ["For restaurants", "/register?role=owner"],
   ["Sign in", "/login"],
-  ["Reserve a table", "/restaurants"],
   ["Seghan, home", "/"],
 ])("%s goes to %s", (name, href) => {
   renderAt();
@@ -63,31 +64,31 @@ test.each([
 test("the logo shows the lowercase wordmark, and is named Seghan for screen readers", () => {
   renderAt();
 
-  expect(link("Seghan, home").textContent).toBe("seghan");
+  // The mark beside the word is decoration, so only the word is checked.
+  expect(link("Seghan, home").textContent).toContain("seghan");
 });
 
-test("phones show the short label, and screen readers still hear all of it", () => {
+test("the header has no Reserve button: the search and the menu lead to a table", () => {
   renderAt();
 
-  const hidden = link("Reserve a table").querySelector(".max-md\\:sr-only");
-
-  expect(hidden?.textContent).toBe("a table");
+  expect(screen.queryByRole("link", { name: /Reserve/ })).toBeNull();
 });
 
 test("the page you're on is marked", () => {
   renderAt("/restaurants");
 
-  expect(link("Discover").getAttribute("aria-current")).toBe("page");
+  expect(link("Explore").getAttribute("aria-current")).toBe("page");
   expect(link("Sign in").getAttribute("aria-current")).toBeNull();
 });
 
 test("a filter in the address doesn't lose the mark", () => {
   renderAt("/restaurants?district=KENTRON");
 
-  expect(link("Discover").getAttribute("aria-current")).toBe("page");
+  expect(link("Explore").getAttribute("aria-current")).toBe("page");
 });
 
 test("nothing is marked on a page with no link in the header", () => {
+  // Neighborhoods points into the home page, which is no page of its own to mark.
   renderAt("/");
 
   expect(screen.queryAllByRole("link", { current: "page" })).toHaveLength(0);
@@ -97,14 +98,6 @@ test("For restaurants isn't marked on the plain sign-up page", () => {
   renderAt("/register");
 
   expect(screen.queryAllByRole("link", { current: "page" })).toHaveLength(0);
-});
-
-test("the current page's dot is decoration, hidden from screen readers", () => {
-  renderAt("/restaurants");
-
-  const dot = link("Discover").querySelector(".bg-accent");
-
-  expect(dot?.getAttribute("aria-hidden")).toBe("true");
 });
 
 test("Menu is a button that says it opens a dialog", () => {
@@ -146,44 +139,45 @@ describe("the main links, by who's signed in", () => {
     expect(screen.queryByRole("link", { name: "For restaurants" })).toBeNull();
   });
 
-  test("while the app is still checking, only Discover shows", () => {
+  test("while the app is still checking, only Explore and Neighborhoods show", () => {
     renderAt("/", account({ user: undefined }));
 
     const main = within(screen.getByRole("navigation", { name: "Main" }));
-    expect(main.getAllByRole("link").map((one) => one.textContent)).toEqual(["Discover"]);
+    expect(main.getAllByRole("link").map((one) => one.textContent)).toEqual([
+      "Explore",
+      "Neighborhoods",
+    ]);
   });
-});
 
-describe("Reserve a table, by who's signed in", () => {
-  const reserve = (): HTMLElement | null => screen.queryByRole("link", { name: "Reserve a table" });
+  test("signed out, My reservations is there too, marked on its page", () => {
+    renderAt("/reservations");
 
-  test("an admin, who never books, has Admin and Sign out but no Reserve a table", () => {
+    const main = within(screen.getByRole("navigation", { name: "Main" }));
+    expect(main.getAllByRole("link").map((one) => one.textContent)).toEqual([
+      "Explore",
+      "Neighborhoods",
+      "My reservations",
+    ]);
+    expect(link("My reservations").getAttribute("aria-current")).toBe("page");
+  });
+
+  test("an admin has Admin and Sign out", () => {
     const nare: AuthUser = { ...lilit, name: "Demo Admin", role: "ADMIN" };
     renderAt("/admin", account({ user: nare }));
 
-    expect(reserve()).toBeNull();
     expect(link("Admin").getAttribute("aria-current")).toBe("page");
+    expect(screen.queryByRole("link", { name: "My reservations" })).toBeNull();
     expect(screen.getByRole("button", { name: "Sign out" })).toBeDefined();
   });
 
-  test("an owner, who never books either, has their Dashboard and Sign out but no Reserve a table", () => {
+  test("an owner has their Dashboard and Sign out", () => {
     const ani: AuthUser = { ...lilit, name: "Ani Sargsyan", role: "OWNER" };
     renderAt("/dashboard", account({ user: ani }));
 
-    expect(reserve()).toBeNull();
     expect(link("Dashboard").getAttribute("aria-current")).toBe("page");
-    expect(link("Discover").getAttribute("href")).toBe("/restaurants");
+    expect(link("Explore").getAttribute("href")).toBe("/restaurants");
+    expect(screen.queryByRole("link", { name: "My reservations" })).toBeNull();
     expect(screen.getByRole("button", { name: "Sign out" })).toBeDefined();
-  });
-
-  test.each([
-    ["while the app is still checking", undefined],
-    ["signed out", null],
-    ["a guest", lilit],
-  ])("%s keeps it", (_who, user) => {
-    renderAt("/", account({ user }));
-
-    expect(reserve()?.getAttribute("href")).toBe("/restaurants");
   });
 });
 
@@ -199,10 +193,27 @@ describe("the account corner", () => {
     renderAt("/", account({ user: lilit }));
 
     expect(screen.queryByRole("link", { name: "Sign in" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "For restaurants" })).toBeNull();
     expect(screen.getByRole("button", { name: "Sign out" })).toBeDefined();
-    // The first name is for the eye. Screen readers hear the full sentence instead.
+    // The initial and the first name are for the eye. Screen readers hear the full sentence instead.
+    expect(screen.getByText("L").getAttribute("aria-hidden")).toBe("true");
     expect(screen.getByText("Lilit").getAttribute("aria-hidden")).toBe("true");
     expect(screen.getByText("Signed in as Lilit Harutyunyan.")).toBeDefined();
+  });
+
+  test("Sign in stays on phones, while a name and Sign out move into the menu there", () => {
+    // jsdom applies no CSS, so this reads the classes that hide them.
+    const hiddenOnPhones = (element: HTMLElement): boolean =>
+      element.closest(".max-md\\:hidden") !== null;
+
+    renderAt("/");
+    expect(hiddenOnPhones(link("Sign in"))).toBe(false);
+    // For restaurants waits for the wider screens, and is in the menu until then.
+    expect(link("For restaurants").className).toContain("max-lg:hidden");
+    cleanup();
+
+    renderAt("/", account({ user: lilit }));
+    expect(hiddenOnPhones(screen.getByRole("button", { name: "Sign out" }))).toBe(true);
   });
 
   test("Sign out asks to sign out", async () => {
@@ -244,6 +255,7 @@ test("the logo leads the left side, with the way around the site, and the action
       (item) => item.getAttribute("aria-label") ?? item.textContent?.trim(),
     );
 
-  expect(names(start)).toEqual(["Seghan, home", "Discover", "For restaurants", "Menu"]);
-  expect(names(end)).toEqual(["Sign in", "Reserve a table"]);
+  expect(names(start)).toEqual(["Seghan, home", "Explore", "Neighborhoods", "My reservations"]);
+  // Menu is last on the right, where Close lands when the menu opens.
+  expect(names(end)).toEqual(["For restaurants", "Sign in", "Menu"]);
 });

@@ -8,6 +8,7 @@ import { RouterProvider } from "react-router/dom";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { AppLayout } from "@/components/AppLayout";
+import type { ShellHandle } from "@/components/AppLayout";
 import { ME_QUERY_KEY } from "@/lib/queryClient";
 import type { AuthUser } from "@/types/api";
 
@@ -102,11 +103,95 @@ test("the page appears inside the shell's main area", () => {
   expect(main.textContent).toBe("The home page");
 });
 
-test("every page has a header and a footer", () => {
+test("a guest's page has the site's header and footer", () => {
   renderApp();
 
   expect(screen.getByRole("banner")).toBeDefined();
   expect(screen.getByRole("contentinfo")).toBeDefined();
+});
+
+describe("a route that brings its own frame", () => {
+  const office: ShellHandle = { chrome: "office" };
+  const bare: ShellHandle = { chrome: "bare" };
+
+  // As in router.tsx: the handle sits on a guard, a layout route without a path, and the pages
+  // inside it have none of their own.
+  function renderFramed(path: string): void {
+    const router = createMemoryRouter(
+      [
+        {
+          element: <AppLayout />,
+          children: [
+            { index: true, element: <p>The home page</p> },
+            {
+              handle: office,
+              children: [
+                { path: "dashboard", element: <p>The dashboard</p> },
+                // The last route that asks wins, whichever it asks for.
+                { path: "dashboard/print", handle: bare, element: <p>A page to print</p> },
+              ],
+            },
+            {
+              handle: bare,
+              children: [
+                { path: "login", element: <p>Sign in</p> },
+                { path: "login/help", handle: office, element: <p>Help</p> },
+              ],
+            },
+            // A handle about something else leaves the site's frame alone.
+            { path: "about", handle: { title: "About" }, element: <p>About</p> },
+          ],
+        },
+      ],
+      { initialEntries: [path] },
+    );
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+  }
+
+  const shell = (): HTMLElement | null => screen.getByRole("main").parentElement;
+
+  test.each(["/dashboard", "/login/help"])(
+    "an office route, such as %s, has no site header or footer, on the office's warm page",
+    (path) => {
+      renderFramed(path);
+
+      expect(screen.queryByRole("banner")).toBeNull();
+      expect(screen.queryByRole("contentinfo")).toBeNull();
+      expect(shell()?.className).toContain("bg-surface-office");
+    },
+  );
+
+  test.each(["/login", "/dashboard/print"])(
+    "a bare route, such as %s, has no site header or footer, on the usual page",
+    (path) => {
+      renderFramed(path);
+
+      expect(screen.queryByRole("banner")).toBeNull();
+      expect(screen.queryByRole("contentinfo")).toBeNull();
+      expect(shell()?.className).not.toContain("bg-surface-office");
+    },
+  );
+
+  test.each(["/", "/about"])("%s keeps the site's header and footer", (path) => {
+    renderFramed(path);
+
+    expect(screen.getByRole("banner")).toBeDefined();
+    expect(screen.getByRole("contentinfo")).toBeDefined();
+    expect(shell()?.className).not.toContain("bg-surface-office");
+  });
+
+  test("the page still sits in the main area, with the skip link to it", () => {
+    renderFramed("/dashboard");
+
+    expect(screen.getByRole("main").textContent).toBe("The dashboard");
+    expect(screen.getByRole("link", { name: "Skip to content" }).getAttribute("href")).toBe(
+      "#main",
+    );
+  });
 });
 
 test("the skip link is the first stop for the Tab key, and points at the main area", async () => {

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { ZONE_LABELS, guestsWords } from "@/features/dashboard/labels";
-import type { OwnerTable, TableZone } from "@/types/api";
+import type { OwnerBlock, OwnerReservation, OwnerTable, TableZone } from "@/types/api";
 
 /** The most guests one table can seat: the server's limit (tables.schemas.ts). */
 export const MAX_SEATS = 50;
@@ -95,4 +95,57 @@ export function tablesByZone<Table extends { zone: TableZone }>(
     zone,
     tables: tables.filter((table) => table.zone === zone),
   })).filter((area) => area.tables.length > 0);
+}
+
+/** How a table stands at a moment, for the floor plan. */
+export type TableNow =
+  | { kind: "off" }
+  | { kind: "blocked"; until: string }
+  | { kind: "seated"; until: string }
+  | { kind: "reserved"; at: string }
+  | { kind: "free" };
+
+/**
+ * How a table stands at `now`, for the floor plan, from the day's bookings and the blocked times:
+ * switched off, blocked by a block that covers now, seated by a guest marked arrived whose booking
+ * covers now, reserved by the next booking still to come or under way, or free. Only arrived
+ * guests count as seated: a confirmed booking whose time has come is still reserved until the
+ * guest is marked arrived.
+ */
+export function tableNow(
+  table: OwnerTable,
+  bookings: OwnerReservation[],
+  blocks: OwnerBlock[],
+  now: number,
+): TableNow {
+  if (!table.isActive) return { kind: "off" };
+  const covers = (startsAt: string, endsAt: string): boolean =>
+    Date.parse(startsAt) <= now && now < Date.parse(endsAt);
+  const block = blocks.find(
+    (one) => (one.table === null || one.table.id === table.id) && covers(one.startsAt, one.endsAt),
+  );
+  if (block) return { kind: "blocked", until: block.ends.time };
+  const mine = bookings.filter((booking) => booking.table.id === table.id);
+  const seated = mine.find(
+    (booking) => booking.status === "ARRIVED" && covers(booking.startsAt, booking.endsAt),
+  );
+  if (seated) return { kind: "seated", until: seated.ends };
+  const [next] = mine
+    .filter(
+      (booking) =>
+        (booking.status === "PENDING" || booking.status === "CONFIRMED") &&
+        Date.parse(booking.endsAt) > now,
+    )
+    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
+  return next ? { kind: "reserved", at: next.starts } : { kind: "free" };
+}
+
+/** A table's name in a few letters for its square, such as "T4": the name itself when it's short. */
+export function tableCode(label: string): string {
+  const name = label.trim();
+  if (name.length <= 4) return name;
+  const number = /(\d+)\s*$/.exec(name)?.[1] ?? "";
+  const code = `${name.charAt(0).toUpperCase()}${number}`;
+  // A number too long to fit isn't cut, which could name another table: the letter stands alone.
+  return code.length <= 4 ? code : name.charAt(0).toUpperCase();
 }

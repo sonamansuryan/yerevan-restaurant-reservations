@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { PublishPanel } from "@/features/dashboard/components/PublishPanel";
-import { RestaurantHeader } from "@/features/dashboard/components/RestaurantHeader";
+import { RestaurantNav } from "@/features/dashboard/components/RestaurantNav";
 import { RestaurantList } from "@/features/dashboard/components/RestaurantList";
 import { ownedDraft, ownedLori, ownedRestaurants } from "@/features/design/samples";
 import { ApiError } from "@/lib/api";
@@ -29,39 +29,65 @@ test("each restaurant is a line that opens its own dashboard, and says whether g
   expect(links[2]?.textContent).toContain("Draft");
 });
 
-test("a restaurant's header names it, and its parts link to their own addresses", () => {
+test("a restaurant's menu names it, and its parts link to their own addresses", () => {
   render(
     <MemoryRouter initialEntries={[`/dashboard/${ownedLori.id}/hours`]}>
-      <RestaurantHeader restaurant={ownedLori} />
+      <RestaurantNav restaurant={ownedLori} />
     </MemoryRouter>,
   );
 
+  expect(screen.getByRole("link", { name: "Your restaurants" }).getAttribute("href")).toBe(
+    "/dashboard",
+  );
   expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Lori Smokehouse");
+  expect(screen.getByText("Owner dashboard")).toBeDefined();
+  expect(screen.getByText("Published")).toBeDefined();
   const parts = screen.getByRole("navigation", { name: "Lori Smokehouse" });
   const base = `/dashboard/${ownedLori.id}`;
   expect(
     [...parts.querySelectorAll("a")].map((link) => [link.textContent, link.getAttribute("href")]),
   ).toEqual([
-    ["Bookings", base],
-    ["Analytics", `${base}/analytics`],
-    ["Information", `${base}/information`],
-    ["Opening hours", `${base}/hours`],
+    ["Reservations", base],
     ["Tables", `${base}/tables`],
+    ["Opening hours", `${base}/hours`],
     ["Blocked times", `${base}/blocks`],
+    ["Restaurant info", `${base}/information`],
     ["Photos", `${base}/photos`],
+    ["Analytics", `${base}/analytics`],
   ]);
   expect(screen.getByRole("link", { name: "Opening hours" }).getAttribute("aria-current")).toBe(
     "page",
   );
+  // Reservations lives at the restaurant's own address, so only that address marks it.
+  expect(
+    screen.getByRole("link", { name: "Reservations" }).getAttribute("aria-current"),
+  ).toBeNull();
   expect(screen.getByRole("link", { name: "See the guests’ page" }).getAttribute("href")).toBe(
     "/restaurants/lori-smokehouse",
   );
 });
 
+test("Reservations says how many of today's bookings wait to be confirmed, and nothing at none", () => {
+  render(
+    <MemoryRouter>
+      <RestaurantNav restaurant={ownedLori} waiting={3} />
+    </MemoryRouter>,
+  );
+  expect(screen.getByRole("link", { name: "Reservations, 3 to confirm" })).toBeDefined();
+  cleanup();
+
+  render(
+    <MemoryRouter>
+      <RestaurantNav restaurant={ownedLori} waiting={0} />
+    </MemoryRouter>,
+  );
+  expect(screen.getByRole("link", { name: "Reservations" }).textContent).toBe("Reservations");
+});
+
 test("a draft has no guests' page to link to yet", () => {
   render(
     <MemoryRouter>
-      <RestaurantHeader restaurant={ownedDraft} />
+      <RestaurantNav restaurant={ownedDraft} />
     </MemoryRouter>,
   );
 
@@ -95,12 +121,12 @@ test("a published restaurant can be hidden again", async () => {
   expect(screen.getByText("Guests can find it and book a table.")).toBeDefined();
 });
 
-test("a restaurant Seghan hid says so, in the list and its header, with no guests' page to link to", () => {
+test("a restaurant Seghan hid says so, in the list and its menu, with no guests' page to link to", () => {
   const hidden = { ...ownedLori, hiddenBySeghan: true };
   render(
     <MemoryRouter>
       <RestaurantList restaurants={[hidden]} />
-      <RestaurantHeader restaurant={hidden} />
+      <RestaurantNav restaurant={hidden} />
     </MemoryRouter>,
   );
 

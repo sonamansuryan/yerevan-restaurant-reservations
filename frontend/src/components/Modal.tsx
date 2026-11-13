@@ -45,11 +45,11 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps): R
       aria-labelledby={titleId}
       onClose={onClose}
       onMouseDown={handleMouseDown}
-      className="modal-sheet m-auto w-[calc(100%-2rem)] max-w-120 rounded-card bg-surface-raised text-ink shadow-float max-md:mb-0 max-md:w-full max-md:max-w-full max-md:rounded-b-none"
+      className="modal-sheet m-auto w-[calc(100%-2rem)] max-w-120 rounded-band bg-surface-raised text-ink shadow-float max-md:mb-0 max-md:w-full max-md:max-w-full max-md:rounded-b-none"
     >
-      <div className="p-8">
+      <div className="p-6 md:p-8">
         <div className="flex items-start justify-between gap-4">
-          <h2 id={titleId} className="font-display text-logo">
+          <h2 id={titleId} className="font-grotesque text-subheading font-bold">
             {title}
           </h2>
           {!footer && (

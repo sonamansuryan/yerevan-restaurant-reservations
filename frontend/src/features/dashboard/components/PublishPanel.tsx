@@ -31,7 +31,7 @@ export function PublishPanel({
   headingLevel = 3,
 }: PublishPanelProps): ReactElement {
   return (
-    <FormPart title="Visibility" headingLevel={headingLevel} className="max-w-160">
+    <FormPart title="Visibility" headingLevel={headingLevel} className="max-w-180">
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
         <div className="flex min-w-0 flex-col gap-1">
           <PublishedBadge isPublished={isPublished} hiddenBySeghan={hiddenBySeghan} />

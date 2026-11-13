@@ -51,8 +51,8 @@ export function TimeChoice({
       <>
         {coursesOf(data.slots).map(({ name, slots }) => (
           <div key={slots[0]?.startsAt}>
-            {name && <p className="mb-2 text-eyebrow text-ink-muted uppercase">{name}</p>}
-            <div className="grid grid-cols-4 gap-2">
+            {name && <p className="mb-2 text-meta font-semibold text-ink-secondary">{name}</p>}
+            <div className="grid grid-cols-4 gap-1.5">
               {slots.map((slot) => (
                 <SlotButton
                   key={slot.startsAt}
@@ -76,11 +76,20 @@ export function TimeChoice({
     );
   }
 
+  // How many of the day's times have a table for the party, as the export says beside "Time".
+  const free = data?.slots.filter((slot) => slot.tables.length > 0).length ?? 0;
   return (
-    <div role="group" aria-labelledby={labelId} className="flex flex-col gap-4">
-      <p id={labelId} className="text-meta font-medium text-ink-secondary">
-        Time
-      </p>
+    <div role="group" aria-labelledby={labelId} className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-3 text-ui">
+        <p id={labelId} className="font-semibold text-ink">
+          Time
+        </p>
+        {data && data.slots.length > 0 && (
+          <p className="text-ink-secondary">
+            {free === 1 ? "1 time available" : `${free} times available`}
+          </p>
+        )}
+      </div>
       {times}
     </div>
   );

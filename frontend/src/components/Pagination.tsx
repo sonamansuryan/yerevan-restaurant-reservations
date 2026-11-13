@@ -12,8 +12,8 @@ interface PaginationProps extends ComponentProps<"nav"> {
 }
 
 /**
- * Previous and Next around "Page 2 of 5", on a hairline, like the foot of a printed page. Nothing
- * shows when everything fits on one page.
+ * Previous and Next as small outline buttons, around "Page 2 of 5". Nothing shows when everything
+ * fits on one page.
  */
 export function Pagination({
   page,
@@ -28,14 +28,11 @@ export function Pagination({
     <nav
       aria-label="Pages"
       {...rest}
-      className={cx(
-        "grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-t border-line pt-4",
-        className,
-      )}
+      className={cx("grid grid-cols-[1fr_auto_1fr] items-center gap-4", className)}
     >
       <div>
         {page > 1 && (
-          <LinkButton variant="link" to={hrefFor(page - 1)} rel="prev">
+          <LinkButton variant="ghost" size="small" to={hrefFor(page - 1)} rel="prev">
             Previous
           </LinkButton>
         )}
@@ -45,7 +42,7 @@ export function Pagination({
       </p>
       <div className="text-right">
         {page < pageCount && (
-          <LinkButton variant="link" to={hrefFor(page + 1)} rel="next">
+          <LinkButton variant="ghost" size="small" to={hrefFor(page + 1)} rel="next">
             Next
           </LinkButton>
         )}

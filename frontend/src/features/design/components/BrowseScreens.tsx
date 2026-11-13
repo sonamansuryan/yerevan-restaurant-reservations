@@ -13,16 +13,46 @@ import {
   sampleRestaurants,
 } from "@/features/design/samples";
 import { screenStates } from "@/features/design/tokens";
+import { CardHeart } from "@/features/favorites/components/CardHeart";
 import type { BrowseFilters } from "@/features/restaurants/browseFilters";
 import { BrowseResults } from "@/features/restaurants/components/BrowseResults";
+import { FreeTimes } from "@/features/restaurants/components/FreeTimes";
 import { RestaurantCard } from "@/features/restaurants/components/RestaurantCard";
 import { RestaurantFilters } from "@/features/restaurants/components/RestaurantFilters";
+import { tableQuery } from "@/features/restaurants/tableSearch";
+import type { RestaurantSummary } from "@/types/api";
 
 type StateOf<K extends keyof typeof screenStates> = (typeof screenStates)[K][number];
 
 const ignore = (): void => {};
 // Pages in these specimens can't be followed, so they all point here.
 const stay = (): To => ({ hash: "#screens" });
+// A Friday afternoon, so the search starts at 19:30.
+const TODAY = "2026-11-13";
+const NOW = "16:00";
+
+/** Each card's free times nearest 19:30, as Browse shows them. */
+const timesFor = (restaurant: RestaurantSummary): ReactElement => (
+  <FreeTimes
+    name={restaurant.name}
+    state={{ status: "ready", times: ["19:00", "19:30", "20:00"] }}
+    when="today"
+    linkFor={stay}
+    pageLink={stay()}
+  />
+);
+
+/** Each card's heart, as someone signed out sees it. */
+const saveFor = (restaurant: RestaurantSummary): ReactElement => (
+  <CardHeart
+    name={restaurant.name}
+    viewer={{
+      kind: "signedOut",
+      signIn: { from: { pathname: "/restaurants", search: "", hash: "" } },
+    }}
+  />
+);
+
 // The cards sit under this page's group headings, so their names are one level below.
 const actions = {
   onRetry: ignore,
@@ -30,12 +60,22 @@ const actions = {
   onFirstPage: ignore,
   hrefFor: stay,
   cardHeading: "h4",
+  timesFor,
+  saveFor,
 } as const;
 
 /** The filters as they are on Browse, holding their own choices so they can be tried out. */
 function LiveFilters(): ReactElement {
   const [filters, setFilters] = useState<BrowseFilters>({ page: 1 });
-  return <RestaurantFilters key={filters.q ?? ""} filters={filters} onChange={setFilters} />;
+  return (
+    <RestaurantFilters
+      key={[filters.q, filters.date, filters.time, filters.guests].join("|")}
+      filters={filters}
+      onChange={setFilters}
+      query={tableQuery(filters, TODAY, NOW)}
+      today={TODAY}
+    />
+  );
 }
 
 const filters: Record<StateOf<"browseFilters">, ReactElement> = {
@@ -44,10 +84,17 @@ const filters: Record<StateOf<"browseFilters">, ReactElement> = {
     <RestaurantFilters
       filters={{ q: "wine", cuisine: "ARMENIAN", district: "KENTRON", price: 2, page: 1 }}
       onChange={ignore}
+      query={{ date: "2026-11-14", time: "20:00", guests: 4 }}
+      today={TODAY}
     />
   ),
   "Highest rated first": (
-    <RestaurantFilters filters={{ sort: "rating", page: 1 }} onChange={ignore} />
+    <RestaurantFilters
+      filters={{ sort: "rating", page: 1 }}
+      onChange={ignore}
+      query={tableQuery({}, TODAY, NOW)}
+      today={TODAY}
+    />
   ),
 };
 

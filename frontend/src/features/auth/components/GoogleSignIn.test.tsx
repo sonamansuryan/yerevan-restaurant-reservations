@@ -74,11 +74,11 @@ function renderGoogle(props: Partial<ComponentProps<typeof GoogleSignIn>> = {}):
 
 const googleButton = (): HTMLElement => screen.getByRole("button", { name: "Sign in with Google" });
 
-test("shows the divider, then Google's own button in its outline style", () => {
+test("shows Google's own button in its outline style, then the divider before the email form", () => {
   renderGoogle();
 
-  expect(screen.getByText("or")).toBeDefined();
-  expect(googleButton()).toBeDefined();
+  const divider = screen.getByText("or with email");
+  expect(googleButton().compareDocumentPosition(divider)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   expect(google.buttons.at(-1)).toMatchObject({
     text: "signin_with",
     theme: "outline",
@@ -114,7 +114,7 @@ test("while Google's script loads, the divider shows and the button's space is k
   google.script = "loading";
   renderGoogle();
 
-  expect(screen.getByText("or")).toBeDefined();
+  expect(screen.getByText("or with email")).toBeDefined();
   expect(screen.queryByRole("button")).toBeNull();
   expect(screen.queryByText("Google sign-in isn’t available right now.")).toBeNull();
   // The 40px space Google's button will take, so nothing below moves when it arrives.

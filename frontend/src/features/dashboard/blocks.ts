@@ -115,3 +115,31 @@ export function blockWhen(
 export function blockWhat({ table }: Pick<OwnerBlock, "table">): string {
   return table ? `${tableName(table.label)} · ${ZONE_LABELS[table.zone]}` : "Whole restaurant";
 }
+
+/** How a day stands on the blocks calendar: blocked for the whole restaurant, or only partly. */
+export type BlockedDay = "whole" | "partial";
+
+/**
+ * The days the blocks touch, for the calendar, by YYYY-MM-DD: "whole" when the whole restaurant is
+ * blocked from midnight to midnight, "partial" when only some hours or some tables are. A block
+ * ending at 00:00 ends with the day before. The whole day wins when blocks overlap.
+ */
+export function blockedDays(blocks: OwnerBlock[]): Map<string, BlockedDay> {
+  const days = new Map<string, BlockedDay>();
+  for (const block of blocks) {
+    const last = block.ends.time === "00:00" ? shiftDate(block.ends.date, -1) : block.ends.date;
+    // A year at most, so a block far into the future can't make this run on.
+    for (
+      let date = block.starts.date, step = 0;
+      date <= last && step < 366;
+      date = shiftDate(date, 1), step += 1
+    ) {
+      const fromMidnight = date > block.starts.date || block.starts.time === "00:00";
+      const toMidnight = block.ends.date >= shiftDate(date, 1);
+      const kind: BlockedDay =
+        block.table === null && fromMidnight && toMidnight ? "whole" : "partial";
+      if (days.get(date) !== "whole") days.set(date, kind);
+    }
+  }
+  return days;
+}

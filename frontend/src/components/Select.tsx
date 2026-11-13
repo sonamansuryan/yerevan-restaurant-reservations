@@ -41,7 +41,7 @@ export function Select({
             {...control}
             disabled={disabled}
             className={cx(
-              "h-11 appearance-none pr-7",
+              "h-12 appearance-none pr-10",
               controlClass({ invalid: Boolean(error), disabled }),
             )}
           >
@@ -49,7 +49,7 @@ export function Select({
           </select>
           <ChevronDownIcon
             strokeWidth="1.6"
-            className="pointer-events-none absolute top-1/2 right-0 -translate-y-1/2 text-ink-muted"
+            className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-ink-muted"
           />
         </div>
       )}

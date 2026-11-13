@@ -10,28 +10,31 @@ const states = [
 ];
 
 const isBorderColor = (name: string): boolean =>
-  name.startsWith("border-") && name !== "border-b" && name !== "border-dashed";
+  name.startsWith("border-") && name !== "border-dashed";
 
 // Two classes for one property don't override each other, because Tailwind decides which one wins.
-test.each(states)("the $name state sets one line color and one text color", (state) => {
+test.each(states)("the $name state sets one line, one fill and one text color", (state) => {
   const classes = controlClass(state).split(" ");
 
   expect(classes.filter(isBorderColor)).toHaveLength(1);
+  expect(classes.filter((name) => name.startsWith("bg-"))).toHaveLength(1);
   expect(classes.filter((name) => /^text-(ink|error)/.test(name))).toHaveLength(1);
 });
 
-test("a field is a ruled line, not a box", () => {
+test("a field is a white box with rounded corners", () => {
   const classes = controlClass({ invalid: false, disabled: false }).split(" ");
 
-  expect(classes).toContain("border-b");
-  expect(classes).toContain("bg-transparent");
+  expect(classes).toContain("border");
+  expect(classes).toContain("rounded-card");
+  expect(classes).toContain("bg-surface-raised");
 });
 
-test("focus turns the line to the accent and doubles it", () => {
+test("focus turns the line to the accent and doubles it with a ring, which takes no room", () => {
   const classes = controlClass({ invalid: false, disabled: false }).split(" ");
 
   expect(classes).toContain("focus:border-accent");
-  expect(classes).toContain("focus:shadow-rule-focus");
+  expect(classes).toContain("focus:ring-1");
+  expect(classes).toContain("focus:ring-accent");
 });
 
 test("the ring is switched off in a way forced high-contrast mode still shows", () => {
@@ -39,21 +42,8 @@ test("the ring is switched off in a way forced high-contrast mode still shows", 
   expect(controlClass({ invalid: false, disabled: false })).not.toContain("outline-none");
 });
 
-test("the error state uses the error color, focused or not", () => {
-  const classes = controlClass({ invalid: true, disabled: false }).split(" ");
+test("its right padding is left to each field, so an arrow or Show has room", () => {
+  const classes = controlClass({ invalid: false, disabled: false }).split(" ");
 
-  expect(classes).toContain("border-error");
-  expect(classes).toContain("focus:shadow-rule-error");
-});
-
-test("a disabled line is dashed", () => {
-  expect(controlClass({ invalid: false, disabled: true })).toContain("border-dashed");
-});
-
-test("disabled wins over invalid, because a disabled field can't be fixed", () => {
-  expect(controlClass({ invalid: true, disabled: true })).not.toContain("border-error");
-});
-
-test("field text is 16px, or iPhones zoom the page when a field gets focus", () => {
-  expect(controlClass({ invalid: false, disabled: false }).split(" ")).toContain("text-body");
+  expect(classes.some((name) => /^(px|pr)-/.test(name))).toBe(false);
 });

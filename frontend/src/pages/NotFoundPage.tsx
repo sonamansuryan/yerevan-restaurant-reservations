@@ -22,8 +22,10 @@ export function NotFoundPage({
   return (
     <PageContainer className="page-fill flex flex-col items-center justify-center py-section-sm text-center md:py-section-lg">
       <title>{`${title} · Seghan`}</title>
-      <p className="text-eyebrow text-ink-muted uppercase">404</p>
-      <h1 className="mt-4 max-w-140 font-display text-section text-balance md:text-feature">
+      <p className="rounded-pill bg-surface-blush px-3 py-1 text-caption font-semibold text-ink-secondary">
+        404
+      </p>
+      <h1 className="mt-5 max-w-140 font-grotesque text-page-title font-bold text-balance">
         {title}
       </h1>
       <p className="mt-4 max-w-110 text-body text-balance text-ink-secondary">{description}</p>

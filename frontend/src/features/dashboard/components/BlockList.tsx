@@ -20,9 +20,10 @@ interface BlockListProps {
 }
 
 /**
- * The blocked times that aren't over yet, by when they start: the days in serif, then the times
- * and what's blocked, and the owner's own reason. Removing one asks first, because guests can
- * book that time again straight away.
+ * The blocked times that aren't over yet, by when they start, as the export's "Blocked dates &
+ * tables": one white panel, a line each, the days in bold, then the times and what's blocked, and
+ * the owner's own reason, with Remove in wine. Removing one asks first, because guests can book that
+ * time again straight away.
  */
 export function BlockList({
   blocks,
@@ -41,38 +42,44 @@ export function BlockList({
   return (
     <div className="flex flex-col gap-4">
       <RefusalNotice error={error} className="max-w-160" />
-      <ul className="border-t border-line">
-        {blocks.map((block) => {
-          const { days, times } = blockWhen(block, today);
-          const what = blockWhat(block);
-          return (
-            <li
-              key={block.id}
-              className="flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-line py-4"
-            >
-              <div className="min-w-0 flex-1 basis-64">
-                <p className="font-display text-title-xs break-words">{days}</p>
-                <p className="mt-0.5 text-meta text-ink-secondary">
-                  <span className="tabular-nums">{times}</span> · {what}
-                </p>
-                {block.reason && (
-                  <p className="mt-1.5 text-meta break-words text-ink-secondary">
-                    <span className="font-medium text-ink">Reason:</span> {block.reason}
-                  </p>
-                )}
-              </div>
-              <Button
-                variant="link"
-                aria-label={`Remove, ${days}, ${times}, ${what}`}
-                loading={removingId === block.id}
-                onClick={() => setConfirming(block)}
+      <section className="min-w-0 overflow-hidden rounded-band border border-line bg-surface-raised">
+        <h3 className="border-b border-line px-5 py-4 text-body font-semibold">
+          Blocked dates &amp; tables
+        </h3>
+        <ul>
+          {blocks.map((block) => {
+            const { days, times } = blockWhen(block, today);
+            const what = blockWhat(block);
+            return (
+              <li
+                key={block.id}
+                className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line-soft px-5 py-3 last:border-b-0"
               >
-                Remove
-              </Button>
-            </li>
-          );
-        })}
-      </ul>
+                <div className="min-w-0 flex-1 basis-56">
+                  <p className="text-ui font-semibold break-words">{days}</p>
+                  <p className="mt-0.5 text-meta text-ink-secondary">
+                    <span className="tabular-nums">{times}</span> · {what}
+                  </p>
+                  {block.reason && (
+                    <p className="mt-1.5 text-meta break-words text-ink-secondary">
+                      <span className="font-semibold text-ink">Reason:</span> {block.reason}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="danger"
+                  size="compact"
+                  aria-label={`Remove, ${days}, ${times}, ${what}`}
+                  loading={removingId === block.id}
+                  onClick={() => setConfirming(block)}
+                >
+                  Remove
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
       <Modal
         open={confirming !== null}

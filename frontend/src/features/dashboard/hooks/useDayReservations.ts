@@ -19,9 +19,12 @@ export function useDayReservations(
   id: string,
   date: string,
   page: number,
+  /** False until the restaurant is known, as for the menu's count of bookings to confirm. */
+  enabled = true,
 ): UseQueryResult<ListResponse<OwnerReservation>, ApiError> {
   return useQuery<ListResponse<OwnerReservation>, ApiError>({
     queryKey: ownerKeys.day(id, date, page),
+    enabled,
     queryFn: () => {
       const query = new URLSearchParams({ date, page: String(page) });
       return apiGet<ListResponse<OwnerReservation>>(

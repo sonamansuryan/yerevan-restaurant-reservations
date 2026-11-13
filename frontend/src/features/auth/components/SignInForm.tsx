@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { useLocation } from "react-router";
 
 import { Button, LinkButton } from "@/components/Button";
+import { StoreIcon } from "@/components/icons";
 import { Input } from "@/components/Input";
 import { PasswordField } from "@/components/PasswordField";
 import { ServerNotice } from "@/features/auth/components/ServerNotice";
@@ -23,7 +24,7 @@ interface SignInFormProps {
   /** For /design: values to start with, and showing their problems at once. */
   defaultValues?: Partial<SignInFields>;
   validateOnMount?: boolean;
-  /** Another way in, shown under the button: the "or" divider and Google's button. */
+  /** Another way in, shown above the form: Google's button and the "or with email" divider. */
   google?: ReactNode;
 }
 
@@ -62,9 +63,10 @@ export function SignInForm({
 
   return (
     // Google's part sits outside the <form>, because it isn't part of what the form sends.
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
+      {google}
       {/* noValidate: the browser's own bubbles would come before these messages, in its own words. */}
-      <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <ServerNotice error={error} />
         <Input
           label="Email"
@@ -80,17 +82,25 @@ export function SignInForm({
           error={errors.password?.message}
           {...register("password")}
         />
-        <Button type="submit" loading={pending} className="mt-2 w-full">
+        <Button type="submit" variant="accent" size="large" loading={pending} className="w-full">
           Sign in
         </Button>
       </form>
-      {google}
-      <p className="text-ui text-ink-secondary">
-        New to Seghan?{" "}
-        <LinkButton variant="link" to="/register" state={returnState}>
-          Create an account
-        </LinkButton>
-      </p>
+      {/* As in the export: owners sign in here too, with the same form. */}
+      <div className="flex items-center gap-3 rounded-hero border border-dashed border-line-strong p-4">
+        <StoreIcon width="18" height="18" className="flex-none text-ink-secondary" />
+        <p className="text-ui leading-copy text-ink-body">
+          Restaurant owner? You sign in here too. New to Seghan?{" "}
+          <LinkButton
+            variant="link"
+            to="/register?role=owner"
+            state={returnState}
+            className="min-h-0"
+          >
+            List your restaurant
+          </LinkButton>
+        </p>
+      </div>
     </div>
   );
 }

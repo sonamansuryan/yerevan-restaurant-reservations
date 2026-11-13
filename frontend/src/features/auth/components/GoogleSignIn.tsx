@@ -11,7 +11,7 @@ import type { ApiError } from "@/lib/api";
 import { cx } from "@/lib/cx";
 
 /** Google's own words on its button. */
-export type GoogleButtonText = "signin_with" | "signup_with";
+export type GoogleButtonText = "continue_with" | "signin_with" | "signup_with";
 
 /** Where Google's script is. Its button can only be drawn once the script has arrived. */
 export type GoogleStatus = "loading" | "ready" | "unavailable";
@@ -83,9 +83,9 @@ export function GoogleBlock({
       ? NO_TOKEN
       : null;
 
+  // Google's button comes first, then the form under "or with email", as the export has them.
   return (
-    <div className="flex flex-col gap-6">
-      <OrDivider />
+    <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-4">
         {/* Google's button is 40px tall. Its space is kept from the start, so nothing jumps when
             the button arrives. */}
@@ -129,6 +129,7 @@ export function GoogleBlock({
         </div>
         {problem && <FormNotice tone="error">{problem}</FormNotice>}
       </div>
+      <OrDivider>or with email</OrDivider>
     </div>
   );
 }

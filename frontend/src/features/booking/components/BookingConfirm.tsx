@@ -8,10 +8,12 @@ import type { Viewer } from "@/features/booking/booking";
 import type { ApiError } from "@/lib/api";
 
 interface BookingConfirmProps {
-  /** The booking in one sentence, such as "A table for two on Saturday 14 November at 19:00, indoors." */
-  readBack: string;
-  /** What the sentence leaves out, such as "Table T2 · until 21:00". */
-  details: string;
+  /** What's still to choose before booking: a time, then a table. Null once a table is chosen. */
+  missing: "time" | "table" | null;
+  /** The button's words once a table is chosen, such as "Reserve for 2 · Fri 13 Nov, 19:30". */
+  label: string;
+  /** Until when the table is held, such as "21:30", once a table is chosen. */
+  ends: string | null;
   viewer: Viewer;
   sending: boolean;
   /** Why booking this table failed, such as a lost connection, shown by the button. */
@@ -19,14 +21,19 @@ interface BookingConfirmProps {
   onBook: (specialRequests: string) => void;
 }
 
+const hint = "rounded-hero bg-surface-tinted p-3.5 text-ui text-pretty text-ink-body";
+
 /**
- * The last step: the booking said back, then the one button that books it. Someone signed out is
- * sent to sign in and brought back to the same choices. An owner's account can't book, so it's
- * told why instead.
+ * The foot of the booking panel, as the export has it: one wide wine button that says what it
+ * books, such as "Reserve for 2 · Fri 13 Nov, 19:30", and a line under it. Until a time and a table
+ * are chosen it waits, greyed, saying what's missing. A guest can leave the restaurant a note
+ * first. Someone signed out is sent to sign in and brought back to the same choices. An owner's
+ * account can't book, so it's told why instead.
  */
 export function BookingConfirm({
-  readBack,
-  details,
+  missing,
+  label,
+  ends,
   viewer,
   sending,
   refusal,
@@ -34,51 +41,82 @@ export function BookingConfirm({
 }: BookingConfirmProps): ReactElement {
   const [requests, setRequests] = useState("");
 
-  return (
-    <div className="flex flex-col gap-6 border-t border-line pt-6">
-      <div>
-        <p className="font-display text-title-xs text-pretty">{readBack}</p>
-        <p className="mt-1 text-meta text-ink-muted">{details}</p>
+  if (missing) {
+    return (
+      <div className="flex flex-col gap-3">
+        {missing === "time" && (
+          <p className={hint}>
+            Choose a time to see which tables are free. A time that’s struck through has no table
+            for your party.
+          </p>
+        )}
+        <Button variant="accent" size="large" disabled className="w-full">
+          {missing === "time" ? "Choose a time and table" : "Choose a table"}
+        </Button>
       </div>
+    );
+  }
 
-      {viewer.kind === "signedOut" && (
-        <div className="flex flex-col items-start gap-3">
-          <LinkButton to="/login" state={viewer.signIn}>
-            Sign in to book
-          </LinkButton>
-          <p className="text-meta text-ink-muted">You’ll come back to this table afterwards.</p>
-        </div>
-      )}
+  if (viewer.kind === "notAGuest") {
+    return (
+      <p className={hint}>
+        Tables are booked from a guest account. You’re signed in as {viewer.name}.
+      </p>
+    );
+  }
 
-      {viewer.kind === "notAGuest" && (
-        <p className="text-ui text-ink-secondary">
-          Tables are booked from a guest account. You’re signed in as {viewer.name}.
-        </p>
-      )}
-
-      {(viewer.kind === "guest" || viewer.kind === "checking") && (
-        <form
-          className="flex flex-col items-start gap-6"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onBook(requests.trim());
-          }}
+  // Booking is the page's one action, so its button is wine and as wide as the panel.
+  if (viewer.kind === "signedOut") {
+    return (
+      <div className="flex flex-col gap-2">
+        <LinkButton
+          variant="accent"
+          size="large"
+          to="/login"
+          state={viewer.signIn}
+          className="w-full"
         >
-          <Textarea
-            label="Special requests"
-            hint="Optional. The restaurant sees it."
-            rows={2}
-            maxLength={500}
-            value={requests}
-            onChange={(event) => setRequests(event.target.value)}
-            className="w-full"
-          />
-          {refusal && <FormNotice className="w-full">{refusal.message}</FormNotice>}
-          <Button type="submit" loading={sending} disabled={viewer.kind === "checking"}>
-            Book this table
-          </Button>
-        </form>
-      )}
-    </div>
+          Sign in to reserve
+        </LinkButton>
+        <p className="text-center text-caption text-ink-secondary">
+          You’ll come back to this table afterwards.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      className="flex flex-col gap-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onBook(requests.trim());
+      }}
+    >
+      <Textarea
+        label="Note for the restaurant (optional)"
+        placeholder="Allergies, an occasion, a high chair…"
+        rows={2}
+        maxLength={500}
+        value={requests}
+        onChange={(event) => setRequests(event.target.value)}
+      />
+      {refusal && <FormNotice>{refusal.message}</FormNotice>}
+      <div className="flex flex-col gap-2">
+        <Button
+          type="submit"
+          variant="accent"
+          size="large"
+          loading={sending}
+          disabled={viewer.kind === "checking"}
+          className="w-full"
+        >
+          {label}
+        </Button>
+        <p className="text-center text-caption text-ink-secondary">
+          {ends ? `The table is yours until ${ends}. ` : ""}No payment needed.
+        </p>
+      </div>
+    </form>
   );
 }

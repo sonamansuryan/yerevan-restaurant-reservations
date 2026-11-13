@@ -12,8 +12,8 @@ interface PasswordFieldProps extends Omit<ComponentProps<"input">, "type"> {
 }
 
 /**
- * A password on the ruled line, with Show and Hide at its end. Seeing what you typed replaces the
- * usual "confirm password" field. `ref` and the other props go to the real <input>, so React Hook
+ * A password in its box, with Show and Hide at its end. Seeing what you typed replaces the usual
+ * "confirm password" field. `ref` and the other props go to the real <input>, so React Hook
  * Form's register() works, as with Input.
  */
 export function PasswordField({
@@ -44,7 +44,7 @@ export function PasswordField({
             type={shown ? "text" : "password"}
             disabled={disabled}
             // Room at the end, so a long password never runs under Show.
-            className={cx("h-11 pr-14", controlClass({ invalid: Boolean(error), disabled }))}
+            className={cx("h-12 pr-17", controlClass({ invalid: Boolean(error), disabled }))}
           />
           <button
             type="button"
@@ -54,7 +54,7 @@ export function PasswordField({
             // Screen readers hear what it's for. The name starts with the word on screen, so voice
             // control users can say "Show" too.
             aria-label={shown ? "Hide password" : "Show password"}
-            className="absolute right-0 bottom-0 flex h-11 items-center text-meta font-medium text-ink-secondary underline decoration-line-control underline-offset-4 transition-[color,text-decoration-color] duration-button hover:text-ink hover:decoration-ink disabled:cursor-not-allowed disabled:text-ink-muted"
+            className="absolute right-3.5 bottom-0 flex h-12 items-center text-meta font-medium text-ink-secondary underline decoration-line-control underline-offset-4 transition-[color,text-decoration-color] duration-button hover:text-ink hover:decoration-ink disabled:cursor-not-allowed disabled:text-ink-muted"
           >
             {shown ? "Hide" : "Show"}
           </button>

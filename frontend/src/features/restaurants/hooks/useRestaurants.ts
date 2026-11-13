@@ -9,15 +9,18 @@ import type { ListResponse, RestaurantSummary } from "@/types/api";
 
 /**
  * One page of restaurants for these filters. Each set of filters is cached on its own, so going
- * Back shows the earlier list at once. While a new list loads, the last one stays on screen.
+ * Back shows the earlier list at once. While a new list loads, the last one stays on screen. The
+ * table looked for (its day, time and party) isn't a filter: the list is the same whatever it is,
+ * so it's left out of the request and the cache key, and changing it asks for nothing again.
  */
 export function useRestaurants(
   filters: BrowseFilters,
 ): UseQueryResult<ListResponse<RestaurantSummary>, ApiError> {
+  const list: BrowseFilters = { ...filters, date: undefined, time: undefined, guests: undefined };
   return useQuery({
-    queryKey: ["restaurants", filters],
+    queryKey: ["restaurants", list],
     queryFn: () => {
-      const query = filtersToParams(filters).toString();
+      const query = filtersToParams(list).toString();
       return apiGet<ListResponse<RestaurantSummary>>(`/api/restaurants${query ? `?${query}` : ""}`);
     },
     placeholderData: keepPreviousData,

@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import type { To } from "react-router";
 
+import { Badge } from "@/components/Badge";
 import { Select } from "@/components/Select";
 import {
   ROLE_CHOICES,
@@ -47,15 +48,15 @@ function UserLine({ user, today }: { user: AdminUser; today: string }): ReactEle
   // The day in Yerevan, with its year when it isn't this year's.
   const joined = `Joined ${formatDayHeading(yerevanToday(new Date(user.createdAt)), today)}`;
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-6 gap-y-1 border-b border-line py-4">
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-6 gap-y-1 px-5 py-4">
       <div className="min-w-0">
-        <p className="font-display text-title-xs break-words">{user.name}</p>
+        <p className="font-semibold break-words">{user.name}</p>
         <p className="mt-0.5 text-meta break-words text-ink-secondary">{user.email}</p>
         <p className="text-meta text-ink-secondary">
           {activity ? `${activity} · ${joined}` : joined}
         </p>
       </div>
-      <p className="text-ui font-medium text-ink-secondary">{ROLE_LABELS[user.role]}</p>
+      <Badge>{ROLE_LABELS[user.role]}</Badge>
     </li>
   );
 }
@@ -94,7 +95,6 @@ export function AdminUsers({
         q={filters.q}
         placeholder="Name or email"
         onSearch={(q) => change({ q })}
-        choices={1}
       >
         <Select
           label="Role"
@@ -119,7 +119,7 @@ export function AdminUsers({
         hrefFor={hrefFor}
       >
         {(users) => (
-          <ul className="border-t border-line">
+          <ul className="divide-y divide-line">
             {users.map((user) => (
               <UserLine key={user.id} user={user} today={today} />
             ))}

@@ -14,9 +14,9 @@ export function Section({ id, title, intro, children }: SectionProps): ReactElem
     <section
       id={id}
       aria-labelledby={`${id}-title`}
-      className="scroll-mt-6 border-t-3 border-double border-line-rule pt-8 pb-16 last:pb-0"
+      className="scroll-mt-6 border-t border-line pt-8 pb-16 last:pb-0"
     >
-      <h2 id={`${id}-title`} className="font-display text-section">
+      <h2 id={`${id}-title`} className="font-grotesque text-page-title font-bold">
         {title}
       </h2>
       {intro && <p className="mt-3 max-w-160 text-body text-ink-secondary">{intro}</p>}
@@ -41,7 +41,7 @@ interface GroupProps {
 export function Group({ title, note, children }: GroupProps): ReactElement {
   return (
     <div className="mt-10">
-      <h3 className="font-display text-title">{title}</h3>
+      <h3 className="font-grotesque text-subheading font-bold">{title}</h3>
       {note && <p className="mt-1 max-w-160 text-ui text-ink-muted">{note}</p>}
       <div className="mt-4">{children}</div>
     </div>
@@ -87,13 +87,12 @@ interface TokenLineProps {
   children?: ReactNode;
 }
 
-/** A token's role and value, joined like a line on a menu, with its name beneath. */
+/** A token's role, its value at the end of the line, and its name beneath. */
 export function TokenLine({ name, role, value, children }: TokenLineProps): ReactElement {
   return (
     <div className="border-b border-line py-3">
-      <div className="flex flex-wrap items-baseline gap-x-2">
-        <span className="text-ui font-medium">{role}</span>
-        <span aria-hidden="true" className="menu-leader max-sm:hidden" />
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+        <span className="text-ui font-semibold">{role}</span>
         <code className="font-sans text-meta text-ink-muted">{value}</code>
       </div>
       <code className="mt-0.5 block font-sans text-caption text-ink-muted">--{name}</code>

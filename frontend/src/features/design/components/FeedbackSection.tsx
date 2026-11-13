@@ -8,9 +8,14 @@ import { FormNotice } from "@/components/FormNotice";
 import {
   AlertIcon,
   ArrowRightIcon,
+  CalendarIcon,
   CheckIcon,
   ChevronDownIcon,
+  ClockIcon,
   CloseIcon,
+  HeartIcon,
+  SearchIcon,
+  UsersIcon,
 } from "@/components/icons";
 import { Modal } from "@/components/Modal";
 import { Spinner } from "@/components/Spinner";
@@ -27,9 +32,14 @@ const statuses: [BadgeTone, string][] = [
 const icons = [
   { name: "Alert", Icon: AlertIcon },
   { name: "Arrow", Icon: ArrowRightIcon },
+  { name: "Calendar", Icon: CalendarIcon },
   { name: "Check", Icon: CheckIcon },
   { name: "Chevron", Icon: ChevronDownIcon },
+  { name: "Clock", Icon: ClockIcon },
   { name: "Close", Icon: CloseIcon },
+  { name: "Heart", Icon: HeartIcon },
+  { name: "Search", Icon: SearchIcon },
+  { name: "People", Icon: UsersIcon },
 ];
 
 export function FeedbackSection(): ReactElement {
@@ -44,9 +54,9 @@ export function FeedbackSection(): ReactElement {
     >
       <Group
         title="Badge"
-        note="A dot and a word, like a note in the margin of the book. These are the booking statuses."
+        note="A word on its tone's soft fill, as a small pill. These are the booking statuses."
       >
-        <div className="flex flex-wrap gap-x-8 gap-y-3">
+        <div className="flex flex-wrap gap-3">
           {statuses.map(([tone, word]) => (
             <Badge key={word} tone={tone}>
               {word}
@@ -71,7 +81,7 @@ export function FeedbackSection(): ReactElement {
       </Group>
       <Group
         title="Spinner"
-        note="The logo's dot, for a page that's loading. Buttons have their own ring."
+        note="A wine dot, breathing, for a page that's loading. Buttons have their own ring."
       >
         <Spinner label="Loading the page" />
       </Group>

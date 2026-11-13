@@ -92,7 +92,7 @@ export function RestaurantForm({
 
   return (
     // noValidate: the browser's own bubbles would come before these messages, in its own words.
-    <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex max-w-160 flex-col gap-10">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex max-w-180 flex-col gap-6">
       {(error || (saved && !isDirty)) && (
         <div className="flex flex-col gap-3">
           <ServerNotice error={error} />
@@ -113,7 +113,7 @@ export function RestaurantForm({
           aria-describedby={cx(cuisinesError && `${cuisinesId}-error`, `${cuisinesId}-hint`)}
           className="flex min-w-0 flex-col"
         >
-          <legend className="text-meta font-medium text-ink-secondary">Cuisines</legend>
+          <legend className="text-ui font-semibold text-ink">Cuisines</legend>
           <p id={`${cuisinesId}-hint`} className="mt-0.5 text-meta text-ink-muted">
             Choose up to {MAX_CUISINES}.
           </p>

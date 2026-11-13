@@ -1,6 +1,11 @@
-import { useState } from "react";
-import type { ReactElement, ReactNode } from "react";
+import { useId, useState } from "react";
+import type { ComponentProps, ReactElement, ReactNode } from "react";
 import type { To } from "react-router";
+
+import { Button } from "@/components/Button";
+import { Figures } from "@/components/Figures";
+import { OfficeAccount } from "@/components/OfficeAccount";
+import { PartHeader } from "@/components/PartHeader";
 
 import type { BookingChange } from "@/features/dashboard/bookingChanges";
 import { BookingChangeNotice } from "@/features/dashboard/components/BookingChangeNotice";
@@ -17,11 +22,11 @@ import { OpeningHoursForm } from "@/features/dashboard/components/OpeningHoursFo
 import { PhotoManager } from "@/features/dashboard/components/PhotoManager";
 import { PublishPanel } from "@/features/dashboard/components/PublishPanel";
 import { RestaurantForm } from "@/features/dashboard/components/RestaurantForm";
-import { RestaurantHeader } from "@/features/dashboard/components/RestaurantHeader";
+import { RestaurantNav } from "@/features/dashboard/components/RestaurantNav";
 import { RestaurantList } from "@/features/dashboard/components/RestaurantList";
 import { UPLOAD_FAILED } from "@/features/dashboard/hooks/usePhotos";
 import { weekFields } from "@/features/dashboard/hours";
-import { daySummary } from "@/features/dashboard/labels";
+import { dayFigures } from "@/features/dashboard/labels";
 import { NEW_RESTAURANT, restaurantFields } from "@/features/dashboard/schemas";
 import { Group, Specimens } from "@/features/design/components/parts";
 import {
@@ -36,6 +41,7 @@ import {
 } from "@/features/design/samples";
 import { screenStates } from "@/features/design/tokens";
 import { ApiError } from "@/lib/api";
+import { formatDayHeading } from "@/lib/time";
 import type { OwnerReservation } from "@/types/api";
 
 type StateOf<K extends keyof typeof screenStates> = (typeof screenStates)[K][number];
@@ -102,29 +108,73 @@ const list: Record<StateOf<"dashboardList">, ReactElement> = {
   ),
 };
 
-// The parts' links start at this page's address, so the first, Bookings, shows as open.
+// Ani, the owner, signed in: the menu's foot, with Sign out.
+const ani = (
+  <OfficeAccount
+    account={{
+      user: {
+        id: "owner-ani",
+        name: "Ani Sargsyan",
+        email: "ani@example.com",
+        phone: null,
+        role: "OWNER",
+      },
+      onSignOut: ignore,
+      signingOut: false,
+      signOutFailed: false,
+    }}
+  />
+);
+
+// The parts' links start at this page's address, so the first, Reservations, shows as open.
 const header: Record<StateOf<"dashboardHeader">, ReactElement> = {
-  Published: <RestaurantHeader restaurant={ownedLori} headingLevel={4} sectionsBase="/design" />,
-  "A draft, with a long Armenian name": (
-    <RestaurantHeader restaurant={ownedDraft} headingLevel={4} sectionsBase="/design" />
-  ),
-  "Hidden by Seghan": (
-    <RestaurantHeader
-      restaurant={{ ...ownedLori, hiddenBySeghan: true }}
+  Published: (
+    <RestaurantNav
+      restaurant={ownedLori}
+      waiting={2}
+      account={ani}
       headingLevel={4}
       sectionsBase="/design"
+      specimen
+    />
+  ),
+  "A draft, with a long Armenian name": (
+    <RestaurantNav
+      restaurant={ownedDraft}
+      account={ani}
+      headingLevel={4}
+      sectionsBase="/design"
+      specimen
+    />
+  ),
+  "Hidden by Seghan": (
+    <RestaurantNav
+      restaurant={{ ...ownedLori, hiddenBySeghan: true }}
+      account={ani}
+      headingLevel={4}
+      sectionsBase="/design"
+      specimen
     />
   ),
 };
 
 const FRIDAY = "2026-11-13";
 
-/** A day's page as Bookings shows it: the date, the days around it, then what's booked. */
+/**
+ * A day's page as Reservations shows it: the part's heading with the date and its hours, the days
+ * around it, then what's booked.
+ */
 function Day({ date, children }: { date: string; children: ReactNode }): ReactElement {
   return (
     <div>
-      <DayNav date={date} today={FRIDAY} hrefFor={stay} onGoTo={ignore} headingLevel={4} />
-      <div className="mt-8">{children}</div>
+      <PartHeader
+        title="Reservations"
+        headingLevel={4}
+        description={`${formatDayHeading(date, FRIDAY)} · Open 12:00 – 15:00, 18:00 – 23:00`}
+        action={<DayNav date={date} today={FRIDAY} hrefFor={stay} onGoTo={ignore} />}
+        className="mb-6"
+      />
+      {children}
     </div>
   );
 }
@@ -149,7 +199,7 @@ function LiveDay(): ReactElement {
   return (
     <Day date={FRIDAY}>
       <BookingChangeNotice changed={changed} refusal={null} className="mb-6" />
-      <p className="mb-4 text-ui text-ink-secondary">{daySummary(bookings)}</p>
+      <Figures figures={dayFigures(bookings, true)} className="mb-6" />
       <DayBookings reservations={bookings} onChange={change} />
     </Day>
   );
@@ -281,14 +331,30 @@ const form: Record<StateOf<"restaurantForm">, ReactElement> = {
   ),
 };
 
+/** The week with Save changes above it, as the part's header holds it on the page. */
+function Hours({
+  sending = false,
+  ...form
+}: { sending?: boolean } & Omit<ComponentProps<typeof OpeningHoursForm>, "id">): ReactElement {
+  const id = useId();
+  return (
+    <div className="flex flex-col items-start gap-4">
+      <Button type="submit" form={id} variant="accent" loading={sending}>
+        Save changes
+      </Button>
+      <OpeningHoursForm id={id} {...form} />
+    </div>
+  );
+}
+
 const hours: Record<StateOf<"openingHours">, ReactElement> = {
-  "Split shifts (live)": <OpeningHoursForm values={weekFields(splitWeek)} onSubmit={ignore} />,
-  "Late nights and a closed day": <OpeningHoursForm values={tsiranWeek} onSubmit={ignore} />,
-  "No hours yet": <OpeningHoursForm values={{ hours: [] }} onSubmit={ignore} />,
-  "An overlap": <OpeningHoursForm values={overlapping} onSubmit={ignore} error={overlap} />,
-  "An empty week": <OpeningHoursForm values={{ hours: [] }} onSubmit={ignore} error={emptyWeek} />,
-  Sending: <OpeningHoursForm values={oneOpening} onSubmit={ignore} pending />,
-  Saved: <OpeningHoursForm values={oneOpening} onSubmit={ignore} saved />,
+  "Split shifts (live)": <Hours values={weekFields(splitWeek)} onSubmit={ignore} />,
+  "Late nights and a closed day": <Hours values={tsiranWeek} onSubmit={ignore} />,
+  "No hours yet": <Hours values={{ hours: [] }} onSubmit={ignore} />,
+  "An overlap": <Hours values={overlapping} onSubmit={ignore} error={overlap} />,
+  "An empty week": <Hours values={{ hours: [] }} onSubmit={ignore} error={emptyWeek} />,
+  Sending: <Hours values={oneOpening} onSubmit={ignore} sending />,
+  Saved: <Hours values={oneOpening} onSubmit={ignore} saved />,
 };
 
 const photoActions = {
@@ -312,7 +378,7 @@ export function DashboardScreens(): ReactElement {
     <>
       <Group
         title="Your restaurants"
-        note="/dashboard: the owner's restaurants as lines in the book, each opening its own dashboard. Add a restaurant opens the form below, under Restaurant information."
+        note="/dashboard: the owner's restaurants, a white card each, each opening its own dashboard. Add a restaurant opens the form below, under Restaurant information."
       >
         <Specimens wide specimens={list} />
       </Group>

@@ -2,12 +2,12 @@ import { useEffect, useRef } from "react";
 import type { ReactElement } from "react";
 
 import { FormNotice } from "@/components/FormNotice";
-import { Input } from "@/components/Input";
-import { Select } from "@/components/Select";
-import { GUEST_COUNTS, guestsLabel, readBack } from "@/features/booking/booking";
+import { reserveLabel } from "@/features/booking/booking";
 import type { BookingChoices, Viewer } from "@/features/booking/booking";
 import { BookingConfirm } from "@/features/booking/components/BookingConfirm";
 import { BookingDone } from "@/features/booking/components/BookingDone";
+import { DayChoice } from "@/features/booking/components/DayChoice";
+import { GuestStepper } from "@/features/booking/components/GuestStepper";
 import { TableChoice } from "@/features/booking/components/TableChoice";
 import { TimeChoice } from "@/features/booking/components/TimeChoice";
 import type { ApiError } from "@/lib/api";
@@ -36,9 +36,9 @@ export interface BookingWidgetProps {
 }
 
 /**
- * Booking a table on a restaurant's page, one choice after another: the date and the party, a
- * time, a table, then the booking said back with one button. Each step appears once the one
- * before it is chosen, and changing an earlier choice clears the ones after it.
+ * Booking a table on a restaurant's page, as the export's panel has it: the party, the day, a time,
+ * a table, then one button that says what it books. The tables appear once a time is chosen, and
+ * changing an earlier choice clears the ones after it.
  */
 export function BookingWidget({
   choices,
@@ -95,35 +95,17 @@ export function BookingWidget({
   );
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="grid grid-cols-2 gap-x-6">
-        <Input
-          label="Date"
-          type="date"
-          required
-          value={choices.date}
-          min={today}
-          max={availability.data?.bookingWindow.last}
-          onChange={(event) => {
-            // A date that's only half typed is empty, and changes nothing yet.
-            if (event.target.value)
-              onChoose({ date: event.target.value, time: null, tableId: null });
-          }}
-        />
-        <Select
-          label="Guests"
-          value={choices.guests}
-          onChange={(event) =>
-            onChoose({ guests: Number(event.target.value), time: null, tableId: null })
-          }
-        >
-          {GUEST_COUNTS.map((count) => (
-            <option key={count} value={count}>
-              {guestsLabel(count)}
-            </option>
-          ))}
-        </Select>
-      </div>
+    <div className="flex flex-col gap-5">
+      <GuestStepper
+        guests={choices.guests}
+        onChange={(guests) => onChoose({ guests, time: null, tableId: null })}
+      />
+      <DayChoice
+        date={choices.date}
+        today={today}
+        last={availability.data?.bookingWindow.last}
+        onChoose={(date) => onChoose({ date, time: null, tableId: null })}
+      />
 
       {!slot && notice}
       <TimeChoice
@@ -134,7 +116,7 @@ export function BookingWidget({
       />
 
       {slot && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           {notice}
           <TableChoice
             time={slot.starts}
@@ -145,16 +127,15 @@ export function BookingWidget({
         </div>
       )}
 
-      {slot && table && (
-        <BookingConfirm
-          readBack={readBack(choices.guests, choices.date, slot.starts, table.zone, today)}
-          details={`Table ${table.label} · until ${slot.ends}`}
-          viewer={viewer}
-          sending={sending}
-          refusal={refusal}
-          onBook={onBook}
-        />
-      )}
+      <BookingConfirm
+        missing={!slot ? "time" : !table ? "table" : null}
+        label={slot ? reserveLabel(choices.guests, choices.date, slot.starts) : ""}
+        ends={slot && table ? slot.ends : null}
+        viewer={viewer}
+        sending={sending}
+        refusal={refusal}
+        onBook={onBook}
+      />
     </div>
   );
 }

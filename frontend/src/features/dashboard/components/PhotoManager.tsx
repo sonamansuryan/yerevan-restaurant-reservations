@@ -73,7 +73,7 @@ export function PhotoManager({
         <p className="text-ui text-ink-secondary">
           {photos.length} of {MAX_PHOTOS} photos. The cover comes first, on your page and on Browse.
         </p>
-        <Button variant="ghost" loading={uploading} disabled={full || busy} onClick={choose}>
+        <Button loading={uploading} disabled={full || busy} onClick={choose}>
           Add a photo
         </Button>
         {/* The real picker, opened by the button, so its look is ours. */}
@@ -101,25 +101,24 @@ export function PhotoManager({
           action={{ label: "Add a photo", onClick: choose }}
         />
       ) : (
-        <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-4">
           {photos.map((photo, position) => {
             const name = photo.isCover ? "the cover" : `photo ${position + 1}`;
             return (
-              <li key={photo.id} className="flex min-w-0 flex-col gap-1">
+              <li key={photo.id} className="flex min-w-0 flex-col gap-2">
                 <img
                   src={photoUrl(photo.url, 480)}
                   alt={`${restaurantName}, ${photo.isCover ? "cover photo" : `photo ${position + 1}`}`}
                   loading="lazy"
-                  className="aspect-square w-full rounded-media bg-fill-slot object-cover"
+                  className="aspect-square w-full rounded-card bg-fill-slot object-cover"
                 />
-                <div className="flex flex-wrap items-center justify-between gap-x-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   {photo.isCover ? (
-                    <Badge tone="info" className="min-h-touch md:min-h-0">
-                      Cover
-                    </Badge>
+                    <Badge tone="info">Cover</Badge>
                   ) : (
                     <Button
-                      variant="link"
+                      variant="ghost"
+                      size="small"
                       disabled={waiting}
                       aria-label={`Make cover, ${name}`}
                       onClick={() => onMakeCover(photo.id)}
@@ -128,7 +127,8 @@ export function PhotoManager({
                     </Button>
                   )}
                   <Button
-                    variant="link"
+                    variant="ghost"
+                    size="small"
                     disabled={waiting}
                     aria-label={`Delete, ${name}`}
                     onClick={() => setConfirming(photo)}
@@ -140,7 +140,7 @@ export function PhotoManager({
             );
           })}
           {uploading && (
-            <li className="grid aspect-square place-items-center rounded-media bg-fill-slot">
+            <li className="grid aspect-square place-items-center rounded-card bg-fill-slot">
               <Spinner label="Uploading the photo" />
             </li>
           )}

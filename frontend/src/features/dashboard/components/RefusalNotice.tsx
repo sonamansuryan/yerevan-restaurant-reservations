@@ -17,10 +17,13 @@ export function BookingsInTheWay({
   reservations: OwnerReservation[];
 }): ReactElement {
   return (
-    <ul aria-label="Bookings in the way" className="border-t border-line">
+    <ul
+      aria-label="Bookings in the way"
+      className="divide-y divide-line rounded-card border border-line bg-surface-raised"
+    >
       {reservations.map((booking) => (
-        <li key={booking.id} className="border-b border-line py-2.5">
-          <p className="text-ui font-medium text-ink">
+        <li key={booking.id} className="px-4 py-2.5">
+          <p className="text-ui font-semibold text-ink">
             {formatBookDate(new Date(booking.startsAt))},{" "}
             <span className="tabular-nums">
               {booking.starts}–{booking.ends}

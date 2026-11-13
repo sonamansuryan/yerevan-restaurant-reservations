@@ -15,26 +15,6 @@ export function pageFrom(params: URLSearchParams): number {
   return Number.isInteger(page) && page >= 1 ? page : 1;
 }
 
-/** One day's bookings, in the order they came. */
-export interface BookingDay {
-  date: string;
-  bookings: GuestReservation[];
-}
-
-/**
- * The bookings under their days, as a diary lists them. They come in time order, so a day's
- * bookings are next to each other, and a day split between two pages starts again on the next.
- */
-export function byDay(reservations: GuestReservation[]): BookingDay[] {
-  const days: BookingDay[] = [];
-  for (const booking of reservations) {
-    const last = days.at(-1);
-    if (last?.date === booking.date) last.bookings.push(booking);
-    else days.push({ date: booking.date, bookings: [booking] });
-  }
-  return days;
-}
-
 // The words a guest sees for their own bookings. The restaurant's book says "Pending" and
 // "No-show". The guest is told what it means for them. A Record needs every status.
 export const GUEST_STATUS_LABELS: Record<ReservationStatus, string> = {

@@ -26,19 +26,38 @@ function renderForm(change: Partial<ComponentProps<typeof ReviewForm>> = {}) {
   return props;
 }
 
-test("the five ratings are in words, best first, with none chosen yet", () => {
+test("it names the visit, unless it sits under the visit's own card", () => {
+  renderForm();
+  expect(screen.getByText("Your visit to Lori Smokehouse on Friday 6 November.")).toBeDefined();
+  cleanup();
+
+  renderForm({ intro: false });
+  expect(screen.queryByText(/^Your visit to/)).toBeNull();
+});
+
+test("the rating is five stars, each named in words for screen readers, with none chosen yet", () => {
   renderForm();
 
-  const ratings = within(screen.getByRole("group", { name: "Your rating" }));
+  const ratings = within(screen.getByRole("group", { name: "How was it?" }));
   const radios = ratings.getAllByRole<HTMLInputElement>("radio");
-  expect(radios.map((radio) => radio.closest("label")?.textContent)).toEqual([
-    "Excellent 5",
-    "Very good 4",
-    "Good 3",
-    "Fair 2",
-    "Poor 1",
+  expect(radios.map((radio) => radio.getAttribute("aria-label"))).toEqual([
+    "1 of 5, Poor",
+    "2 of 5, Fair",
+    "3 of 5, Good",
+    "4 of 5, Very good",
+    "5 of 5, Excellent",
   ]);
   expect(radios.some((radio) => radio.checked)).toBe(false);
+  expect(screen.queryByText(/ of 5 · /)).toBeNull();
+});
+
+test("the rating chosen is said back in words beside the stars, for the eye", async () => {
+  renderForm();
+
+  await userEvent.click(screen.getByRole("radio", { name: "4 of 5, Very good" }));
+
+  // Screen readers have already heard it in the radio's name.
+  expect(screen.getByText("4 of 5 · Very good").getAttribute("aria-hidden")).toBe("true");
 });
 
 test("the words are optional, and the hint says who will see them", () => {
@@ -71,10 +90,12 @@ test("a rating alone is enough, and blank words count as none", async () => {
 test("the arrow keys move between the ratings, as in any radio group", async () => {
   renderForm();
 
-  await userEvent.click(screen.getByRole("radio", { name: /Good 3/ }));
+  await userEvent.click(screen.getByRole("radio", { name: "3 of 5, Good" }));
   await userEvent.keyboard("{ArrowDown}");
 
-  expect(screen.getByRole<HTMLInputElement>("radio", { name: /Fair/ }).checked).toBe(true);
+  expect(screen.getByRole<HTMLInputElement>("radio", { name: "4 of 5, Very good" }).checked).toBe(
+    true,
+  );
 });
 
 test("words over 1000 characters are refused under the field, and nothing is sent", async () => {
@@ -121,10 +142,10 @@ test("a refusal about one field shows under that field instead", async () => {
   expect(screen.queryByText("The request is invalid.")).toBeNull();
 });
 
-test("Not now closes it", async () => {
+test("Later closes it", async () => {
   const { onClose, onPost } = renderForm();
 
-  await userEvent.click(screen.getByRole("button", { name: "Not now" }));
+  await userEvent.click(screen.getByRole("button", { name: "Later" }));
 
   expect(onClose).toHaveBeenCalled();
   expect(onPost).not.toHaveBeenCalled();

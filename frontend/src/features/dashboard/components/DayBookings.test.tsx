@@ -27,14 +27,35 @@ describe("a day's bookings", () => {
     return screen.getAllByRole("listitem");
   };
 
-  test("one line per booking: time, guest, table, party and status", () => {
-    const confirmed = lines()[2];
+  test("one line per booking: time, status, guest and note, party, and table with its area", () => {
+    const [, , confirmed] = lines();
+    if (!confirmed) throw new Error("No third booking");
+    const line = within(confirmed);
 
-    expect(confirmed?.textContent).toContain("19:00 to 21:00");
-    expect(confirmed?.textContent).toContain("Anahit Petrosyan");
-    expect(confirmed?.textContent).toContain("Table T3 · Indoor · 4 guests");
-    expect(confirmed?.textContent).toContain("Confirmed");
-    expect(confirmed?.textContent).toContain("Note: Birthday dinner");
+    // Screen readers hear the time from start to end. On screen, the end sits under the start.
+    expect(line.getByText("19:00 to 21:00").className).toContain("sr-only");
+    expect(line.getByText("to 21:00").getAttribute("aria-hidden")).toBe("true");
+    expect(line.getByText("Confirmed")).toBeDefined();
+    expect(line.getByText("Anahit Petrosyan")).toBeDefined();
+    expect(line.getByText("Birthday dinner")).toBeDefined();
+    expect(line.getByText("4 guests")).toBeDefined();
+    expect(line.getByText("Table T3")).toBeDefined();
+    expect(line.getByText("Indoor")).toBeDefined();
+  });
+
+  test("the columns' names are for the eye: each line says its own in full", () => {
+    lines();
+
+    const names = screen.getByText("Actions").parentElement;
+    expect(names?.getAttribute("aria-hidden")).toBe("true");
+    expect(Array.from(names?.children ?? [], (name) => name.textContent)).toEqual([
+      "Time",
+      "Guest",
+      "Party",
+      "Table",
+      "Status",
+      "Actions",
+    ]);
   });
 
   test("a cancelled booking stays, crossed out, with who cancelled and why", () => {
@@ -55,11 +76,90 @@ describe("a day's bookings", () => {
   });
 });
 
+describe("narrowing the day", () => {
+  // Whose bookings are listed, in order: each line is known by its guest's name.
+  const names = fridayBookings.map(({ guest }) => guest.name);
+  const guestsShown = (): (string | undefined)[] =>
+    screen
+      .queryAllByRole("listitem")
+      .map((line) => names.find((name) => line.textContent?.includes(name)));
+
+  test("the statuses on the day narrow it, each with its count, and All brings them all back", async () => {
+    render(<DayBookings reservations={fridayBookings} />);
+
+    const show = screen.getByRole("group", { name: "Show" });
+    expect(
+      within(show)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual([
+      "All (6)",
+      "Pending (1)",
+      "Confirmed (2)",
+      "Arrived (1)",
+      "No-show (1)",
+      "Cancelled (1)",
+    ]);
+    const all = within(show).getByRole("button", { name: "All (6)" });
+    expect(all.getAttribute("aria-pressed")).toBe("true");
+
+    const confirmed = within(show).getByRole("button", { name: "Confirmed (2)" });
+    await userEvent.click(confirmed);
+
+    expect(confirmed.getAttribute("aria-pressed")).toBe("true");
+    expect(all.getAttribute("aria-pressed")).toBe("false");
+    expect(guestsShown()).toEqual(["Anahit Petrosyan", "Գոհար Մկրտչյան"]);
+
+    await userEvent.click(all);
+    expect(guestsShown()).toHaveLength(6);
+  });
+
+  test("a status no booking has isn't offered", () => {
+    const [arrived, noShow] = fridayBookings;
+    if (!arrived || !noShow) throw new Error("No sample bookings");
+    render(<DayBookings reservations={[arrived, noShow]} />);
+
+    const show = screen.getByRole("group", { name: "Show" });
+    expect(
+      within(show)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["All (2)", "Arrived (1)", "No-show (1)"]);
+  });
+
+  test("the search finds a guest by name or a table by its name, or says nothing matches", async () => {
+    render(<DayBookings reservations={fridayBookings} />);
+    const search = screen.getByRole("searchbox", { name: "Search guests or tables" });
+
+    await userEvent.type(search, "ANAHIT");
+    expect(guestsShown()).toEqual(["Anahit Petrosyan"]);
+
+    await userEvent.clear(search);
+    await userEvent.type(search, "t1");
+    expect(guestsShown()).toEqual(["Lilit Harutyunyan", "Գոհար Մկրտչյան"]);
+
+    await userEvent.clear(search);
+    await userEvent.type(search, "Nobody");
+    expect(screen.queryByRole("list")).toBeNull();
+    expect(screen.getByText("No bookings match.")).toBeDefined();
+  });
+
+  test("without narrowing, as when the day doesn't fit on one page, every booking shows, unfiltered", () => {
+    render(<DayBookings reservations={fridayBookings} narrowing={false} />);
+
+    expect(screen.queryByRole("group", { name: "Show" })).toBeNull();
+    expect(screen.queryByRole("searchbox")).toBeNull();
+    expect(screen.getAllByRole("listitem")).toHaveLength(6);
+  });
+});
+
 describe("moving a booking on", () => {
   // As at 19:10: Anahit's 19:00 has started, Aram's 19:30 is pending, and Gohar's 22:30 is ahead.
   const [, , anahit, aram] = fridayBookings;
   const ANAHIT = "Anahit Petrosyan, 19:00";
   const ARAM = "Aram Khachatryan, 19:30";
+  // The changes are in the bookings' list. The day's statuses above it are buttons too.
+  const changes = (): HTMLElement[] => within(screen.getByRole("list")).queryAllByRole("button");
 
   function renderDay(changing: { id: string; status: "CONFIRMED" } | null = null) {
     const onChange = vi.fn();
@@ -70,20 +170,29 @@ describe("moving a booking on", () => {
   test("a day that's only read offers no changes", () => {
     render(<DayBookings reservations={fridayBookings} />);
 
-    expect(screen.queryByRole("button")).toBeNull();
+    expect(changes()).toEqual([]);
   });
 
   test("each booking offers only the changes the server allows, the usual next step first", () => {
     renderDay();
 
-    const offered = screen.getAllByRole("button").map((button) => button.ariaLabel);
+    const offered = changes().map((button) => button.ariaLabel);
+    // Cancelling a booking still waiting for the restaurant is declining it.
     expect(offered).toEqual([
       `Mark arrived, ${ANAHIT}`,
       `Mark no-show, ${ANAHIT}`,
-      `Cancel booking, ${ANAHIT}`,
+      `Cancel, ${ANAHIT}`,
       `Confirm, ${ARAM}`,
-      `Cancel booking, ${ARAM}`,
-      "Cancel booking, Գոհար Մկրտչյան, 22:30",
+      `Decline, ${ARAM}`,
+      "Cancel, Գոհար Մկրտչյան, 22:30",
+    ]);
+    expect(changes().map((button) => button.textContent)).toEqual([
+      "Mark arrived",
+      "Mark no-show",
+      "Cancel",
+      "Confirm",
+      "Decline",
+      "Cancel",
     ]);
   });
 
@@ -118,7 +227,7 @@ describe("moving a booking on", () => {
   test("cancelling asks first, with room for a reason the guest will see", async () => {
     const onChange = renderDay();
 
-    await userEvent.click(screen.getByRole("button", { name: `Cancel booking, ${ARAM}` }));
+    await userEvent.click(screen.getByRole("button", { name: `Decline, ${ARAM}` }));
     const question = screen.getByRole("dialog", { name: "Cancel this booking?" });
     expect(question.textContent).toContain(
       "Aram Khachatryan’s table at 19:30 will be offered to other guests.",
@@ -138,7 +247,7 @@ describe("moving a booking on", () => {
   test("the reason is optional, and a long one is refused before anything is sent", async () => {
     const onChange = renderDay();
 
-    await userEvent.click(screen.getByRole("button", { name: `Cancel booking, ${ARAM}` }));
+    await userEvent.click(screen.getByRole("button", { name: `Decline, ${ARAM}` }));
     const reason = within(screen.getByRole("dialog")).getByLabelText("Reason for the guest");
     fireEvent.change(reason, { target: { value: "x".repeat(201) } });
     await userEvent.click(
@@ -159,13 +268,11 @@ describe("moving a booking on", () => {
 
     expect(screen.getByRole("button", { name: `Confirm, ${ARAM}` }).ariaBusy).toBe("true");
     expect(
-      (screen.getByRole("button", { name: `Cancel booking, ${ARAM}` }) as HTMLButtonElement)
-        .disabled,
+      screen.getByRole<HTMLButtonElement>("button", { name: `Decline, ${ARAM}` }).disabled,
     ).toBe(true);
     // Other bookings can still be moved on.
     expect(
-      (screen.getByRole("button", { name: `Cancel booking, ${ANAHIT}` }) as HTMLButtonElement)
-        .disabled,
+      screen.getByRole<HTMLButtonElement>("button", { name: `Cancel, ${ANAHIT}` }).disabled,
     ).toBe(false);
   });
 });
@@ -180,11 +287,12 @@ test("a table whose name already says so isn't called a table twice", () => {
     />,
   );
 
-  expect(screen.getByRole("listitem").textContent).toContain("Table 1 · Indoor · 2 guests");
-  expect(screen.getByRole("listitem").textContent).not.toContain("Table Table");
+  const line = screen.getByRole("listitem");
+  expect(within(line).getByText("Table 1")).toBeDefined();
+  expect(line.textContent).not.toContain("Table Table");
 });
 
-describe("the day's heading and ways around", () => {
+describe("moving between days", () => {
   // Days are links, so each points where hrefFor says.
   const hrefFor = (date: string): To => ({ search: `?date=${date}` });
 
@@ -200,13 +308,15 @@ describe("the day's heading and ways around", () => {
   const href = (name: string): string | null =>
     screen.getByRole("link", { name }).getAttribute("href");
 
-  test("today is headed as the book would, and marked", () => {
+  test("on today, Today is marked as the day shown", () => {
     renderNav("2026-11-13");
 
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Friday 13 November");
-    expect(screen.getByText("Today")).toBeDefined();
-    // Already on today, so there's no link to it.
-    expect(screen.queryByRole("link", { name: "Today" })).toBeNull();
+    const days = screen.getByRole("navigation", { name: "Days" });
+    expect(within(days).getByRole("link", { name: "Today" }).getAttribute("aria-current")).toBe(
+      "page",
+    );
+    // The day is said in the part's heading, above, not here.
+    expect(screen.queryByRole("heading")).toBeNull();
   });
 
   test("the days on either side are links, across the end of a month too", () => {
@@ -215,18 +325,14 @@ describe("the day's heading and ways around", () => {
     expect(href("Previous day")).toBe("/?date=2026-11-29");
     expect(href("Next day")).toBe("/?date=2026-12-01");
     expect(href("Today")).toBe("/?date=2026-11-13");
-  });
-
-  test("another year's date says its year", () => {
-    renderNav("2027-01-05");
-
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Tuesday 5 January 2027");
+    // Another day is shown, so Today isn't marked.
+    expect(screen.getByRole("link", { name: "Today" }).getAttribute("aria-current")).toBeNull();
   });
 
   test("Show opens the date chosen", async () => {
     const onGoTo = renderNav("2026-11-13");
 
-    fireEvent.change(screen.getByLabelText("Go to a date"), { target: { value: "2026-12-24" } });
+    fireEvent.change(screen.getByLabelText("Go to"), { target: { value: "2026-12-24" } });
     await userEvent.click(screen.getByRole("button", { name: "Show" }));
 
     expect(onGoTo).toHaveBeenCalledWith("2026-12-24");
@@ -235,10 +341,11 @@ describe("the day's heading and ways around", () => {
   test("Show with no date says what's missing, and goes nowhere", async () => {
     const onGoTo = renderNav("2026-11-13");
 
-    fireEvent.change(screen.getByLabelText("Go to a date"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("Go to"), { target: { value: "" } });
     await userEvent.click(screen.getByRole("button", { name: "Show" }));
 
     expect(screen.getByText("Choose a date.")).toBeDefined();
+    expect(screen.getByLabelText("Go to").getAttribute("aria-invalid")).toBe("true");
     expect(onGoTo).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 
+import { PartHeader } from "@/components/PartHeader";
 import { AnalyticsReport } from "@/features/analytics/components/AnalyticsReport";
 import { MostBooked } from "@/features/analytics/components/MostBooked";
 import { useSeghanAnalytics } from "@/features/analytics/hooks/useSeghanAnalytics";
@@ -10,7 +11,11 @@ export function AdminAnalyticsPage(): ReactElement {
   return (
     <>
       <title>Analytics · Admin · Seghan</title>
-      <h2 className="sr-only">Analytics</h2>
+      <PartHeader
+        title="Analytics"
+        description="How all of Seghan did, over the days you choose."
+        className="mb-6"
+      />
       <AnalyticsReport
         {...analytics}
         more={(numbers) => <MostBooked restaurants={numbers.restaurants} />}

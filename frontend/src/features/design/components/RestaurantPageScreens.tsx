@@ -127,7 +127,7 @@ export function RestaurantPageScreens(): ReactElement {
   return (
     <Group
       title="Restaurant page"
-      note="With no photo, the cover is the title itself, on the restaurant's tone. Opening hours are menu lines, Monday first, with today marked: Friday here. A restaurant that doesn't exist gets the not-found page: see it under Responsive. The map sits above the address: OpenStreetMap's streets in Geoapify's light Positron style, with the logo's wine dot at the place, and it opens Google Maps. The live one shows the real picture once GEOAPIFY_API_KEY is in backend/.env; with no key, or when the address can't be found or Geoapify fails, there's no map, and the address and its link stand alone, as before."
+      note="With no photo, a short band in the restaurant's tone stands in for the cover, and the name follows it. Opening hours run Monday first, with today marked: Friday here. A restaurant that doesn't exist gets the not-found page: see it under Responsive. The map sits above the address: OpenStreetMap's streets in Geoapify's light Positron style, with the logo's wine dot at the place, and it opens Google Maps. The live one shows the real picture once GEOAPIFY_API_KEY is in backend/.env; with no key, or when the address can't be found or Geoapify fails, there's no map, and the address and its link stand alone, as before."
     >
       <Specimens wide specimens={states} />
     </Group>

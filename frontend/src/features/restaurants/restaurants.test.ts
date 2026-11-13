@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import { filtersToParams, isFiltered, readFilters } from "@/features/restaurants/browseFilters";
 import { cuisineLine, priceSigns, priceWords } from "@/features/restaurants/labels";
-import { toneFor } from "@/features/restaurants/tones";
+import { toneAt, toneFor } from "@/features/restaurants/tones";
 
 const read = (query: string): ReturnType<typeof readFilters> =>
   readFilters(new URLSearchParams(query));
@@ -106,5 +106,19 @@ describe("toneFor", () => {
     const tones = ["kond-house", "lori-smokehouse", "nurr", "sevan-and-salt", "", "ա"].map(toneFor);
 
     for (const tone of tones) expect(tone).toMatch(/^bg-tone-[1-6]$/);
+  });
+});
+
+describe("toneAt", () => {
+  test("gives a row of tiles the tones in order, each different, then starts again", () => {
+    expect([0, 1, 2, 3, 4, 5].map(toneAt)).toEqual([
+      "bg-tone-1",
+      "bg-tone-2",
+      "bg-tone-3",
+      "bg-tone-4",
+      "bg-tone-5",
+      "bg-tone-6",
+    ]);
+    expect(toneAt(6)).toBe("bg-tone-1");
   });
 });

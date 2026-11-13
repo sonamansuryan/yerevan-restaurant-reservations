@@ -119,9 +119,3 @@ test("the fields are named for password managers", () => {
   expect(field("Email").getAttribute("autocomplete")).toBe("email");
   expect(field("Password").getAttribute("autocomplete")).toBe("new-password");
 });
-
-test("it offers to sign in instead", () => {
-  renderForm();
-
-  expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/login");
-});

@@ -36,6 +36,18 @@ export function yerevanToday(now: Date = new Date()): string {
   return isoDate.format(now);
 }
 
+const clock = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "Asia/Yerevan",
+});
+
+/** The time in Yerevan at that moment, as HH:MM on a 24-hour clock, such as "19:05". */
+export function yerevanClock(now: Date = new Date()): string {
+  return clock.format(now);
+}
+
 /**
  * The year, month and day of a YYYY-MM-DD date, or null if it isn't one, or doesn't exist, such as
  * 2026-02-30. Split by hand, because new Date("2026-11-13") means midnight UTC.
@@ -92,6 +104,75 @@ export function formatDayHeading(date: string, today: string = yerevanToday()): 
   const heading = dayHeading.format(new Date(Date.UTC(year, month - 1, day)));
   // Added by hand: with the year, Intl puts a comma after the weekday, unlike the book's style.
   return date.slice(0, 4) === today.slice(0, 4) ? heading : `${heading} ${year}`;
+}
+
+const shortDay = new Intl.DateTimeFormat("en-GB", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+
+const shortDayOfMonth = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+
+/**
+ * A YYYY-MM-DD date in a few letters, for a short list such as the search's dates: "Today, 13 Nov",
+ * "Tomorrow, 14 Nov", then "Sun 15 Nov".
+ */
+export function formatShortDay(date: string, today: string = yerevanToday()): string {
+  const [year, month, day] = dateParts(date) ?? [1970, 1, 1];
+  const at = new Date(Date.UTC(year, month - 1, day));
+  if (date === today) return `Today, ${shortDayOfMonth.format(at)}`;
+  if (date === shiftDate(today, 1)) return `Tomorrow, ${shortDayOfMonth.format(at)}`;
+  // en-GB writes "Sun 15 Nov", with no comma after the weekday.
+  return shortDay.format(at);
+}
+
+/**
+ * A YYYY-MM-DD date with its weekday, in a few letters: "Fri 13 Nov". Given today, a day in another
+ * year gets its year too: "Wed 31 Dec 2025".
+ */
+export function formatWeekdayDate(date: string, today?: string): string {
+  const [year, month, day] = dateParts(date) ?? [1970, 1, 1];
+  const short = shortDay.format(new Date(Date.UTC(year, month - 1, day)));
+  return today !== undefined && date.slice(0, 4) !== today.slice(0, 4) ? `${short} ${year}` : short;
+}
+
+/** Whole days from one YYYY-MM-DD date to another: 1 from today to tomorrow, -1 back. */
+export function daysFrom(from: string, to: string): number {
+  const [fromYear, fromMonth, fromDay] = dateParts(from) ?? [1970, 1, 1];
+  const [toYear, toMonth, toDay] = dateParts(to) ?? [1970, 1, 1];
+  const ms = Date.UTC(toYear, toMonth - 1, toDay) - Date.UTC(fromYear, fromMonth - 1, fromDay);
+  return Math.round(ms / 86_400_000);
+}
+
+const monthOnly = new Intl.DateTimeFormat("en-GB", { month: "long", timeZone: "UTC" });
+
+/** The month of a run of days, or both months when it crosses into the next: "November – December". */
+export function formatMonthSpan(from: string, to: string): string {
+  const name = (date: string): string => {
+    const [year, month] = dateParts(date) ?? [1970, 1, 1];
+    return monthOnly.format(new Date(Date.UTC(year, month - 1, 1)));
+  };
+  return from.slice(0, 7) === to.slice(0, 7) ? name(from) : `${name(from)} – ${name(to)}`;
+}
+
+const weekdayOfDate = new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone: "UTC" });
+
+/** The day of the week of a YYYY-MM-DD date: 0 = Sunday … 6 = Saturday, as the API counts. */
+export function weekdayOf(date: string): number {
+  const [year, month, day] = dateParts(date) ?? [1970, 1, 1];
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+}
+
+/** A YYYY-MM-DD date's weekday and day of the month, for a day to tap: { weekday: "Fri", day: 13 }. */
+export function dayParts(date: string): { weekday: string; day: number } {
+  const [year, month, day] = dateParts(date) ?? [1970, 1, 1];
+  return { weekday: weekdayOfDate.format(new Date(Date.UTC(year, month - 1, day))), day };
 }
 
 const dayAndMonth = new Intl.DateTimeFormat("en-GB", {

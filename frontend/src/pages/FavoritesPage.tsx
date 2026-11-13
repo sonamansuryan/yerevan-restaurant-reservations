@@ -8,9 +8,9 @@ import { useMyFavorites } from "@/features/favorites/hooks/useMyFavorites";
 export function FavoritesPage(): ReactElement {
   const favorites = useMyFavorites();
   return (
-    <PageContainer className="py-section-sm">
+    <PageContainer className="pt-10 pb-section-sm md:pt-14">
       <title>My favorites · Seghan</title>
-      <h1 className="font-display text-section">My favorites</h1>
+      <h1 className="font-grotesque text-page-title font-bold">My favorites</h1>
       <MyFavorites {...favorites} className="mt-8" />
     </PageContainer>
   );

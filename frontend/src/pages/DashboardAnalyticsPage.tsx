@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 
+import { PartHeader } from "@/components/PartHeader";
 import { AnalyticsReport } from "@/features/analytics/components/AnalyticsReport";
 import { useRestaurantAnalytics } from "@/features/analytics/hooks/useRestaurantAnalytics";
 import { useDashboardRestaurant } from "@/features/dashboard/hooks/useDashboardRestaurant";
@@ -11,7 +12,11 @@ export function DashboardAnalyticsPage(): ReactElement {
   return (
     <>
       <title>{`Analytics · ${restaurant.name} · Seghan`}</title>
-      <h2 className="sr-only">Analytics</h2>
+      <PartHeader
+        title="Analytics"
+        description="Your bookings and ratings, over the days you choose."
+        className="mb-6"
+      />
       <AnalyticsReport {...analytics} />
     </>
   );

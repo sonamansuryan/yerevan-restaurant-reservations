@@ -86,7 +86,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 ## 3. Current state (13 November 2026)
 
-- **Checks:** typecheck ✅, lint ✅, 2133 tests ✅, and 122 database tests on real PostgreSQL ✅. Running the whole setup together is task 1.1.
+- **Checks:** typecheck ✅, lint ✅, 2455 tests ✅ (1347 frontend, 1108 backend), and 122 database tests on real PostgreSQL ✅. Running the whole setup together is task 1.1.
 - **Built:**
   - the project setup
   - the database: 9 tables, the double-booking constraint and 11 checks, verified on real PostgreSQL on 5 November
@@ -113,7 +113,7 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - My reservations: a guest's upcoming and past bookings, each cancellable until it starts, with its states in `/design`
   - the dashboard's bookings: confirm, cancel with a reason, or mark guests arrived or no-show, refreshed every 30 seconds, with the "Handle a reservation" flow in `/design`
   - reviews (9.1): a guest reviews each visit marked arrived once, from My reservations. The restaurant's average and count change in the same transaction, restaurant pages list the reviews, and Browse sorts by rating
-  - favorites (9.2): a guest saves a restaurant from its page, and finds it on My favorites, linked from the main links and the footer
+  - favorites (9.2): a guest saves a restaurant from its page or its card's heart, and finds it on My favorites, linked from the main links
   - booking emails (9.3): the guest is emailed through Resend when a booking is requested, confirmed or cancelled
   - the map on each restaurant's page (9.4): OpenStreetMap through Geoapify, above its address
   - the admin area (9.5), for admins only: every user, restaurant and booking to look through, and hiding a restaurant from guests
@@ -124,7 +124,8 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
   - `lib/api.ts`: GET, POST, PUT, PATCH and DELETE, renewing an expired session once
   - route guards: signed-out visitors go to Sign in and come back afterwards, owner pages are for owners only, and admin pages for admins
   - what one person loads for themselves (bookings, favorites, an owner's restaurants, an admin's lists) is forgotten when they sign out, or when someone else signs in, in this tab or another. A new private cache key must start with one of the prefixes in `lib/queryClient.ts`
-  - the main links follow who's signed in, on desktop and phones: My reservations and My favorites for guests, the Dashboard for owners, Admin for admins, and For restaurants for everyone else. Owners and admins, who never book, have no Reserve a table
+  - the main links follow who's signed in, on desktop and phones: Explore and Neighborhoods for everyone, My reservations for guests and anyone signed out, My favorites for guests, the Dashboard for owners and Admin for admins. Anyone signed out also has For restaurants and Sign in
+  - the redesign to the user's design export, approved on 13 November 2026 (§6)
   - the Seghan foundation and `/design`
 - **Partly built:**
   - the time helpers
@@ -226,15 +227,18 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 **Key states:** loading, empty, error with a retry, field errors, sending, success, not allowed, and each feature's own errors. A step is done only when its screens are in `/design`. `EmptyState` and `ErrorState` keep their approved look.
 
-**Deferred design polish.** These work and are approved as working, but their look will be revisited. They are kept here so they aren't forgotten. They aren't roadmap tasks, so they never become the current task.
+**The redesign ✅ (approved and complete, 13 November 2026).** The whole app follows the user's design export (`Seghan.html`: Home, Restaurant + booking, My reservations, Sign in, the phone booking sheet, and the dashboard's Reservations, Tables and Hours & blocks). It's frontend only: the API, the data and the booking rules are unchanged. The reservation-book look is gone, and the "Evening over Yerevan" hero is no longer used (`EveningOverYerevan.tsx` is kept, unused, until it's decided).
+- **Tokens:** wine `#9f1d2b` on `#faf7f2`, Inter for text, and Bricolage Grotesque for the logo and every heading. Instrument Serif is left only in the protected `EmptyState` and `ErrorState`.
+- **Logo:** a wine square holding a table with a covered dish, then lowercase `seghan`. The favicon is the same mark.
+- **Shells:** a route's `handle: { chrome: "office" | "bare" }` leaves out the site header and footer. The dashboard and admin area use `OfficeLayout`, a full-height dark menu with Sign out. Sign in and Create an account use a dark panel with the logo; their headings are "Welcome back" and "Create an account".
+- **Built on the existing APIs:** the search's day, time and party, so each Browse card shows its free times nearest then; hearts on cards; the booking panel's guest stepper, row of days and "Best fit"; "Open now"; My reservations' photos, Directions, counts, Recently visited and Saved restaurants; the owner's day figures, filters and search, the floor plan with each table's status now, and the blocks calendar.
+- **On purpose, unlike the export:**
+  - Fields keep a 3:1 outline (§13.6).
+  - Small controls grow to 44 px on touch screens.
+  - Hours and blocked times stay two parts.
+  - Controls with nothing behind them are left out: walk-in bookings, booking rules, the Reviews part, amenity tags, review bars, share, booking codes, Change time, Forgot?, languages, and the export's About, Help and Terms.
 
-- [ ] **Home hero animation** ("Evening over Yerevan", `features/home/components/EveningOverYerevan.tsx`, from task 3.5). Approved as functionally complete on 10 November 2026, but the user isn't fully satisfied with its visual design. Keep the current version until it is revisited, and agree the new direction before rebuilding it.
-
-**The agreed sign-in design ("the open book"):**
-
-- From 1024 px wide, the page is a two-page spread. The left page shows today's date, the heading and one sentence. The right page holds the form, with Google's button under an "or" divider.
-- The headings are "Sign in" and "Create an account". Sign-up has a different sentence for guests and for restaurants.
-- It adds four shared components: a password field, a form notice, choice lines and an "or" divider. The full details are in git history (old plan §13.10).
+**Sign-in design.** From 1024 px wide, the dark panel takes the left half, with the logo, "Your table is waiting." and what an account is for; on a phone it's a band across the top. The form has a Sign in / Create account switch, then Google's button, the "or with email" divider and the fields.
 
 ## 7. Roadmap
 
@@ -286,7 +290,7 @@ Real Yerevan restaurants, which the assignment leaves for "later" with Google Pl
   *Check:* in the browser and in `/design`.
 - [x] **3.5 Home:** "Choose your *Seghan.*", search, and a few restaurants. *Check:* in the browser.
 
-  **Deferred design polish:** the hero animation works and stays as it is for now, but its visual design will be revisited later (§6).
+  The hero was replaced in the redesign (§6).
 
 ### Step 4: Restaurant dashboard ✅
 

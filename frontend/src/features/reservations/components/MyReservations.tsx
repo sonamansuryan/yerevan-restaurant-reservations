@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import type { To } from "react-router";
 
+import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
@@ -10,14 +11,16 @@ import { Modal } from "@/components/Modal";
 import { Pagination } from "@/components/Pagination";
 import { SectionNav } from "@/components/SectionNav";
 import { Spinner } from "@/components/Spinner";
+import { GUEST_STATUS_TONES, guestsWords } from "@/features/dashboard/labels";
 import { GuestBookings } from "@/features/reservations/components/GuestBookings";
-import { bookingsWords } from "@/features/reservations/reservations";
+import type { BookedPlace } from "@/features/reservations/components/GuestBookings";
+import { GUEST_STATUS_LABELS, bookingsWords } from "@/features/reservations/reservations";
 import type { ReservationsWhen } from "@/features/reservations/reservations";
 import { ReviewForm } from "@/features/reviews/components/ReviewForm";
 import type { NewReview } from "@/features/reviews/reviews";
 import type { ApiError } from "@/lib/api";
 import { cx } from "@/lib/cx";
-import { formatDayHeading } from "@/lib/time";
+import { formatDayHeading, formatWeekdayDate } from "@/lib/time";
 import type { GuestReservation, ListResponse } from "@/types/api";
 
 export interface ReservationListState {
@@ -43,12 +46,29 @@ export interface ReviewFlowState {
   onPost: (review: NewReview) => void;
 }
 
+/** The latest visit not reviewed yet, to review under Recently visited, as in the export. */
+export interface VisitReviewState {
+  booking: GuestReservation;
+  sending: boolean;
+  /** Why the review was refused, or couldn't be sent. The form stays, with what was written. */
+  error: ApiError | null;
+  onPost: (review: NewReview) => void;
+  /** Puts it away for now. It's still on the Past list. */
+  onLater: () => void;
+}
+
 export interface MyReservationsProps {
   when: ReservationsWhen;
   page: number;
   /** Today in Yerevan, so a day this year is shown without its year. */
   today: string;
   list: ReservationListState;
+  /** How many bookings each list has, once known, for the tabs: "Upcoming (2)". */
+  counts?: Partial<Record<ReservationsWhen, number>>;
+  /** Each restaurant's photo and map link, for the cards. */
+  placeFor?: (slug: string) => BookedPlace | undefined;
+  /** The latest visit to review, under the upcoming list. */
+  visit?: VisitReviewState | null;
   /** Where each list and page lives. Lists and pages are links, so Back returns. */
   hrefFor: (when: ReservationsWhen, page?: number) => To;
   /** The booking being cancelled right now. */
@@ -61,21 +81,28 @@ export interface MyReservationsProps {
   review: ReviewFlowState;
   onFindATable: () => void;
   onFirstPage: () => void;
-  /** The level of the days' headings: 2 on the page, lower inside /design. */
+  /** The level of the cards' and sections' headings: 2 on the page, lower inside /design. */
   headingLevel?: 2 | 4;
   className?: string;
 }
 
+const countWords = (label: string, count: number | undefined): string =>
+  count === undefined ? label : `${label} (${count})`;
+
 /**
  * The signed-in guest's bookings, upcoming or past, a page at a time, each upcoming one cancellable
  * until it starts. Cancelling asks first, because a table given up may be taken at once. A visit the
- * restaurant marked as arrived can be reviewed once, in a form over the page.
+ * restaurant marked as arrived can be reviewed once: the latest under Recently visited, as the
+ * export has it, and any of them from the Past list, in a form over the page.
  */
 export function MyReservations({
   when,
   page,
   today,
   list,
+  counts = {},
+  placeFor,
+  visit = null,
   hrefFor,
   cancellingId,
   cancelled,
@@ -89,6 +116,8 @@ export function MyReservations({
 }: MyReservationsProps): ReactElement {
   const [asking, setAsking] = useState<GuestReservation | null>(null);
   const noticeRef = useRef<HTMLDivElement>(null);
+  const visitTitleId = useId();
+  const Heading = headingLevel === 2 ? "h2" : "h4";
 
   const { posted } = review;
 
@@ -152,6 +181,7 @@ export function MyReservations({
         <GuestBookings
           reservations={data}
           today={today}
+          placeFor={placeFor}
           cancellingId={cancellingId}
           onCancel={setAsking}
           onReview={review.onWrite}
@@ -171,8 +201,8 @@ export function MyReservations({
       <SectionNav
         label="Your reservations"
         links={[
-          { to: hrefFor("upcoming"), label: "Upcoming", end: true },
-          { to: hrefFor("past"), label: "Past", end: true },
+          { to: hrefFor("upcoming"), label: countWords("Upcoming", counts.upcoming), end: true },
+          { to: hrefFor("past"), label: countWords("Past", counts.past), end: true },
         ]}
       />
       {(cancelled || refusal || posted) && (
@@ -195,16 +225,52 @@ export function MyReservations({
       )}
       {content}
 
+      {when === "upcoming" && visit && (
+        <section aria-labelledby={visitTitleId} className="flex flex-col gap-4 pt-2">
+          <Heading id={visitTitleId} className="font-grotesque text-subheading font-bold">
+            Recently visited
+          </Heading>
+          <div className="flex flex-col gap-4 rounded-band border border-line bg-surface-raised p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-lead font-semibold break-words">
+                  {visit.booking.restaurant.name}
+                </p>
+                <p className="text-ui text-ink-secondary">
+                  {formatWeekdayDate(visit.booking.date, today)} · {visit.booking.starts} ·{" "}
+                  {guestsWords(visit.booking.partySize)}
+                </p>
+              </div>
+              <Badge tone={GUEST_STATUS_TONES[visit.booking.status]}>
+                {GUEST_STATUS_LABELS[visit.booking.status]}
+              </Badge>
+            </div>
+            <div className="rounded-hero bg-surface-page p-4">
+              {/* A new form for each visit, so a rating chosen for another is left behind. */}
+              <ReviewForm
+                key={visit.booking.id}
+                visit={`${visit.booking.restaurant.name} on ${formatDayHeading(visit.booking.date, today)}`}
+                intro={false}
+                sending={visit.sending}
+                error={visit.error}
+                onPost={visit.onPost}
+                onClose={visit.onLater}
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
       <Modal
         open={asking !== null}
         onClose={() => setAsking(null)}
-        title="Cancel this booking?"
+        title="Cancel this reservation?"
         footer={
           <>
             <Button variant="ghost" onClick={() => setAsking(null)}>
               Keep it
             </Button>
-            <Button onClick={cancel}>Cancel booking</Button>
+            <Button onClick={cancel}>Cancel reservation</Button>
           </>
         }
       >

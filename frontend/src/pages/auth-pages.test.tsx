@@ -136,6 +136,14 @@ const alertTexts = (): (string | null)[] =>
     .getAllByRole("alert")
     .map((alert: HTMLElement) => alert.textContent);
 
+/**
+ * Sign out, in the site's header. Sign in and Create an account have no header of their own, so
+ * this waits for the page that comes after them.
+ */
+async function findSignOut(): Promise<HTMLElement> {
+  return within(await screen.findByRole("banner")).findByRole("button", { name: "Sign out" });
+}
+
 async function signIn(): Promise<void> {
   await userEvent.type(await main().findByLabelText("Email"), "Lilit@Example.com");
   await userEvent.type(main().getByLabelText("Password"), "a long password");
@@ -156,7 +164,7 @@ test("signing in sends the details, puts the person in the header, and goes home
 
   await signIn();
 
-  expect(await header().findByRole("button", { name: "Sign out" })).toBeDefined();
+  expect(await findSignOut()).toBeDefined();
   expect(router.state.location.pathname).toBe("/");
   expect(fetch).toHaveBeenCalledWith("/api/auth/login", {
     method: "POST",
@@ -176,7 +184,64 @@ test("a wrong password keeps the page, and says so in the agreed words", async (
     "Incorrect email or password. Please try again.",
   );
   expect(router.state.location.pathname).toBe("/login");
-  expect(header().queryByRole("button", { name: "Sign out" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+});
+
+test.each([
+  ["/login", "Sign in", "Create account"],
+  ["/register", "Create account", "Sign in"],
+])("%s is one half of a switch: %s is marked, and %s is a link away", async (path, open, other) => {
+  fakeApi("works");
+  renderAt(path);
+
+  const pages = within(await main().findByRole("navigation", { name: "Your account" }));
+  expect(pages.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+    "/login",
+    "/register",
+  ]);
+  expect(pages.getByRole("link", { name: open }).getAttribute("aria-current")).toBe("page");
+  expect(pages.getByRole("link", { name: other }).getAttribute("aria-current")).toBeNull();
+});
+
+test.each(["/login", "/register"])(
+  "%s has no site header or footer: its dark panel carries the logo home",
+  async (path) => {
+    fakeApi("works");
+    renderAt(path);
+
+    const home = await main().findByRole("link", { name: "Seghan, home" });
+
+    expect(home.getAttribute("href")).toBe("/");
+    expect(screen.queryByRole("banner")).toBeNull();
+    expect(screen.queryByRole("contentinfo")).toBeNull();
+  },
+);
+
+test("Google's button comes first, then the words or with email, then the form", async () => {
+  fakeApi("works");
+  renderAt("/login");
+
+  const google = await main().findByRole("button", { name: "Sign in with Google" });
+  const divider = main().getByText("or with email");
+  const email = main().getByLabelText("Email");
+
+  expect(google.compareDocumentPosition(divider)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  expect(divider.compareDocumentPosition(email)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+});
+
+test("owners sign in here too, and List your restaurant opens a restaurant's sign-up, keeping the destination", async () => {
+  fakeApi("works");
+  const state = returnStateFor({ pathname: "/dashboard", search: "", hash: "" });
+  const router = renderAt({ pathname: "/login", state });
+
+  const note = await main().findByText("Restaurant owner? You sign in here too. New to Seghan?");
+  await userEvent.click(within(note).getByRole("link", { name: "List your restaurant" }));
+
+  expect(router.state.location.pathname).toBe("/register");
+  expect(router.state.location.search).toBe("?role=owner");
+  expect(returnPath(router.state.location.state)).toBe("/dashboard");
+  const restaurant = await main().findByRole("radio", { name: /A restaurant/ });
+  expect((restaurant as HTMLInputElement).checked).toBe(true);
 });
 
 test("a restaurant's new account is sent as OWNER, and is signed in at once", async () => {
@@ -186,7 +251,8 @@ test("a restaurant's new account is sent as OWNER, and is signed in at once", as
 
   await createAccount();
 
-  expect(await header().findByRole("button", { name: "Sign out" })).toBeDefined();
+  // Home, as for anyone: the dashboard is a link away.
+  expect(await findSignOut()).toBeDefined();
   expect(router.state.location.pathname).toBe("/");
   const sent = fetch.mock.calls.find(([url]) => url === "/api/auth/register")?.[1] as RequestInit;
   expect(JSON.parse(String(sent.body))).toEqual({
@@ -213,18 +279,19 @@ test("a signed-out visitor to My reservations signs in, and is brought back ther
   fakeApi("works");
   const router = renderAt("/reservations");
 
-  expect(await main().findByRole("heading", { level: 1, name: "Sign in" })).toBeDefined();
+  expect(await main().findByRole("heading", { level: 1, name: "Welcome back" })).toBeDefined();
   await signIn();
 
   expect(await main().findByRole("heading", { level: 1, name: "My reservations" })).toBeDefined();
   expect(router.state.location.pathname).toBe("/reservations");
 });
 
-test("switching to Create an account on the way there keeps the destination", async () => {
+test("switching to Create account on the way there keeps the destination", async () => {
   fakeApi("works");
   const router = renderAt("/reservations");
 
-  await userEvent.click(await main().findByRole("link", { name: "Create an account" }));
+  const pages = within(await main().findByRole("navigation", { name: "Your account" }));
+  await userEvent.click(pages.getByRole("link", { name: "Create account" }));
   await createAccount();
 
   expect(await main().findByRole("heading", { level: 1, name: "My reservations" })).toBeDefined();
@@ -257,7 +324,9 @@ test("signing out on My reservations goes home, not to Sign in", async () => {
   // Someone who chose to sign out isn't sent to Sign in, as if their session had ended.
   expect(router.state.location.pathname).toBe("/");
   expect(router.state.location.state).toBeNull();
-  expect(main().getByRole("heading", { level: 1 }).textContent).toBe("Choose your Seghan.");
+  expect(main().getByRole("heading", { level: 1 }).textContent).toBe(
+    "Find a table in Yerevan, tonight or any night.",
+  );
 });
 
 test("a guest who heads for the dashboard signs in, and is told it's for restaurants", async () => {
@@ -278,7 +347,7 @@ test("signing in with Google sends Google's token, then goes home signed in", as
 
   await userEvent.click(await main().findByRole("button", { name: "Sign in with Google" }));
 
-  expect(await header().findByRole("button", { name: "Sign out" })).toBeDefined();
+  expect(await findSignOut()).toBeDefined();
   expect(router.state.location.pathname).toBe("/");
   expect(fetch).toHaveBeenCalledWith("/api/auth/google", {
     method: "POST",
@@ -294,7 +363,7 @@ test("Create an account sends the role chosen in the form along with Google's to
 
   await userEvent.click(await main().findByRole("button", { name: "Sign up with Google" }));
 
-  await header().findByRole("button", { name: "Sign out" });
+  await findSignOut();
   const sent = fetch.mock.calls.find(([url]) => url === "/api/auth/google")?.[1] as RequestInit;
   expect(JSON.parse(String(sent.body))).toEqual({
     credential: "header.payload.signature",
@@ -309,7 +378,7 @@ test("changing the choice to a guest before using Google sends that instead", as
   await userEvent.click(await main().findByRole("radio", { name: /A guest/ }));
   await userEvent.click(main().getByRole("button", { name: "Sign up with Google" }));
 
-  await header().findByRole("button", { name: "Sign out" });
+  await findSignOut();
   const sent = fetch.mock.calls.find(([url]) => url === "/api/auth/google")?.[1] as RequestInit;
   expect(JSON.parse(String(sent.body))).toMatchObject({ role: "CUSTOMER" });
 });
@@ -326,7 +395,7 @@ test("Google's refusal shows under its button, and the page stays", async () => 
     main().getByRole("button", { name: "Sign in with Google" }).compareDocumentPosition(alert),
   ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   expect(router.state.location.pathname).toBe("/login");
-  expect(header().queryByRole("button", { name: "Sign out" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
 });
 
 test("one message at a time: trying Google clears the form's old message", async () => {

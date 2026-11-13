@@ -1,8 +1,13 @@
 import type { ReactElement } from "react";
 
 import type { Account } from "@/components/account";
-import { CurrentPageDot, Logo } from "@/components/Logo";
+import { Button } from "@/components/Button";
+import { CalendarIcon, ChartIcon, ClockIcon, TableIcon } from "@/components/icons";
+import { Logo } from "@/components/Logo";
 import { MenuAccountLine } from "@/components/MobileMenu";
+import { Panel } from "@/components/Panel";
+import { PartHeader } from "@/components/PartHeader";
+import { SideNav } from "@/components/SideNav";
 import { HeaderAccount, MainLinks } from "@/components/SiteHeader";
 import { Group, Section, Specimen, SpecimenRow } from "@/features/design/components/parts";
 
@@ -60,6 +65,15 @@ const mainLinkStates = [
   },
 ];
 
+// The links lead nowhere real, so the menu is frozen. The open part's link is this page's own
+// address, which is how a real one is marked: NavLink compares it with the address in the bar.
+const sideLinks = [
+  { to: "/design", label: "Bookings", icon: <CalendarIcon />, end: true },
+  { to: "/design/analytics", label: "Analytics", icon: <ChartIcon /> },
+  { to: "/design/hours", label: "Opening hours", icon: <ClockIcon /> },
+  { to: "/design/tables", label: "Tables", icon: <TableIcon /> },
+];
+
 const shell = [
   { name: "SiteHeader, MastheadRow, MastheadStart", where: "The top of this page" },
   { name: "SiteFooter", where: "The foot of this page" },
@@ -75,30 +89,27 @@ export function BrandSection(): ReactElement {
       title="Brand and shell"
       intro="The wordmark, and the pieces around every page."
     >
-      <Group title="Logo">
-        <div className="flex flex-wrap items-baseline gap-x-12 gap-y-3">
+      <Group
+        title="Logo"
+        note="The mark, a wine square holding a table with a covered dish, then seghan in Bricolage Grotesque, bold and lowercase. The mark is sized in em, so it follows the wordmark: 22px in the desktop header and on the sign-in panel, 20px on phones, 18px in the dark menu."
+      >
+        <div className="flex flex-wrap items-center gap-x-12 gap-y-3">
           <Logo className="text-masthead text-ink" />
           <Logo className="text-logo text-ink" />
-          <Logo className="text-title text-ink" />
+          <Logo className="text-logo-sm text-ink" />
+          <span className="surface-dark rounded-card px-4 py-2">
+            <Logo className="text-logo-sm text-on-dark" />
+          </span>
         </div>
-      </Group>
-      <Group title="The current page" note="The logo's dot, after the link to the page you're on.">
-        <span
-          aria-current="page"
-          className="group inline-flex items-baseline gap-1 font-display text-title-xs"
-        >
-          Discover
-          <CurrentPageDot />
-        </span>
       </Group>
       <Group
         title="The main links"
-        note="Beside the logo, from tablet width up, and first in the menu on phones. A guest reaches My reservations and My favorites, an owner their Dashboard and an admin the Admin area, where anyone signed out sees the page for restaurants."
+        note="Beside the logo, from tablet width up, and first in the menu on phones, as the export has them: Explore and Neighborhoods for everyone, then My reservations for anyone signed out or a guest, who also has My favorites, an owner's Dashboard, or the Admin area. The page you're on is in ink."
       >
         <SpecimenRow>
           {mainLinkStates.map(({ label, account }) => (
             <Specimen key={label} label={label} frozen>
-              <div className="flex items-baseline gap-8">
+              <div className="flex items-center gap-7">
                 <MainLinks user={account.user} />
               </div>
             </Specimen>
@@ -107,14 +118,13 @@ export function BrandSection(): ReactElement {
       </Group>
       <Group
         title="Account, in the header"
-        note="The corner beside Reserve a table, from tablet width up. Sign out keeps its place, and the first name sits above it. Owners and admins, who never book, have no Reserve a table, here or in the menu on phones, so Sign out ends the row."
+        note="The header's right corner: Sign in as an outline pill, with For restaurants beside it from laptop width, and Sign in stays on phones beside Menu. Signed in, from tablet width up, the person's initial, first name and Sign out. The dashboard and the admin area have their own, at the foot of the dark menu."
       >
         <SpecimenRow>
           {accountStates.map(({ label, account }) => (
             <Specimen key={label} label={label} frozen>
-              {/* Right-aligned as in the header, with room above, because the name sits over
-                  Sign out and grows to the left. */}
-              <div className="flex w-full justify-end pt-5">
+              {/* Right-aligned as in the header, so a longer name grows to the left. */}
+              <div className="flex w-full justify-end">
                 <HeaderAccount account={account} />
               </div>
             </Specimen>
@@ -123,7 +133,7 @@ export function BrandSection(): ReactElement {
       </Group>
       <Group
         title="Account, in the menu"
-        note="The menu's last line on phones. Signed in, the note is the person's full name."
+        note="The menu's last line on phones. Signed in, the person's full name, with Sign out as a pill."
       >
         <div className="grid max-w-180 gap-x-10 gap-y-5 sm:grid-cols-2">
           {accountStates.map(({ label, account }) => (
@@ -136,16 +146,59 @@ export function BrandSection(): ReactElement {
         </div>
       </Group>
       <Group
+        title="SideNav"
+        note="The dark panel that leads the owner's dashboard and the admin area: whose place it is, then its parts, the open one lit. From 1024px it stands beside the page; on a phone it sits above it, its links in rows."
+      >
+        <div className="max-w-60">
+          <SideNav
+            label="Lori Smokehouse"
+            links={sideLinks}
+            header={<p className="font-grotesque text-subheading font-bold">Lori Smokehouse</p>}
+            className="lg:static"
+          />
+        </div>
+      </Group>
+      <Group
+        title="PartHeader"
+        note="The top of one part of the dashboard or the admin area: its name in bold, a line about it, and its main action."
+      >
+        <PartHeader
+          title="Tables"
+          headingLevel={4}
+          description="7 tables, 37 seats"
+          action={<Button>Add a table</Button>}
+          className="max-w-200"
+        />
+      </Group>
+      <Group
+        title="Panel"
+        note="A white card with a soft line, holding one part of a page. With flush, a list runs edge to edge under its title, each line with its own padding."
+      >
+        <div className="grid max-w-200 gap-6 md:grid-cols-2">
+          <Panel title="Visibility" headingLevel={4}>
+            <p className="text-ui text-ink-secondary">Guests can find it and book a table.</p>
+          </Panel>
+          <Panel title="Indoor" headingLevel={4} flush>
+            <ul className="divide-y divide-line">
+              {["T1 · 2 guests", "T2 · 2 to 4 guests"].map((line) => (
+                <li key={line} className="px-5 py-3 text-ui">
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        </div>
+      </Group>
+      <Group
         title="The shell"
         note="These are the real thing, so they're listed by where to find them."
       >
         {shell.map(({ name, where }) => (
           <div
             key={name}
-            className="flex flex-wrap items-baseline gap-x-2 border-b border-line py-3"
+            className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-line py-3"
           >
-            <span className="text-ui font-medium">{name}</span>
-            <span aria-hidden="true" className="menu-leader max-sm:hidden" />
+            <span className="text-ui font-semibold">{name}</span>
             <span className="text-meta text-ink-muted">{where}</span>
           </div>
         ))}

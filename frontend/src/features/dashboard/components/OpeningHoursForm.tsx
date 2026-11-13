@@ -5,8 +5,10 @@ import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import type { Control, UseFormClearErrors, UseFormRegister } from "react-hook-form";
 
 import { Button } from "@/components/Button";
+import { FieldError } from "@/components/Field";
+import { controlClass } from "@/components/field-styles";
 import { FormNotice } from "@/components/FormNotice";
-import { Select } from "@/components/Select";
+import { ChevronDownIcon } from "@/components/icons";
 import { ServerNotice } from "@/features/auth/components/ServerNotice";
 import {
   OPENINGS_PER_DAY,
@@ -21,6 +23,7 @@ import {
 import type { WeekFields, WeekRequest } from "@/features/dashboard/hours";
 import { DAY_NAMES, WEEK } from "@/features/restaurants/openingHours";
 import type { ApiError } from "@/lib/api";
+import { cx } from "@/lib/cx";
 
 // The opening times are the same 96 quarter hours for every opening, so they're made once.
 const OPENS_OPTIONS = QUARTER_HOURS.map((minutes) => (
@@ -41,8 +44,9 @@ interface OpeningRowProps {
 }
 
 /**
- * One opening: when it opens, when it closes, and Remove. It watches only its own two times, so a
- * change redraws this row, not the whole week.
+ * One opening, on one line as the export has it: when it opens, a dash, when it closes, and Remove.
+ * Each time is named for screen readers, "Monday opens" and "Monday closes", as the day leads the
+ * line. It watches only its own two times, so a change redraws this row, not the whole week.
  */
 function OpeningRow({
   index,
@@ -57,49 +61,69 @@ function OpeningRow({
   const closesName = `hours.${index}.closes` as const;
   const [opens, closes] = useWatch({ control, name: [opensName, closesName] });
   const opensAt = Number(opens);
+  const errorId = useId();
+  const select = cx(
+    "h-10 cursor-pointer appearance-none pr-8",
+    controlClass({ invalid: Boolean(error), disabled: false }),
+  );
 
   return (
-    <div className="grid w-full max-w-120 grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] items-start gap-x-3">
-      <Select
-        label="Opens"
-        error={error}
-        // The message is about the whole opening, so it runs on under Closes in one line,
-        // instead of breaking in this narrow column.
-        className="[&>p]:whitespace-nowrap"
-        {...register(opensName)}
-      >
-        {OPENS_OPTIONS}
-      </Select>
-      <Select
-        label="Closes"
-        // A change to either time answers the server's message about this opening.
-        {...register(closesName, { onChange: () => clearErrors(opensName) })}
-      >
-        {QUARTER_HOURS.map((minutes) => (
-          <option key={minutes} value={String(minutes)}>
-            {clockTime(minutes)}
-            {closesNextDay(opensAt, minutes) ? " (next day)" : ""}
-          </option>
-        ))}
-      </Select>
-      <Button
-        variant="link"
-        aria-label={`Remove, ${day} ${clockTime(opensAt)} to ${clockTime(Number(closes))}`}
-        onClick={onRemove}
-        // As tall as the times beside it, so it sits level with them on every screen.
-        className="mt-5 h-11"
-      >
-        Remove
-      </Button>
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="relative">
+          <select
+            aria-label={`${day} opens`}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+            className={select}
+            {...register(opensName)}
+          >
+            {OPENS_OPTIONS}
+          </select>
+          <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-ink-muted" />
+        </span>
+        <span aria-hidden="true" className="text-ink-secondary">
+          –
+        </span>
+        <span className="relative">
+          <select
+            aria-label={`${day} closes`}
+            // The message is about the whole opening, so both its times are marked.
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+            className={select}
+            // A change to either time answers the server's message about this opening.
+            {...register(closesName, { onChange: () => clearErrors(opensName) })}
+          >
+            {QUARTER_HOURS.map((minutes) => (
+              <option key={minutes} value={String(minutes)}>
+                {clockTime(minutes)}
+                {closesNextDay(opensAt, minutes) ? " (next day)" : ""}
+              </option>
+            ))}
+          </select>
+          <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-ink-muted" />
+        </span>
+        <Button
+          variant="link"
+          aria-label={`Remove, ${day} ${clockTime(opensAt)} to ${clockTime(Number(closes))}`}
+          onClick={onRemove}
+          className="ml-1"
+        >
+          Remove
+        </Button>
+      </div>
+      {error && <FieldError id={errorId}>{error}</FieldError>}
     </div>
   );
 }
 
 interface OpeningHoursFormProps {
+  /** The form's id, so the page's Save changes, up in its header, can send it. */
+  id?: string;
   /** The week as saved. New values, such as the week after a save, reset the form. */
   values: WeekFields;
   onSubmit: (request: WeekRequest) => void;
-  pending?: boolean;
   /** What the server said last, if it said no. */
   error?: ApiError | null;
   /** The last save worked. It's said until something changes. */
@@ -107,15 +131,17 @@ interface OpeningHoursFormProps {
 }
 
 /**
- * The whole week, Monday first, saved at once. Each day has up to three openings, and a day with
- * none is closed. The times are quarter hours, and a closing at or before the opening is the next
- * day's, so every pair of times is a real opening. Only overlaps are left for the server to find:
- * its messages appear under the openings they're about.
+ * The whole week, Monday first, saved at once, as the export's "Weekly opening hours": a line a day,
+ * its name, whether it's open, and its hours. A day has up to three openings; ticking Open gives it
+ * one, and unticking it closes the day. The times are quarter hours, and a closing at or before the
+ * opening is the next day's, so every pair of times is a real opening. Only overlaps are left for
+ * the server to find: its messages appear under the openings they're about. The page's header
+ * holds Save changes, which sends this form by its id.
  */
 export function OpeningHoursForm({
+  id,
   values,
   onSubmit,
-  pending = false,
   error = null,
   saved = false,
 }: OpeningHoursFormProps): ReactElement {
@@ -146,7 +172,12 @@ export function OpeningHoursForm({
   const showSaved = saved && !isDirty && !error;
 
   return (
-    <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex max-w-160 flex-col gap-6">
+    <form
+      id={id}
+      noValidate
+      onSubmit={handleSubmit(onSubmit)}
+      className="flex max-w-180 flex-col gap-4"
+    >
       {(error || weekProblem || showSaved) && (
         <div className="flex flex-col gap-3">
           {weekProblem ? (
@@ -161,26 +192,46 @@ export function OpeningHoursForm({
         A closing time at or before the opening time is the next day’s, such as 18:00 to 02:00.
       </p>
 
-      <div className="border-t border-line">
+      <section className="overflow-hidden rounded-band border border-line bg-surface-raised">
+        <h3 className="border-b border-line px-5 py-4 text-body font-semibold">
+          Weekly opening hours
+        </h3>
         {WEEK.map((dayOfWeek) => {
           const day = DAY_NAMES[dayOfWeek] ?? "";
           const dayId = `${formId}-day-${dayOfWeek}`;
           const openings = fields
             .map((field, index) => ({ field, index }))
             .filter(({ field }) => field.dayOfWeek === dayOfWeek);
-          const adding = openings.length === 0 ? "Add opening hours" : "Add another opening";
           return (
             <div
               key={dayOfWeek}
               role="group"
               aria-labelledby={dayId}
-              className="grid gap-x-8 gap-y-3 border-b border-line py-5 sm:grid-cols-[8rem_minmax(0,1fr)]"
+              className="flex flex-wrap items-start gap-x-4 gap-y-2 border-b border-line-soft px-5 py-2.5 last:border-b-0"
             >
-              <p id={dayId} className="font-display text-title-xs sm:pt-6">
+              <p id={dayId} className="flex h-10 w-27 items-center text-input font-semibold">
                 {day}
               </p>
-              <div className="flex flex-col items-start gap-4">
-                {openings.length === 0 && <p className="text-ui text-ink-muted sm:pt-7">Closed</p>}
+              <label className="flex h-10 w-22 cursor-pointer items-center gap-2 text-ui">
+                <input
+                  type="checkbox"
+                  checked={openings.length > 0}
+                  onChange={(event) =>
+                    event.target.checked
+                      ? append(newOpening(dayOfWeek, true))
+                      : remove(openings.map(({ index }) => index))
+                  }
+                  className="size-4.5 cursor-pointer accent-success-strong"
+                />
+                Open <span className="sr-only">on {day}</span>
+              </label>
+              {/* On a phone the times take a line of their own, under the day and Open. */}
+              <div className="flex w-full min-w-0 flex-col items-start gap-2 sm:w-auto sm:flex-1">
+                {openings.length === 0 && (
+                  <p className="flex h-10 items-center text-ui text-ink-secondary">
+                    No bookings this day
+                  </p>
+                )}
                 {openings.map(({ field, index }) => (
                   <OpeningRow
                     key={field.id}
@@ -193,26 +244,20 @@ export function OpeningHoursForm({
                     onRemove={() => remove(index)}
                   />
                 ))}
-                {openings.length < OPENINGS_PER_DAY && (
+                {openings.length > 0 && openings.length < OPENINGS_PER_DAY && (
                   <Button
                     variant="link"
-                    aria-label={`${adding}, ${day}`}
-                    onClick={() => append(newOpening(dayOfWeek, openings.length === 0))}
+                    aria-label={`Add another opening, ${day}`}
+                    onClick={() => append(newOpening(dayOfWeek, false))}
                   >
-                    {adding}
+                    Add another opening
                   </Button>
                 )}
               </div>
             </div>
           );
         })}
-      </div>
-
-      <div>
-        <Button type="submit" loading={pending}>
-          Save opening hours
-        </Button>
-      </div>
+      </section>
     </form>
   );
 }

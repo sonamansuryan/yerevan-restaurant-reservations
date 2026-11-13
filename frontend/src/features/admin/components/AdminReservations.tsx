@@ -42,8 +42,8 @@ function ReservationLine({
   // Struck through, as on the restaurant's own page of the book. The badge says it in words.
   const crossedOut = status === "CANCELLED" && "text-ink-muted line-through";
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-6 gap-y-1 border-b border-line py-4 sm:grid-cols-[12rem_minmax(0,1fr)_auto]">
-      <p className={cx("text-ui font-medium", crossedOut)}>
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-6 gap-y-1 px-5 py-4 sm:grid-cols-[12rem_minmax(0,1fr)_auto]">
+      <p className={cx("text-ui font-semibold", crossedOut)}>
         {formatDayHeading(date, today)}
         <span aria-hidden="true" className="block tabular-nums">
           {starts}–{ends}
@@ -56,9 +56,7 @@ function ReservationLine({
         <Badge tone={STATUS_TONES[status]}>{STATUS_LABELS[status]}</Badge>
       </div>
       <div className="col-span-2 min-w-0 sm:col-span-1">
-        <p className={cx("font-display text-title-xs break-words", crossedOut)}>
-          {restaurant.name}
-        </p>
+        <p className={cx("font-semibold break-words", crossedOut)}>{restaurant.name}</p>
         <p className="mt-0.5 text-meta break-words text-ink-secondary">
           {guest.name} · {guest.email}
         </p>
@@ -104,7 +102,6 @@ export function AdminReservations({
         q={filters.q}
         placeholder="Restaurant, guest or email"
         onSearch={(q) => change({ q })}
-        choices={2}
       >
         <Select
           label="Status"
@@ -138,7 +135,7 @@ export function AdminReservations({
         hrefFor={hrefFor}
       >
         {(reservations) => (
-          <ul className="border-t border-line">
+          <ul className="divide-y divide-line">
             {reservations.map((reservation) => (
               <ReservationLine key={reservation.id} reservation={reservation} today={today} />
             ))}
