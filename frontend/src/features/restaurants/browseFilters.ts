@@ -1,5 +1,5 @@
 import { CUISINE_LABELS, DISTRICT_LABELS } from "@/features/restaurants/labels";
-import type { Cuisine, District } from "@/types/api";
+import type { Cuisine, District, RestaurantSort } from "@/types/api";
 
 /** What Browse is showing. The address holds it, so Back, Forward and shared links all work. */
 export interface BrowseFilters {
@@ -7,6 +7,8 @@ export interface BrowseFilters {
   cuisine?: Cuisine;
   district?: District;
   price?: number;
+  /** By name when it's missing, as the API sorts. */
+  sort?: RestaurantSort;
   page: number;
 }
 
@@ -38,6 +40,8 @@ export function readFilters(params: URLSearchParams): BrowseFilters {
     ...(isCuisine(cuisine) ? { cuisine } : {}),
     ...(isDistrict(district) ? { district } : {}),
     ...(price ? { price } : {}),
+    // Name is the default, so only rating is ever in the address.
+    ...(params.get("sort") === "rating" ? { sort: "rating" as const } : {}),
     page: wholeNumber(params.get("page"), 1, 1000) ?? 1,
   };
 }
@@ -49,11 +53,15 @@ export function filtersToParams(filters: BrowseFilters): URLSearchParams {
   if (filters.cuisine) params.set("cuisine", filters.cuisine);
   if (filters.district) params.set("district", filters.district);
   if (filters.price) params.set("price", String(filters.price));
+  if (filters.sort === "rating") params.set("sort", "rating");
   if (filters.page > 1) params.set("page", String(filters.page));
   return params;
 }
 
-/** True when anything narrows the list, so "Clear filters" has something to clear. */
+/**
+ * True when anything narrows the list, so "Clear filters" has something to clear. The order isn't a
+ * filter, so it stays when they're cleared.
+ */
 export function isFiltered({ q, cuisine, district, price }: BrowseFilters): boolean {
   return Boolean(q || cuisine || district || price);
 }

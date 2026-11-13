@@ -67,6 +67,12 @@ describe("freeSlug", () => {
     expect(freeSlug("kond", ["kond-house"])).toBe("kond");
   });
 
+  test("an address the app's own routes use is never a restaurant's", () => {
+    // /api/restaurants/featured is the home page's few, so a restaurant called Featured gets -2.
+    expect(freeSlug("featured", [])).toBe("featured-2");
+    expect(freeSlug("featured-house", [])).toBe("featured-house");
+  });
+
   test("the next number after the highest one taken", () => {
     expect(freeSlug("kond", ["kond"])).toBe("kond-2");
     expect(freeSlug("kond", ["kond", "kond-2", "kond-house"])).toBe("kond-3");

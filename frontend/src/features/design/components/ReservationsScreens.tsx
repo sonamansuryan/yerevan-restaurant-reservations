@@ -9,8 +9,10 @@ import { MyReservations } from "@/features/reservations/components/MyReservation
 import type {
   MyReservationsProps,
   ReservationListState,
+  ReviewFlowState,
 } from "@/features/reservations/components/MyReservations";
 import type { ReservationsWhen } from "@/features/reservations/reservations";
+import type { NewReview } from "@/features/reviews/reviews";
 import { ApiError } from "@/lib/api";
 import type { GuestReservation } from "@/types/api";
 
@@ -39,6 +41,17 @@ const marking =
   (when: ReservationsWhen): To =>
     when === open ? "/design" : `/design/${when}`;
 
+/** No review being written, and none just posted. */
+const noReview: ReviewFlowState = {
+  writing: null,
+  sending: false,
+  error: null,
+  posted: null,
+  onWrite: ignore,
+  onClose: ignore,
+  onPost: ignore,
+};
+
 /** My reservations on one list, as the page shows it, with anything changed for a state. */
 function screen(when: ReservationsWhen, change: Partial<MyReservationsProps> = {}): ReactElement {
   return (
@@ -52,6 +65,7 @@ function screen(when: ReservationsWhen, change: Partial<MyReservationsProps> = {
       cancelled={null}
       refusal={null}
       onCancel={ignore}
+      review={noReview}
       onFindATable={ignore}
       onFirstPage={ignore}
       headingLevel={4}
@@ -89,6 +103,52 @@ function LiveUpcoming(): ReactElement {
   });
 }
 
+const reviewedBy = (booking: GuestReservation, review: NewReview): GuestReservation => ({
+  ...booking,
+  review: { rating: review.rating, comment: review.comment ?? null },
+  canReview: false,
+});
+
+/**
+ * Past, live: Review your visit opens the form over the page, as there, and posting it marks the
+ * visit reviewed here instead of sending anything.
+ */
+function LivePast(): ReactElement {
+  const [bookings, setBookings] = useState(guestPast);
+  const [writing, setWriting] = useState<GuestReservation | null>(null);
+  const [posted, setPosted] = useState<GuestReservation | null>(null);
+
+  function post(review: NewReview): void {
+    if (!writing) return;
+    const done = reviewedBy(writing, review);
+    setBookings((all) => all.map((one) => (one.id === done.id ? done : one)));
+    setPosted(done);
+    setWriting(null);
+  }
+
+  return screen("past", {
+    list: loaded(bookings),
+    review: {
+      ...noReview,
+      writing,
+      posted,
+      onWrite: (booking) => {
+        setPosted(null);
+        setWriting(booking);
+      },
+      onClose: () => setWriting(null),
+      onPost: post,
+    },
+    hrefFor: (when) => (when === "past" ? "/design" : "/reservations"),
+  });
+}
+
+const lastFriday = guestPast.find(({ id }) => id === "past-lori") ?? guestPast[0]!;
+const lastFridayReviewed = reviewedBy(lastFriday, {
+  rating: 4,
+  comment: "A warm room, and the trout was perfect.",
+});
+
 const lori = guestUpcoming.find(({ id }) => id === "upcoming-lori") ?? guestUpcoming[0]!;
 const loriCancelled = cancelledByYou(lori);
 const tooLate = new ApiError(
@@ -121,6 +181,11 @@ const myReservations: Record<StateOf<"myReservations">, ReactElement> = {
     list: { data: undefined, failed: true, retrying: false, onRetry: ignore },
   }),
   "Past the last page": screen("past", { page: 3, list: loaded([], 24, 3) }),
+  "A visit to review (live)": <LivePast />,
+  Reviewed: screen("past", {
+    list: loaded(guestPast.map((one) => (one.id === lastFriday.id ? lastFridayReviewed : one))),
+    review: { ...noReview, posted: lastFridayReviewed },
+  }),
 };
 
 /** A guest's own bookings, /reservations and /reservations/past, in their states. */
@@ -128,7 +193,7 @@ export function ReservationsScreens(): ReactElement {
   return (
     <Group
       title="My reservations"
-      note="For guests only; an owner is told the page is for guests (see the route guard's states). Upcoming bookings aren't over yet, soonest first, and past ones are, latest first. Each day is under its name, and each booking is a ruled line, as in the restaurant's book. A cancelled booking stays, crossed out, with who cancelled it and why. Cancel booking asks first: in the live one, the question opens over the page, and confirming crosses the booking out here without sending anything."
+      note="For guests only; an owner is told the page is for guests (see the route guard's states). Upcoming bookings aren't over yet, soonest first, and past ones are, latest first. Each day is under its name, and each booking is a ruled line, as in the restaurant's book. A cancelled booking stays, crossed out, with who cancelled it and why. Cancel booking asks first: in the live one, the question opens over the page, and confirming crosses the booking out here without sending anything. A visit the restaurant marked as arrived offers Review your visit once; in the live past list, the form opens over the page, and posting it shows the review on its line here."
     >
       <Specimens wide specimens={myReservations} />
     </Group>

@@ -1,8 +1,10 @@
+import { useState } from "react";
 import type { ReactElement } from "react";
 
 import { Button, LinkButton } from "@/components/Button";
 import type { ButtonVariant } from "@/components/Button";
 import { Pagination } from "@/components/Pagination";
+import { SaveButton } from "@/components/SaveButton";
 import { SectionNav } from "@/components/SectionNav";
 import { SlotButton } from "@/components/SlotButton";
 import { Group, Section, Specimen, SpecimenRow } from "@/features/design/components/parts";
@@ -48,6 +50,12 @@ function ButtonStates({ variant, onDark = false }: ButtonStatesProps): ReactElem
       </Specimen>
     </SpecimenRow>
   );
+}
+
+/** The toggle as it is on a restaurant's page, saving and unsaving here only. */
+function LiveSave(): ReactElement {
+  const [saved, setSaved] = useState(false);
+  return <SaveButton saved={saved} name="Lori Smokehouse" onClick={() => setSaved(!saved)} />;
 }
 
 const PARTS = ["Bookings", "Information", "Opening hours", "Tables", "Blocked times", "Photos"];
@@ -148,6 +156,31 @@ export function ActionSection(): ReactElement {
           </Specimen>
           <Specimen label="No table free">
             <SlotButton disabled>19:00</SlotButton>
+          </Specimen>
+        </SpecimenRow>
+      </Group>
+      <Group
+        title="Save"
+        note="Saves a restaurant to a guest's favorites, or takes it out. It says Save, or Saved once it is, and screen readers hear it as pressed. The ring takes the logo's dot when saved, as a chosen line does, and turns while the change is sent."
+      >
+        <SpecimenRow>
+          <Specimen label="Not saved (live)">
+            <LiveSave />
+          </Specimen>
+          <Specimen label="Hover" frozen>
+            <SaveButton saved={false} name="Lori Smokehouse" data-force="hover" />
+          </Specimen>
+          <Specimen label="Focus" frozen>
+            <SaveButton saved={false} name="Lori Smokehouse" data-force="focus" />
+          </Specimen>
+          <Specimen label="Saved">
+            <SaveButton saved name="Lori Smokehouse" />
+          </Specimen>
+          <Specimen label="Saved, hover" frozen>
+            <SaveButton saved name="Lori Smokehouse" data-force="hover" />
+          </Specimen>
+          <Specimen label="Saving">
+            <SaveButton saved={false} name="Lori Smokehouse" loading />
           </Specimen>
         </SpecimenRow>
       </Group>

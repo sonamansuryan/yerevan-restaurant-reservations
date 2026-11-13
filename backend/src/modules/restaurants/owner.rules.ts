@@ -94,13 +94,16 @@ export function slugFromName(name: string): string {
   return slug || "restaurant";
 }
 
+/** Addresses the app's own routes use, so no restaurant can have them: /api/restaurants/featured. */
+export const RESERVED_SLUGS: readonly string[] = ["featured"];
+
 /**
  * The first free address for a name: `base` itself, or base-2, base-3 and so on after the highest
  * number taken. `taken` is every slug that starts with `base`. Others among them, such as
  * kond-house for kond, don't count.
  */
 export function freeSlug(base: string, taken: readonly string[]): string {
-  if (!taken.includes(base)) return base;
+  if (!taken.includes(base) && !RESERVED_SLUGS.includes(base)) return base;
   // `base` holds only a-z, 0-9 and dashes, so it's safe in a pattern as it is.
   const numbered = new RegExp(`^${base}-(\\d+)$`);
   let highest = 1;

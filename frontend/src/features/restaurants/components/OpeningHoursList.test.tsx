@@ -66,3 +66,9 @@ test("a restaurant with no hours yet says so instead of a week of Closed", () =>
   expect(screen.getByText("Opening hours aren’t listed yet.")).toBeDefined();
   expect(screen.queryByRole("term")).toBeNull();
 });
+
+test("open from midnight to midnight reads as open all day, not 00:00–00:00", () => {
+  render(<OpeningHoursList hours={[hours(1, 0, 1440), hours(2, 660, 1440)]} />);
+
+  expect(lines().slice(0, 2)).toEqual(["Monday Open all day", "Tuesday 11:00–00:0011:00 to 00:00"]);
+});

@@ -16,13 +16,15 @@ export interface RestaurantRow {
   cuisines: string[] | null;
   district: string;
   address: string;
-  priceLevel: number;
+  priceLevel: number | null;
   avgRating: number;
   reviewCount: number;
-  photos: { url: string; isCover?: boolean }[];
+  isDemoListing: boolean;
+  photos: { url: string; isCover?: boolean; credit?: string | null; creditUrl?: string | null }[];
   phone?: string | null;
   website?: string | null;
   googlePlaceId?: string | null;
+  osmRef?: string | null;
   openingHours?: { dayOfWeek: number; opensAt: number; closesAt: number }[];
 }
 
@@ -38,6 +40,7 @@ export function summaryRow(extra: Partial<RestaurantRow> = {}): RestaurantRow {
     priceLevel: 2,
     avgRating: 0,
     reviewCount: 0,
+    isDemoListing: false,
     photos: [],
     ...extra,
   };
@@ -50,6 +53,7 @@ export function detailRow(extra: Partial<RestaurantRow> = {}): RestaurantRow {
     phone: "+37400000102",
     website: null,
     googlePlaceId: null,
+    osmRef: null,
     openingHours: [
       { dayOfWeek: 0, opensAt: 1080, closesAt: 1380 },
       { dayOfWeek: 2, opensAt: 1080, closesAt: 1380 },
@@ -71,6 +75,7 @@ const tsiran: RestaurantSummary = {
   avgRating: 0,
   reviewCount: 0,
   coverPhotoUrl: null,
+  isDemoListing: false,
 };
 
 /** What GET /api/restaurants returns, for tests that replace the service. */
@@ -86,8 +91,11 @@ export const detailReply: RestaurantDetail = {
   website: null,
   photos: [],
   openingHours: [{ dayOfWeek: 5, opensAt: 1080, closesAt: 1560, opens: "18:00", closes: "02:00" }],
+  osmUrl: null,
   mapsUrl:
     "https://www.google.com/maps/search/?api=1&query=Tsiran+Wine+Room%2C+31+Saryan+Street%2C+Yerevan",
+  // The tests set GEOAPIFY_API_KEY (vitest.config.ts), so maps are on.
+  mapImageUrl: "/api/restaurants/tsiran-wine-room/map",
 };
 
 /** A whole Restaurant row with its owner, as owner queries find it. */
@@ -106,6 +114,7 @@ export interface OwnedRow {
   slotIntervalMin: number;
   reservationDurationMin: number;
   isPublished: boolean;
+  hiddenAt: Date | null;
   googlePlaceId: string | null;
   avgRating: number;
   reviewCount: number;
@@ -128,6 +137,7 @@ export function ownedRow(extra: Partial<OwnedRow> = {}): OwnedRow {
     slotIntervalMin: 30,
     reservationDurationMin: 120,
     isPublished: true,
+    hiddenAt: null,
     // Set, so a reply that leaked it would show it.
     googlePlaceId: "ChIJ-tsiran-wine-room",
     avgRating: 4.5,

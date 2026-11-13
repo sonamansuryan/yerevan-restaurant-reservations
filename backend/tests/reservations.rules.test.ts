@@ -6,6 +6,7 @@ import { describe, expect, test } from "vitest";
 import type { ReservationStatus } from "../src/generated/prisma/enums.ts";
 import {
   canGuestCancel,
+  canGuestReview,
   RESTAURANT_CHANGES,
   restaurantChangeProblem,
 } from "../src/modules/reservations/reservations.rules.ts";
@@ -24,6 +25,19 @@ const ENDS = after(2 * HOUR);
 const STATUSES: ReservationStatus[] = ["PENDING", "CONFIRMED", "ARRIVED", "NO_SHOW", "CANCELLED"];
 const problem = (status: ReservationStatus, change: RestaurantChange, now: Date) =>
   restaurantChangeProblem({ status, startsAt: STARTS, endsAt: ENDS }, change, now);
+
+describe("canGuestReview", () => {
+  test("a visit the restaurant marked arrived can be reviewed, once", () => {
+    expect(canGuestReview({ status: "ARRIVED" }, false)).toBe(true);
+    expect(canGuestReview({ status: "ARRIVED" }, true)).toBe(false);
+  });
+
+  test("no other booking can: not before the visit, nor after a no-show or a cancellation", () => {
+    for (const status of ["PENDING", "CONFIRMED", "NO_SHOW", "CANCELLED"] as const) {
+      expect(canGuestReview({ status }, false), status).toBe(false);
+    }
+  });
+});
 
 describe("canGuestCancel", () => {
   test("a pending or confirmed booking can be cancelled, days ahead or a minute before it starts", () => {

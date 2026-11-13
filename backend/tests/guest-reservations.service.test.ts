@@ -11,8 +11,11 @@ import {
   cancelReservation,
   listGuestReservations,
 } from "../src/modules/reservations/reservations.service.ts";
+import { emailGuest } from "../src/modules/reservations/reservation-emails.ts";
 import { guestReservation, guestReservationRow } from "./fixtures/reservations.ts";
 import { sessionUser } from "./fixtures/users.ts";
+
+vi.mock("../src/modules/reservations/reservation-emails.ts", () => ({ emailGuest: vi.fn() }));
 
 vi.mock("../src/lib/prisma.ts", () => ({
   prisma: {
@@ -147,6 +150,45 @@ describe("listGuestReservations", () => {
   });
 });
 
+describe("listGuestReservations and reviews", () => {
+  test("each booking carries the guest's review of it, which is the only review read", async () => {
+    findMany.mockResolvedValue([
+      guestReservationRow({ status: "ARRIVED", review: { rating: 4, comment: "Lovely terrace." } }),
+    ] as never);
+
+    const [booking] = (await listGuestReservations(GUEST, { when: "past", ...firstPage }, NOW))
+      .data;
+
+    expect(askedFor()["select"]).toMatchObject({
+      review: { select: { rating: true, comment: true } },
+    });
+    expect(booking).toMatchObject({
+      review: { rating: 4, comment: "Lovely terrace." },
+      canReview: false,
+    });
+  });
+
+  test("only a visit marked arrived, and not reviewed yet, says it can be reviewed", async () => {
+    findMany.mockResolvedValue([
+      guestReservationRow({ status: "ARRIVED" }),
+      guestReservationRow({ status: "ARRIVED", review: { rating: 5, comment: null } }),
+      guestReservationRow({ status: "CONFIRMED" }),
+      guestReservationRow({ status: "NO_SHOW" }),
+      guestReservationRow({ status: "CANCELLED", cancelledBy: "CUSTOMER" }),
+    ] as never);
+
+    const list = await listGuestReservations(GUEST, { when: "past", ...firstPage }, NOW);
+
+    expect(list.data.map((booking) => booking.canReview)).toEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+    ]);
+  });
+});
+
 describe("cancelReservation", () => {
   /** The booking as the database holds it after the update. */
   function stored(row: ReturnType<typeof guestReservationRow> | null, changed: number): void {
@@ -170,6 +212,19 @@ describe("cancelReservation", () => {
     });
     // Cancelling only frees a table, so it takes no lock and needs no transaction.
     expect(transaction).not.toHaveBeenCalled();
+  });
+
+  test("the cancel that applied emails the guest; one refused doesn't", async () => {
+    stored(guestReservationRow({ status: "CANCELLED", cancelledBy: "CUSTOMER" }), 1);
+    await cancelReservation(GUEST, ID, NOW);
+    expect(emailGuest).toHaveBeenCalledExactlyOnceWith("CANCELLED_BY_GUEST", ID);
+
+    vi.mocked(emailGuest).mockClear();
+    stored(guestReservationRow({ status: "CANCELLED", cancelledBy: "RESTAURANT" }), 0);
+    await expect(cancelReservation(GUEST, ID, NOW)).rejects.toMatchObject({
+      code: "ALREADY_CANCELLED",
+    });
+    expect(emailGuest).not.toHaveBeenCalled();
   });
 
   test("answers the booking as it now is: cancelled by the guest, and no longer cancellable", async () => {

@@ -19,6 +19,7 @@ const lori: RestaurantSummary = {
   avgRating: 0,
   reviewCount: 0,
   coverPhotoUrl: null,
+  isDemoListing: false,
 };
 
 function renderCard(restaurant: RestaurantSummary = lori): HTMLElement {
@@ -29,6 +30,20 @@ function renderCard(restaurant: RestaurantSummary = lori): HTMLElement {
   );
   return screen.getByRole("article");
 }
+
+test("once guests have reviewed it, a line says how they rate it", () => {
+  const card = renderCard({ ...lori, avgRating: 4.36, reviewCount: 18 });
+
+  expect(card.textContent).toContain("Rated 4.4 by 18 guests");
+  cleanup();
+
+  expect(renderCard({ ...lori, avgRating: 5, reviewCount: 1 }).textContent).toContain(
+    "Rated 5.0 by 1 guest",
+  );
+  cleanup();
+
+  expect(renderCard().textContent).not.toContain("Rated");
+});
 
 test("the card is one link, named by the restaurant, to its page", () => {
   renderCard();
@@ -82,4 +97,34 @@ test("no description leaves no empty line, and the heading level can change", ()
   expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("Lori Smokehouse");
   // The description is the clamped paragraph, and there isn't one.
   expect(screen.getByRole("article").querySelector(".line-clamp-2")).toBeNull();
+});
+
+test("a cover a crop would spoil (covers.ts) is shown whole on the paper tint, any other fills the card", () => {
+  const listings = "https://res.cloudinary.com/seghan/image/upload/v1/seghan/demo-listings";
+  const whole = renderCard({
+    ...lori,
+    coverPhotoUrl: `${listings}/node-12246284869/466cc90a3f0cb4a9`,
+  }).querySelector("img");
+
+  expect(whole?.className).toContain("object-contain");
+  expect(whole?.className).not.toContain("object-cover");
+  expect(whole?.parentElement?.className).toContain("bg-surface-tinted");
+  cleanup();
+
+  // PAUL's cover is square too, and still fills its card.
+  const cropped = renderCard({
+    ...lori,
+    coverPhotoUrl: `${listings}/node-11197827655/c8cbe22ed2549e9e`,
+  }).querySelector("img");
+  expect(cropped?.className).toContain("object-cover");
+  expect(cropped?.className).not.toContain("object-contain");
+  expect(cropped?.parentElement?.className).not.toContain("bg-surface-tinted");
+});
+
+test("a demo listing (9.7) has no price, which no source gives, and no badge saying it's a demo", () => {
+  const card = renderCard({ ...lori, priceLevel: null, isDemoListing: true });
+
+  expect(card.querySelector("p.text-meta")?.textContent).toBe("Armenian · Steakhouse · Arabkir");
+  expect(card.textContent).not.toContain("֏");
+  expect(card.textContent).not.toMatch(/demo/i);
 });

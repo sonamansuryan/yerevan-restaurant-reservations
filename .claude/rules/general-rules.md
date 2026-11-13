@@ -35,7 +35,7 @@ How we work on Seghan. The Team Lead's requirements are in `.claude/plans/ASSIGN
 | Backend | Express 5 (REST, JSON), TypeScript 7, Zod 4, pino |
 | Database | PostgreSQL 17, Prisma ORM 7 + `@prisma/adapter-pg` |
 | Auth | JWT access token (`jose`) and a rotating refresh token in `httpOnly` cookies; Google Sign-In |
-| Outside services | Google Places API (New), Google Maps, Cloudinary, Resend |
+| Outside services | Geoapify (OpenStreetMap maps and places), Wikimedia Commons (demo listings' photos), Cloudinary, Resend |
 | Dates | `date-fns` 4 + `@date-fns/tz` (restaurant time zone `Asia/Yerevan`) |
 | Quality | Vitest 5, Supertest, Testing Library, oxlint, Prettier 3 |
 
@@ -111,11 +111,10 @@ npm run test:db -w backend               # database tests on yerevan_test, with 
 - **Secrets** live only in `backend/.env`. The app reads them only through `backend/src/config/env.ts`, which refuses to start if one is missing. The Prisma CLI config is the only other reader, apart from `npm run test:db`, which takes only `DATABASE_URL`, to reach `yerevan_test` on the same server.
 - **`POSTGRES_PASSWORD`** lives there too, for Docker Compose, and `DATABASE_URL` uses the same password.
 - **The frontend holds no secrets:** every `VITE_*` value ends up in public JavaScript.
-- **Outside services** (Google, Cloudinary, Resend) are called only from `backend/src/integrations/`. The only exceptions are made for browsers:
+- **Outside services** (Google, Geoapify, Wikimedia Commons, Cloudinary, Resend) are called only from `backend/src/integrations/`. The only exceptions are made for browsers:
   - the Google Sign-In button
   - Cloudinary uploads signed by our server
   - the Google Fonts stylesheet
-  - a Maps key that only works on our address
 - **The repository is public:**
   - Never commit a `.env` file.
   - Give every new variable a placeholder in `.env.example`.

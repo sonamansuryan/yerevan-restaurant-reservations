@@ -119,7 +119,8 @@ export function restaurantFields(restaurant: OwnerRestaurant): RestaurantFields 
     address: restaurant.address,
     phone: restaurant.phone ?? "",
     website: restaurant.website ?? "",
-    priceLevel: String(restaurant.priceLevel),
+    // Only a demo listing (9.7), which no owner manages, has none: then it's still to choose.
+    priceLevel: restaurant.priceLevel === null ? "" : String(restaurant.priceLevel),
     slotIntervalMin: String(restaurant.slotIntervalMin),
     reservationDurationMin: String(restaurant.reservationDurationMin),
   };

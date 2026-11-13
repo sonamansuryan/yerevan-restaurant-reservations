@@ -29,7 +29,7 @@ interface RestaurantFiltersProps {
 }
 
 /**
- * Search, cuisine, district and price. A choice in a list applies at once. The search applies when
+ * Search, cuisine, district and price, and the order. A choice in a list applies at once. The search applies when
  * it's sent, with Enter or the button, so the list doesn't reload at every letter. The search box
  * holds what's typed by itself: Browse gives it a new key when the address's search changes, such
  * as after Back, so it always shows the search in use.
@@ -53,7 +53,7 @@ export function RestaurantFilters({
       aria-label="Restaurants"
       onSubmit={search}
       className={cx(
-        "grid grid-cols-2 items-end gap-x-6 gap-y-5 lg:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))_auto]",
+        "grid grid-cols-2 items-end gap-x-6 gap-y-5 lg:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto]",
         className,
       )}
     >
@@ -109,7 +109,17 @@ export function RestaurantFilters({
           </option>
         ))}
       </Select>
-      <Button type="submit" variant="ghost" className="w-full lg:w-auto">
+      <Select
+        label="Sort by"
+        value={filters.sort ?? "name"}
+        onChange={(event) =>
+          change({ sort: event.target.value === "rating" ? "rating" : undefined })
+        }
+      >
+        <option value="name">Name</option>
+        <option value="rating">Highest rated</option>
+      </Select>
+      <Button type="submit" variant="ghost" className="col-span-2 w-full lg:col-span-1 lg:w-auto">
         Search
       </Button>
     </form>

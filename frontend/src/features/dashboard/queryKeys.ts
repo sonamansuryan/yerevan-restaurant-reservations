@@ -12,6 +12,7 @@ export const ownerKeys = {
   bookings: (id: string) => ["owner", "reservations", id] as const,
   tables: (id: string) => ["owner", "tables", id] as const,
   blocks: (id: string) => ["owner", "blocks", id] as const,
+  analytics: (id: string, days: number) => ["owner", "analytics", id, days] as const,
 };
 
 /** Where one of the owner's restaurants lives in the API. Ids are encoded, like any address part. */

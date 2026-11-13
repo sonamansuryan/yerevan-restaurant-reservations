@@ -71,6 +71,18 @@ const dayHeading = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
 });
 
+const monthName = new Intl.DateTimeFormat("en-GB", {
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** The month of a YYYY-MM-DD date, such as "November 2026": how a review is dated. */
+export function formatMonth(date: string): string {
+  const [year, month] = dateParts(date) ?? [1970, 1, 1];
+  return monthName.format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
 /**
  * A YYYY-MM-DD date as the heading of a page in the book: "Friday 13 November", with the year
  * when it isn't this year's.
@@ -80,4 +92,30 @@ export function formatDayHeading(date: string, today: string = yerevanToday()): 
   const heading = dayHeading.format(new Date(Date.UTC(year, month - 1, day)));
   // Added by hand: with the year, Intl puts a comma after the weekday, unlike the book's style.
   return date.slice(0, 4) === today.slice(0, 4) ? heading : `${heading} ${year}`;
+}
+
+const dayAndMonth = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "long",
+  timeZone: "UTC",
+});
+
+const dayMonthAndYear = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/**
+ * The days from one YYYY-MM-DD date to another, as "14 October – 12 November": the days the
+ * analytics count. Each gets its year only when the two are in different years.
+ */
+export function formatDayRange(from: string, to: string): string {
+  const format = from.slice(0, 4) === to.slice(0, 4) ? dayAndMonth : dayMonthAndYear;
+  const day = (date: string): string => {
+    const [year, month, dayOfMonth] = dateParts(date) ?? [1970, 1, 1];
+    return format.format(new Date(Date.UTC(year, month - 1, dayOfMonth)));
+  };
+  return `${day(from)} – ${day(to)}`;
 }

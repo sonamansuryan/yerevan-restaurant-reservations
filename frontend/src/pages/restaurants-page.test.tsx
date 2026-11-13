@@ -25,6 +25,7 @@ const restaurant = (slug: string, name: string, district: District): RestaurantS
   avgRating: 0,
   reviewCount: 0,
   coverPhotoUrl: null,
+  isDemoListing: false,
 });
 
 const threeRestaurants = [
@@ -38,7 +39,7 @@ const json = (body: unknown, status = 200): Response =>
 
 /**
  * Answers like the API: nobody is signed in, and /api/restaurants filters by district and search,
- * 12 to a page. `failures` makes that many list requests fail first, as with no connection.
+ * and sorts by name or rating, 12 to a page. `failures` makes that many list requests fail first, as with no connection.
  */
 function fakeApi(list: RestaurantSummary[] = threeRestaurants, failures = 0): Mock {
   let failuresLeft = failures;
@@ -56,6 +57,14 @@ function fakeApi(list: RestaurantSummary[] = threeRestaurants, failures = 0): Mo
         (item) =>
           (!district || item.district === district) && (!q || item.name.toLowerCase().includes(q)),
       );
+      if (searchParams.get("sort") === "rating") {
+        found.sort(
+          (a, b) =>
+            b.avgRating - a.avgRating ||
+            b.reviewCount - a.reviewCount ||
+            a.name.localeCompare(b.name),
+        );
+      }
       return Promise.resolve(
         json({
           data: found.slice((page - 1) * 12, page * 12),
@@ -160,6 +169,41 @@ test("nothing found has one way out: clearing the filters", async () => {
 
   expect(await main().findByText("3 restaurants")).toBeDefined();
   expect(router.state.location.search).toBe("");
+});
+
+test("Sort by Highest rated goes into the address, and the best rated come first, with their ratings", async () => {
+  const rated = [
+    restaurant("kond-house", "Kond House", "KENTRON"),
+    {
+      ...restaurant("lori-smokehouse", "Lori Smokehouse", "ARABKIR"),
+      avgRating: 4.4,
+      reviewCount: 18,
+    },
+    { ...restaurant("nurr", "Nurr", "KENTRON"), avgRating: 4.8, reviewCount: 5 },
+  ];
+  const fetch = fakeApi(rated);
+  const router = renderAt("/restaurants");
+  await main().findByText("3 restaurants");
+
+  await userEvent.selectOptions(main().getByLabelText("Sort by"), "Highest rated");
+
+  await waitFor(() => expect(cardNames()).toEqual(["Nurr", "Lori Smokehouse", "Kond House"]));
+  expect(router.state.location.search).toBe("?sort=rating");
+  expect(listRequests(fetch).at(-1)).toBe("/api/restaurants?sort=rating");
+  const nurr = main().getByRole("link", { name: "Nurr" }).closest("article");
+  expect(nurr?.textContent).toContain("Rated 4.8 by 5 guests");
+});
+
+test("clearing the filters keeps the order", async () => {
+  fakeApi();
+  const router = renderAt("/restaurants?q=pizza&sort=rating");
+
+  expect(await main().findByText("No restaurants match")).toBeDefined();
+  await userEvent.click(main().getByRole("button", { name: "Clear filters" }));
+
+  expect(await main().findByText("3 restaurants")).toBeDefined();
+  expect(router.state.location.search).toBe("?sort=rating");
+  expect((main().getByLabelText("Sort by") as HTMLSelectElement).value).toBe("rating");
 });
 
 test("a filter the server would refuse, from a hand-edited link, is ignored", async () => {

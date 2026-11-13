@@ -1,0 +1,1610 @@
+{
+  "sources": {
+    "details": "© OpenStreetMap contributors, through Geoapify (Open Database License)",
+    "photos": "Wikimedia Commons, each photo credited to its author under its own license"
+  },
+  "listings": [
+    {
+      "osmRef": "node/12246284869",
+      "slug": "gustav",
+      "name": "Gustav",
+      "cuisines": ["EUROPEAN"],
+      "district": "KENTRON",
+      "address": "38 Isahakyan Street, Yerevan",
+      "phone": "+374 41 999901",
+      "website": "https://gustav.am/",
+      "description": "A French-inspired bistro and cocktail bar by the Cascade, opened in 2023. Its menu runs from smashed burgers to the Gustav Pan, with a sauce of 30 herbs.",
+      "openingHours": [
+        {
+          "dayOfWeek": 0,
+          "opensAt": 690,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 1,
+          "opensAt": 690,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 2,
+          "opensAt": 690,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 3,
+          "opensAt": 690,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 4,
+          "opensAt": 690,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 5,
+          "opensAt": 690,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 6,
+          "opensAt": 690,
+          "closesAt": 1440
+        }
+      ],
+      "openingHoursText": "Mo-Su 11:30-00:00",
+      "checkDate": null,
+      "photos": [
+        {
+          "title": "https://framerusercontent.com/images/YRJtFF3ukvdzLwWlSadNIbsHKY.webp",
+          "imageUrl": "https://framerusercontent.com/images/YRJtFF3ukvdzLwWlSadNIbsHKY.webp",
+          "pageUrl": "https://gustav.am/",
+          "credit": "Gustav’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://framerusercontent.com/images/24kcVdYfamZhdQ9heO6FBujA.jpg?scale-down-to=2560",
+          "imageUrl": "https://framerusercontent.com/images/24kcVdYfamZhdQ9heO6FBujA.jpg?scale-down-to=2560",
+          "pageUrl": "https://gustav.am/",
+          "credit": "Gustav’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://framerusercontent.com/images/Ps2kzU87aGLzzlHnMoKY3XG6VM.jpg?scale-down-to=2560",
+          "imageUrl": "https://framerusercontent.com/images/Ps2kzU87aGLzzlHnMoKY3XG6VM.jpg?scale-down-to=2560",
+          "pageUrl": "https://gustav.am/",
+          "credit": "Gustav’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://framerusercontent.com/images/qtD1flxCy7vG9ExZ2W1vIS4MIJk.jpg?scale-down-to=2560",
+          "imageUrl": "https://framerusercontent.com/images/qtD1flxCy7vG9ExZ2W1vIS4MIJk.jpg?scale-down-to=2560",
+          "pageUrl": "https://gustav.am/",
+          "credit": "Gustav’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://framerusercontent.com/images/IOxTHgC7VpOxWI1bFYLBjPvMU.jpg?scale-down-to=2560",
+          "imageUrl": "https://framerusercontent.com/images/IOxTHgC7VpOxWI1bFYLBjPvMU.jpg?scale-down-to=2560",
+          "pageUrl": "https://gustav.am/",
+          "credit": "Gustav’s website",
+          "freeLicense": false
+        }
+      ],
+      "tables": [
+        {
+          "label": "T1",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T2",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T3",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T4",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T5",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T6",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T7",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T8",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T9",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "B1",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "BAR_COUNTER"
+        },
+        {
+          "label": "B2",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "BAR_COUNTER"
+        }
+      ],
+      "detailSources": {
+        "name": ["https://www.openstreetmap.org/node/12246284869"],
+        "address": ["https://www.spyur.am/en/companies/53772", "https://gustav.am/"],
+        "district": ["https://www.openstreetmap.org/node/12246284869"],
+        "openingHours": [
+          "https://wanderlog.com/place/details/9770916/gustav",
+          "https://restaurantguru.com/Gustav-Yerevan-Yerevan"
+        ],
+        "cuisines": ["https://gustav.am/", "https://www.turntables.am/projects/gustav"],
+        "phone": ["https://www.spyur.am/en/companies/53772"],
+        "website": ["https://gustav.am/"]
+      },
+      "missing": []
+    },
+    {
+      "osmRef": "node/11197827655",
+      "slug": "paul",
+      "name": "PAUL",
+      "cuisines": ["EUROPEAN"],
+      "district": "KENTRON",
+      "address": "8 Abovyan Street, Yerevan",
+      "phone": "+374 44 100400",
+      "website": "https://www.instagram.com/paul_armenia/",
+      "description": "Armenia’s first café of the French bakery PAUL, in an 1884 building on Abovyan Street, open from breakfast.",
+      "openingHours": [
+        {
+          "dayOfWeek": 0,
+          "opensAt": 480,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 1,
+          "opensAt": 480,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 2,
+          "opensAt": 480,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 3,
+          "opensAt": 480,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 4,
+          "opensAt": 480,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 5,
+          "opensAt": 480,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 6,
+          "opensAt": 480,
+          "closesAt": 1440
+        }
+      ],
+      "openingHoursText": "08:00-24:00",
+      "checkDate": "2024-02-11",
+      "photos": [
+        {
+          "title": "https://galaxygroup.am/wp-content/uploads/2023/07/350117818_974020643631981_4756760333915973128_n.jpg",
+          "imageUrl": "https://galaxygroup.am/wp-content/uploads/2023/07/350117818_974020643631981_4756760333915973128_n.jpg",
+          "pageUrl": "https://galaxygroup.am/businesses/paul-armenia/",
+          "credit": "Galaxy Group’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://galaxygroup.am/wp-content/uploads/2023/07/325931322_742322213980162_4619340868305132916_n-1.jpg",
+          "imageUrl": "https://galaxygroup.am/wp-content/uploads/2023/07/325931322_742322213980162_4619340868305132916_n-1.jpg",
+          "pageUrl": "https://galaxygroup.am/businesses/paul-armenia/",
+          "credit": "Galaxy Group’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://galaxygroup.am/wp-content/uploads/2023/07/325457543_3284412161820613_1431877487036014389_n.jpg",
+          "imageUrl": "https://galaxygroup.am/wp-content/uploads/2023/07/325457543_3284412161820613_1431877487036014389_n.jpg",
+          "pageUrl": "https://galaxygroup.am/businesses/paul-armenia/",
+          "credit": "Galaxy Group’s website",
+          "freeLicense": false
+        }
+      ],
+      "tables": [
+        {
+          "label": "T1",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T2",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T3",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T4",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T5",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T6",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T7",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T8",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T9",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        }
+      ],
+      "detailSources": {
+        "name": [
+          "https://visityerevan.am/restaurants/details/156/en/",
+          "https://www.spyur.am/en/companies/paul-cafe/51095/"
+        ],
+        "address": [
+          "https://visityerevan.am/restaurants/details/156/en/",
+          "https://www.spyur.am/en/companies/paul-cafe/51095/",
+          "https://panarmenian.net/eng/news/296134/Galaxy_Group_of_Companies_opening_first_PAUL_venue_in_Yerevan"
+        ],
+        "district": ["https://www.spyur.am/en/companies/paul-cafe/51095/"],
+        "openingHours": ["https://www.openstreetmap.org/node/11197827655"],
+        "cuisines": ["https://visityerevan.am/restaurants/details/156/en/"],
+        "phone": ["https://www.spyur.am/en/companies/paul-cafe/51095/"],
+        "website": ["https://www.openstreetmap.org/node/11197827655"]
+      },
+      "missing": []
+    },
+    {
+      "osmRef": "node/5299493124",
+      "slug": "sherep",
+      "name": "Sherep",
+      "cuisines": ["FUSION"],
+      "district": "KENTRON",
+      "address": "1 King Pap Street, Yerevan",
+      "phone": "+374 10 600880",
+      "website": "https://www.yeremyanprojects.com/en/restaurants/sherep",
+      "description": "By Republic Square, where the old Armenia café stood: an open kitchen and a tonir, and dishes from many countries rather than one.",
+      "openingHours": [
+        {
+          "dayOfWeek": 0,
+          "opensAt": 570,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 1,
+          "opensAt": 570,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 2,
+          "opensAt": 570,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 3,
+          "opensAt": 570,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 4,
+          "opensAt": 570,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 5,
+          "opensAt": 570,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 6,
+          "opensAt": 570,
+          "closesAt": 1440
+        }
+      ],
+      "openingHoursText": "Mo-Su 09:30-24:00",
+      "checkDate": "2025-04-14",
+      "photos": [
+        {
+          "title": "https://www.yeremyanprojects.com/upload/sherep/579fdeacafc185759b2aaf416217f784.jpg",
+          "imageUrl": "https://www.yeremyanprojects.com/upload/sherep/579fdeacafc185759b2aaf416217f784.jpg",
+          "pageUrl": "https://www.yeremyanprojects.com/en/restaurants/sherep",
+          "credit": "Yeremyan Projects’ website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://www.yeremyanprojects.com/upload/sherep/b50ac5e9dbcde8f44f2671b4be23d7cb.jpg",
+          "imageUrl": "https://www.yeremyanprojects.com/upload/sherep/b50ac5e9dbcde8f44f2671b4be23d7cb.jpg",
+          "pageUrl": "https://www.yeremyanprojects.com/en/restaurants/sherep",
+          "credit": "Yeremyan Projects’ website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://www.yeremyanprojects.com/upload/sherep/39ac908127a414a8eae6f414a0af5050.jpg",
+          "imageUrl": "https://www.yeremyanprojects.com/upload/sherep/39ac908127a414a8eae6f414a0af5050.jpg",
+          "pageUrl": "https://www.yeremyanprojects.com/en/restaurants/sherep",
+          "credit": "Yeremyan Projects’ website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://www.yeremyanprojects.com/upload/sherep/0ea881387f797cd5bbf706e7f2074b51.jpg",
+          "imageUrl": "https://www.yeremyanprojects.com/upload/sherep/0ea881387f797cd5bbf706e7f2074b51.jpg",
+          "pageUrl": "https://www.yeremyanprojects.com/en/restaurants/sherep",
+          "credit": "Yeremyan Projects’ website",
+          "freeLicense": false
+        },
+        {
+          "title": "File:Lavash baking in a restaurant (Yerevan) June 2023.jpg",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/Lavash_baking_in_a_restaurant_%28Yerevan%29_June_2023.jpg/1920px-Lavash_baking_in_a_restaurant_%28Yerevan%29_June_2023.jpg",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:Lavash_baking_in_a_restaurant_(Yerevan)_June_2023.jpg",
+          "credit": "Benoît Prieur, CC0",
+          "freeLicense": true
+        }
+      ],
+      "tables": [
+        {
+          "label": "T1",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T2",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T3",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T4",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T5",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T6",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T7",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T8",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T9",
+          "capacity": 8,
+          "minCapacity": 4,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T10",
+          "capacity": 10,
+          "minCapacity": 5,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T11",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T12",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        }
+      ],
+      "detailSources": {
+        "name": ["https://www.openstreetmap.org/node/5299493124"],
+        "address": [
+          "https://www.yeremyanprojects.com/en/restaurants/sherep",
+          "https://visityerevan.am/restaurants/details/6/en/"
+        ],
+        "district": ["https://www.openstreetmap.org/node/5299493124"],
+        "openingHours": ["https://www.openstreetmap.org/node/5299493124"],
+        "cuisines": [
+          "https://www.yeremyanprojects.com/en/restaurants/sherep",
+          "https://visityerevan.am/restaurants/details/6/en/"
+        ],
+        "phone": ["https://www.openstreetmap.org/node/5299493124"],
+        "website": ["https://www.openstreetmap.org/node/5299493124"]
+      },
+      "missing": []
+    },
+    {
+      "osmRef": "node/5299505621",
+      "slug": "lavash",
+      "name": "Lavash",
+      "cuisines": ["ARMENIAN"],
+      "district": "KENTRON",
+      "address": "21 Tumanyan Street, Yerevan",
+      "phone": "+374 10 608800",
+      "website": "https://www.yeremyanprojects.com/restaurants/lavash",
+      "description": "Traditional Armenian dishes, with lavash from its own tonir, and known for its breakfasts.",
+      "openingHours": [
+        {
+          "dayOfWeek": 0,
+          "opensAt": 510,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 1,
+          "opensAt": 510,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 2,
+          "opensAt": 510,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 3,
+          "opensAt": 510,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 4,
+          "opensAt": 510,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 5,
+          "opensAt": 510,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 6,
+          "opensAt": 510,
+          "closesAt": 1440
+        }
+      ],
+      "openingHoursText": "Mo-Su 08:30-24:00",
+      "checkDate": "2026-06-20",
+      "photos": [
+        {
+          "title": "https://www.yeremyanprojects.com/upload/lavash/c98bc10658d396bdb2761ccf834dd037.jpg",
+          "imageUrl": "https://www.yeremyanprojects.com/upload/lavash/c98bc10658d396bdb2761ccf834dd037.jpg",
+          "pageUrl": "https://www.yeremyanprojects.com/en/restaurants/lavash",
+          "credit": "Yeremyan Projects’ website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://www.yeremyanprojects.com/upload/lavash/4b6d9bfe20e30d2740ff0eae9521a430.jpg",
+          "imageUrl": "https://www.yeremyanprojects.com/upload/lavash/4b6d9bfe20e30d2740ff0eae9521a430.jpg",
+          "pageUrl": "https://www.yeremyanprojects.com/en/restaurants/lavash",
+          "credit": "Yeremyan Projects’ website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://www.yeremyanprojects.com/upload/lavash/7ec62a37367c7fd8fee948e2bf0426e3.jpg",
+          "imageUrl": "https://www.yeremyanprojects.com/upload/lavash/7ec62a37367c7fd8fee948e2bf0426e3.jpg",
+          "pageUrl": "https://www.yeremyanprojects.com/en/restaurants/lavash",
+          "credit": "Yeremyan Projects’ website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://www.yeremyanprojects.com/upload/lavash/6d701fc8915778b929ad1a3e808214ae.jpg",
+          "imageUrl": "https://www.yeremyanprojects.com/upload/lavash/6d701fc8915778b929ad1a3e808214ae.jpg",
+          "pageUrl": "https://www.yeremyanprojects.com/en/restaurants/lavash",
+          "credit": "Yeremyan Projects’ website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://www.yeremyanprojects.com/upload/lavash/24bdea269826236ee37058a16faa6e00.jpg",
+          "imageUrl": "https://www.yeremyanprojects.com/upload/lavash/24bdea269826236ee37058a16faa6e00.jpg",
+          "pageUrl": "https://www.yeremyanprojects.com/en/restaurants/lavash",
+          "credit": "Yeremyan Projects’ website",
+          "freeLicense": false
+        }
+      ],
+      "tables": [
+        {
+          "label": "T1",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T2",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T3",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T4",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T5",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T6",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T7",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T8",
+          "capacity": 8,
+          "minCapacity": 4,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T9",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T10",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T11",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        }
+      ],
+      "detailSources": {
+        "name": ["https://www.openstreetmap.org/node/5299505621"],
+        "address": ["https://www.openstreetmap.org/node/5299505621"],
+        "district": ["https://www.openstreetmap.org/node/5299505621"],
+        "openingHours": ["https://www.openstreetmap.org/node/5299505621"],
+        "cuisines": ["https://www.openstreetmap.org/node/5299505621"],
+        "phone": ["https://www.openstreetmap.org/node/5299505621"],
+        "website": ["https://www.openstreetmap.org/node/5299505621"]
+      },
+      "missing": []
+    },
+    {
+      "osmRef": "node/6566646015",
+      "slug": "dolmama",
+      "name": "Dolmama",
+      "cuisines": ["ARMENIAN"],
+      "district": "KENTRON",
+      "address": "10 Pushkin Street, Yerevan",
+      "phone": "+374 10 56 13 54",
+      "website": "https://www.dolmama.am/",
+      "description": "Armenian cooking, old and new, in rooms full of art and a courtyard under the vines, with its signature dolma.",
+      "openingHours": [
+        {
+          "dayOfWeek": 0,
+          "opensAt": 660,
+          "closesAt": 1410
+        },
+        {
+          "dayOfWeek": 1,
+          "opensAt": 660,
+          "closesAt": 1410
+        },
+        {
+          "dayOfWeek": 2,
+          "opensAt": 660,
+          "closesAt": 1410
+        },
+        {
+          "dayOfWeek": 3,
+          "opensAt": 660,
+          "closesAt": 1410
+        },
+        {
+          "dayOfWeek": 4,
+          "opensAt": 660,
+          "closesAt": 1410
+        },
+        {
+          "dayOfWeek": 5,
+          "opensAt": 660,
+          "closesAt": 1410
+        },
+        {
+          "dayOfWeek": 6,
+          "opensAt": 660,
+          "closesAt": 1410
+        }
+      ],
+      "openingHoursText": "Mo-Su 11:00-23:30",
+      "checkDate": "2024-10-17",
+      "photos": [
+        {
+          "title": "https://www.dolmama.am/assets/photos/gallery/dolmama-interior-gold-room-wide.jpeg",
+          "imageUrl": "https://www.dolmama.am/assets/photos/gallery/dolmama-interior-gold-room-wide.jpeg",
+          "pageUrl": "https://www.dolmama.am/",
+          "credit": "Dolmama’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://www.dolmama.am/assets/photos/hero-art-room.jpg",
+          "imageUrl": "https://www.dolmama.am/assets/photos/hero-art-room.jpg",
+          "pageUrl": "https://www.dolmama.am/",
+          "credit": "Dolmama’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://dolmama.am/assets/photos/signature-dolma-new.jpg",
+          "imageUrl": "https://dolmama.am/assets/photos/signature-dolma-new.jpg",
+          "pageUrl": "https://www.dolmama.am/",
+          "credit": "Dolmama’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://www.dolmama.am/assets/photos/vine-mural-table.jpg",
+          "imageUrl": "https://www.dolmama.am/assets/photos/vine-mural-table.jpg",
+          "pageUrl": "https://www.dolmama.am/",
+          "credit": "Dolmama’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://www.dolmama.am/assets/photos/sunlit-meat-plate.jpg",
+          "imageUrl": "https://www.dolmama.am/assets/photos/sunlit-meat-plate.jpg",
+          "pageUrl": "https://www.dolmama.am/",
+          "credit": "Dolmama’s website",
+          "freeLicense": false
+        }
+      ],
+      "tables": [
+        {
+          "label": "T1",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T2",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T3",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T4",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T5",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T6",
+          "capacity": 8,
+          "minCapacity": 4,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T7",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T8",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T9",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        }
+      ],
+      "detailSources": {
+        "name": ["https://www.openstreetmap.org/node/6566646015"],
+        "address": ["https://www.openstreetmap.org/node/6566646015"],
+        "district": ["https://www.openstreetmap.org/node/6566646015"],
+        "openingHours": ["https://www.dolmama.am/"],
+        "cuisines": ["https://www.openstreetmap.org/node/6566646015"],
+        "phone": ["https://www.openstreetmap.org/node/6566646015"],
+        "website": ["https://www.openstreetmap.org/node/6566646015"]
+      },
+      "missing": []
+    },
+    {
+      "osmRef": "node/2710667288",
+      "slug": "tavern-yerevan",
+      "name": "Tavern Yerevan",
+      "cuisines": ["ARMENIAN"],
+      "district": "KENTRON",
+      "address": "5 King Pap Street, Yerevan",
+      "phone": "+374 10 54 55 45,+374 99 54 55 45",
+      "website": "http://www.pandokyerevan.com",
+      "description": "Armenian dishes from old recipes and new, with bread from the tonir. One of four Tavern Yerevan restaurants.",
+      "openingHours": [
+        {
+          "dayOfWeek": 0,
+          "opensAt": 570,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 1,
+          "opensAt": 570,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 2,
+          "opensAt": 570,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 3,
+          "opensAt": 570,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 4,
+          "opensAt": 570,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 5,
+          "opensAt": 570,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 6,
+          "opensAt": 570,
+          "closesAt": 1440
+        }
+      ],
+      "openingHoursText": "Mo-Su 09:30-00:00",
+      "checkDate": "2024-09-22",
+      "photos": [
+        {
+          "title": "File:Tavern Yerevan (Armyrian Street) - 8.JPG",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Tavern_Yerevan_%28Armyrian_Street%29_-_8.JPG/1920px-Tavern_Yerevan_%28Armyrian_Street%29_-_8.JPG",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:Tavern_Yerevan_(Armyrian_Street)_-_8.JPG",
+          "credit": "Benoît Prieur, CC0",
+          "freeLicense": true
+        },
+        {
+          "title": "https://www.yeremyanprojects.com/upload/tavern/479ff8efb2c63b8d682519c8cfd82778.jpg",
+          "imageUrl": "https://www.yeremyanprojects.com/upload/tavern/479ff8efb2c63b8d682519c8cfd82778.jpg",
+          "pageUrl": "https://www.yeremyanprojects.com/en/restaurants/tavern-yerevan",
+          "credit": "Yeremyan Projects’ website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://www.yeremyanprojects.com/upload/tavern/e5c105b1be0e2f854f184c1c4c926bb6.jpg",
+          "imageUrl": "https://www.yeremyanprojects.com/upload/tavern/e5c105b1be0e2f854f184c1c4c926bb6.jpg",
+          "pageUrl": "https://www.yeremyanprojects.com/en/restaurants/tavern-yerevan",
+          "credit": "Yeremyan Projects’ website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://www.yeremyanprojects.com/upload/tavern/f703ff0552d63cd18fbff5b239b8b473.jpg",
+          "imageUrl": "https://www.yeremyanprojects.com/upload/tavern/f703ff0552d63cd18fbff5b239b8b473.jpg",
+          "pageUrl": "https://www.yeremyanprojects.com/en/restaurants/tavern-yerevan",
+          "credit": "Yeremyan Projects’ website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://www.yeremyanprojects.com/upload/tavern/d5795d355444873474a6ea22d1acc961.jpg",
+          "imageUrl": "https://www.yeremyanprojects.com/upload/tavern/d5795d355444873474a6ea22d1acc961.jpg",
+          "pageUrl": "https://www.yeremyanprojects.com/en/restaurants/tavern-yerevan",
+          "credit": "Yeremyan Projects’ website",
+          "freeLicense": false
+        }
+      ],
+      "tables": [
+        {
+          "label": "T1",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T2",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T3",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T4",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T5",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T6",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T7",
+          "capacity": 8,
+          "minCapacity": 4,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T8",
+          "capacity": 10,
+          "minCapacity": 5,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T9",
+          "capacity": 12,
+          "minCapacity": 6,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "V1",
+          "capacity": 10,
+          "minCapacity": 5,
+          "zone": "VIP"
+        }
+      ],
+      "detailSources": {
+        "name": ["https://www.openstreetmap.org/node/2710667288"],
+        "address": [
+          "https://www.yeremyanprojects.com/en/restaurants/tavern-yerevan",
+          "https://www.spyur.am/en/companies/tavern-yerevan/5916/"
+        ],
+        "district": ["https://www.openstreetmap.org/node/2710667288"],
+        "openingHours": ["https://www.spyur.am/en/companies/tavern-yerevan/5916/"],
+        "cuisines": ["https://www.openstreetmap.org/node/2710667288"],
+        "phone": ["https://www.openstreetmap.org/node/2710667288"],
+        "website": ["https://www.openstreetmap.org/node/2710667288"]
+      },
+      "missing": []
+    },
+    {
+      "osmRef": "node/2514048932",
+      "slug": "charentsi-28",
+      "name": "Charentsi 28",
+      "cuisines": ["FUSION", "ARMENIAN"],
+      "district": "KENTRON",
+      "address": "28 Charents Street, Yerevan",
+      "phone": "(+374-10) 57-29-45",
+      "website": "https://charentsi28.com/",
+      "description": "Dishes from around the world, from Western Armenian manti to Mediterranean, Indian and Mexican, in a house with a courtyard.",
+      "openingHours": [
+        {
+          "dayOfWeek": 0,
+          "opensAt": 720,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 1,
+          "opensAt": 720,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 2,
+          "opensAt": 720,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 3,
+          "opensAt": 720,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 4,
+          "opensAt": 720,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 5,
+          "opensAt": 720,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 6,
+          "opensAt": 720,
+          "closesAt": 1440
+        }
+      ],
+      "openingHoursText": "Mo-Su 12:00-00:00",
+      "checkDate": null,
+      "photos": [
+        {
+          "title": "https://charentsi28.com/jpg/privateroom.jpg",
+          "imageUrl": "https://charentsi28.com/jpg/privateroom.jpg",
+          "pageUrl": "https://charentsi28.com/",
+          "credit": "Charentsi 28’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://charentsi28.com/jpg/paperbride.jpg",
+          "imageUrl": "https://charentsi28.com/jpg/paperbride.jpg",
+          "pageUrl": "https://charentsi28.com/",
+          "credit": "Charentsi 28’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://charentsi28.com/jpg/ddmash.jpg",
+          "imageUrl": "https://charentsi28.com/jpg/ddmash.jpg",
+          "pageUrl": "https://charentsi28.com/",
+          "credit": "Charentsi 28’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://charentsi28.com/jpg/nachos.jpg",
+          "imageUrl": "https://charentsi28.com/jpg/nachos.jpg",
+          "pageUrl": "https://charentsi28.com/",
+          "credit": "Charentsi 28’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "File:Charentsi 28 Restaurant (Yerevan) - 1.JPG",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/11/Charentsi_28_Restaurant_%28Yerevan%29_-_1.JPG/1920px-Charentsi_28_Restaurant_%28Yerevan%29_-_1.JPG",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:Charentsi_28_Restaurant_(Yerevan)_-_1.JPG",
+          "credit": "Benoît Prieur, CC0",
+          "freeLicense": true
+        }
+      ],
+      "tables": [
+        {
+          "label": "T1",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T2",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T3",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T4",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T5",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T6",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T7",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T8",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "V1",
+          "capacity": 10,
+          "minCapacity": 5,
+          "zone": "VIP"
+        }
+      ],
+      "detailSources": {
+        "name": ["https://visityerevan.am/restaurants/details/37/en/", "https://charentsi28.com/"],
+        "address": ["https://www.openstreetmap.org/node/2514048932"],
+        "district": ["https://www.openstreetmap.org/node/2514048932"],
+        "openingHours": ["https://charentsi28.com/"],
+        "cuisines": [
+          "https://charentsi28.com/",
+          "https://visityerevan.am/restaurants/details/37/en/"
+        ],
+        "phone": ["https://www.openstreetmap.org/node/2514048932"],
+        "website": ["https://www.openstreetmap.org/node/2514048932"]
+      },
+      "missing": []
+    },
+    {
+      "osmRef": "node/4249207199",
+      "slug": "abovyan-12",
+      "name": "Abovyan 12",
+      "cuisines": ["ARMENIAN"],
+      "district": "KENTRON",
+      "address": "12 Abovyan Street, Yerevan",
+      "phone": "+374 99 580658;+374 10 580658",
+      "website": "https://dalan.am/restaurant/",
+      "description": "The Dalan art gallery’s courtyard restaurant, with Armenian dishes and many Armenian wines and brandies.",
+      "openingHours": [
+        {
+          "dayOfWeek": 0,
+          "opensAt": 600,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 1,
+          "opensAt": 600,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 2,
+          "opensAt": 600,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 3,
+          "opensAt": 600,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 4,
+          "opensAt": 600,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 5,
+          "opensAt": 600,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 6,
+          "opensAt": 600,
+          "closesAt": 1440
+        }
+      ],
+      "openingHoursText": "Mo-Su 10:00-00:00",
+      "checkDate": "2023-09-02",
+      "photos": [
+        {
+          "title": "https://dalan.am/assets/restaurant-and-car-CheoJ9gj.jpeg",
+          "imageUrl": "https://dalan.am/assets/restaurant-and-car-CheoJ9gj.jpeg",
+          "pageUrl": "https://dalan.am/",
+          "credit": "Dalan’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://dalan.am/assets/balcony-JNYudQ3v.jpeg",
+          "imageUrl": "https://dalan.am/assets/balcony-JNYudQ3v.jpeg",
+          "pageUrl": "https://dalan.am/",
+          "credit": "Dalan’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://dalan.am/assets/courtyard-CYwbBe5X.jpeg",
+          "imageUrl": "https://dalan.am/assets/courtyard-CYwbBe5X.jpeg",
+          "pageUrl": "https://dalan.am/",
+          "credit": "Dalan’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "https://dalan.am/assets/food-B9pKXJNx.jpeg",
+          "imageUrl": "https://dalan.am/assets/food-B9pKXJNx.jpeg",
+          "pageUrl": "https://dalan.am/",
+          "credit": "Dalan’s website",
+          "freeLicense": false
+        },
+        {
+          "title": "File:Dalan Restaurant - 3.JPG",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/40/Dalan_Restaurant_-_3.JPG/1920px-Dalan_Restaurant_-_3.JPG",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:Dalan_Restaurant_-_3.JPG",
+          "credit": "Benoît Prieur, CC0",
+          "freeLicense": true
+        }
+      ],
+      "tables": [
+        {
+          "label": "T1",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T2",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T3",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T4",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T5",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T6",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T7",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T8",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T9",
+          "capacity": 8,
+          "minCapacity": 4,
+          "zone": "TERRACE"
+        }
+      ],
+      "detailSources": {
+        "name": ["https://www.openstreetmap.org/node/4249207199"],
+        "address": ["https://www.openstreetmap.org/node/4249207199"],
+        "district": ["https://www.openstreetmap.org/node/4249207199"],
+        "openingHours": ["https://spyur.am/abovyan12"],
+        "cuisines": ["https://www.openstreetmap.org/node/4249207199"],
+        "phone": ["https://www.openstreetmap.org/node/4249207199"],
+        "website": ["https://www.openstreetmap.org/node/4249207199"]
+      },
+      "missing": []
+    },
+    {
+      "osmRef": "node/2254360353",
+      "slug": "caucasian-captive",
+      "name": "Caucasian Captive",
+      "cuisines": ["GEORGIAN"],
+      "district": "KENTRON",
+      "address": "4/6 King Pap Street, Yerevan",
+      "phone": "+374 10 54 82 91",
+      "website": "https://baklachoff.com/",
+      "description": "Themed on the 1967 comedy Kidnapping, Caucasian Style, with bronze figures of its three heroes at the door and Caucasian dishes inside.",
+      "openingHours": [
+        {
+          "dayOfWeek": 0,
+          "opensAt": 600,
+          "closesAt": 1500
+        },
+        {
+          "dayOfWeek": 1,
+          "opensAt": 600,
+          "closesAt": 1500
+        },
+        {
+          "dayOfWeek": 2,
+          "opensAt": 600,
+          "closesAt": 1500
+        },
+        {
+          "dayOfWeek": 3,
+          "opensAt": 600,
+          "closesAt": 1500
+        },
+        {
+          "dayOfWeek": 4,
+          "opensAt": 600,
+          "closesAt": 1500
+        },
+        {
+          "dayOfWeek": 5,
+          "opensAt": 600,
+          "closesAt": 1500
+        },
+        {
+          "dayOfWeek": 6,
+          "opensAt": 600,
+          "closesAt": 1500
+        }
+      ],
+      "openingHoursText": "Mo-Su 10:00-01:00",
+      "checkDate": "2025-09-12",
+      "photos": [
+        {
+          "title": "File:Restoracio Kaŭkazia kaptitino 01.jpg",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/48/Restoracio_Ka%C5%ADkazia_kaptitino_01.jpg/1920px-Restoracio_Ka%C5%ADkazia_kaptitino_01.jpg",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:Restoracio_Ka%C5%ADkazia_kaptitino_01.jpg",
+          "credit": "RG72, CC BY-SA 4.0",
+          "freeLicense": true
+        },
+        {
+          "title": "File:Restoracio Kaŭkazia kaptitino 09.jpg",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/64/Restoracio_Ka%C5%ADkazia_kaptitino_09.jpg/1920px-Restoracio_Ka%C5%ADkazia_kaptitino_09.jpg",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:Restoracio_Ka%C5%ADkazia_kaptitino_09.jpg",
+          "credit": "RG72, CC BY-SA 4.0",
+          "freeLicense": true
+        },
+        {
+          "title": "File:Restoracio Kaŭkazia kaptitino 10.jpg",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/06/Restoracio_Ka%C5%ADkazia_kaptitino_10.jpg/1920px-Restoracio_Ka%C5%ADkazia_kaptitino_10.jpg",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:Restoracio_Ka%C5%ADkazia_kaptitino_10.jpg",
+          "credit": "RG72, CC BY-SA 4.0",
+          "freeLicense": true
+        },
+        {
+          "title": "File:Restoracio Kaŭkazia kaptitino 07.jpg",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cd/Restoracio_Ka%C5%ADkazia_kaptitino_07.jpg/1920px-Restoracio_Ka%C5%ADkazia_kaptitino_07.jpg",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:Restoracio_Ka%C5%ADkazia_kaptitino_07.jpg",
+          "credit": "RG72, CC BY-SA 4.0",
+          "freeLicense": true
+        },
+        {
+          "title": "File:The Caucasian Prisoner 1.jpg",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/The_Caucasian_Prisoner_1.jpg/1920px-The_Caucasian_Prisoner_1.jpg",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:The_Caucasian_Prisoner_1.jpg",
+          "credit": "Իռեն Սահակյան, CC BY-SA 4.0",
+          "freeLicense": true
+        }
+      ],
+      "tables": [
+        {
+          "label": "T1",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T2",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T3",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T4",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T5",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T6",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T7",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T8",
+          "capacity": 8,
+          "minCapacity": 4,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T9",
+          "capacity": 10,
+          "minCapacity": 5,
+          "zone": "INDOOR"
+        }
+      ],
+      "detailSources": {
+        "name": ["https://www.openstreetmap.org/node/2254360353"],
+        "address": [
+          "https://www.spyur.am/en/companies/kavkazskaya-plennitsa-restaurant/25495/",
+          "https://visityerevan.am/restaurants/details/269/en/"
+        ],
+        "district": ["https://www.openstreetmap.org/node/2254360353"],
+        "openingHours": [
+          "https://www.spyur.am/en/companies/kavkazskaya-plennitsa-restaurant/25495/"
+        ],
+        "cuisines": ["https://www.openstreetmap.org/node/2254360353"],
+        "phone": ["https://www.openstreetmap.org/node/2254360353"],
+        "website": ["https://www.openstreetmap.org/node/2254360353"]
+      },
+      "missing": []
+    },
+    {
+      "osmRef": "node/4117504595",
+      "slug": "dargett-craft-beer",
+      "name": "Dargett Craft Beer",
+      "cuisines": [],
+      "district": "KENTRON",
+      "address": "72 Aram Street, Yerevan",
+      "phone": "+374 96870870",
+      "website": "https://dargett.com",
+      "description": "A craft brewery’s own pub, with its beers on tap, burgers and tarte flambée, and a terrace.",
+      "openingHours": [
+        {
+          "dayOfWeek": 0,
+          "opensAt": 660,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 1,
+          "opensAt": 660,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 2,
+          "opensAt": 660,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 3,
+          "opensAt": 660,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 4,
+          "opensAt": 660,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 5,
+          "opensAt": 660,
+          "closesAt": 1440
+        },
+        {
+          "dayOfWeek": 6,
+          "opensAt": 660,
+          "closesAt": 1440
+        }
+      ],
+      "openingHoursText": "11:00-24:00",
+      "checkDate": "2024-03-30",
+      "photos": [
+        {
+          "title": "File:Dargett Craft Beer 01.jpg",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Dargett_Craft_Beer_01.jpg/1920px-Dargett_Craft_Beer_01.jpg",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:Dargett_Craft_Beer_01.jpg",
+          "credit": "Preacher lad, CC BY-SA 4.0",
+          "freeLicense": true
+        },
+        {
+          "title": "File:Dargett Craft Beer -2.JPG",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Dargett_Craft_Beer_-2.JPG/1920px-Dargett_Craft_Beer_-2.JPG",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:Dargett_Craft_Beer_-2.JPG",
+          "credit": "Benoît Prieur, CC0",
+          "freeLicense": true
+        },
+        {
+          "title": "File:Dargett Craft Beer -3.JPG",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f0/Dargett_Craft_Beer_-3.JPG/1920px-Dargett_Craft_Beer_-3.JPG",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:Dargett_Craft_Beer_-3.JPG",
+          "credit": "Benoît Prieur, CC0",
+          "freeLicense": true
+        },
+        {
+          "title": "File:Dargett Craft Beer - tarte flambée.JPG",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Dargett_Craft_Beer_-_tarte_flamb%C3%A9e.JPG/1920px-Dargett_Craft_Beer_-_tarte_flamb%C3%A9e.JPG",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:Dargett_Craft_Beer_-_tarte_flamb%C3%A9e.JPG",
+          "credit": "Benoît Prieur, CC0",
+          "freeLicense": true
+        },
+        {
+          "title": "File:Dargett Craft Beer - hamburger et frites.JPG",
+          "imageUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6c/Dargett_Craft_Beer_-_hamburger_et_frites.JPG/1920px-Dargett_Craft_Beer_-_hamburger_et_frites.JPG",
+          "pageUrl": "https://commons.wikimedia.org/wiki/File:Dargett_Craft_Beer_-_hamburger_et_frites.JPG",
+          "credit": "Benoît Prieur, CC0",
+          "freeLicense": true
+        }
+      ],
+      "tables": [
+        {
+          "label": "T1",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T2",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T3",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T4",
+          "capacity": 6,
+          "minCapacity": 3,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T5",
+          "capacity": 8,
+          "minCapacity": 4,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T6",
+          "capacity": 8,
+          "minCapacity": 4,
+          "zone": "INDOOR"
+        },
+        {
+          "label": "T7",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "T8",
+          "capacity": 4,
+          "minCapacity": 2,
+          "zone": "TERRACE"
+        },
+        {
+          "label": "B1",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "BAR_COUNTER"
+        },
+        {
+          "label": "B2",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "BAR_COUNTER"
+        },
+        {
+          "label": "B3",
+          "capacity": 2,
+          "minCapacity": 1,
+          "zone": "BAR_COUNTER"
+        }
+      ],
+      "detailSources": {
+        "name": ["https://www.openstreetmap.org/node/4117504595"],
+        "address": ["https://www.openstreetmap.org/node/4117504595"],
+        "district": ["https://www.openstreetmap.org/node/4117504595"],
+        "openingHours": ["https://www.openstreetmap.org/node/4117504595"],
+        "phone": ["https://www.openstreetmap.org/node/4117504595"],
+        "website": ["https://www.openstreetmap.org/node/4117504595"]
+      },
+      "missing": ["cuisine"]
+    }
+  ]
+}

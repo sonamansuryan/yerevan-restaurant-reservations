@@ -9,6 +9,7 @@ import { MyReservations } from "@/features/reservations/components/MyReservation
 import type {
   MyReservationsProps,
   ReservationListState,
+  ReviewFlowState,
 } from "@/features/reservations/components/MyReservations";
 import { reservationsPath } from "@/features/reservations/reservations";
 import { ApiError } from "@/lib/api";
@@ -37,6 +38,18 @@ const loaded = (data: GuestReservation[], total = data.length): ReservationListS
   onRetry: vi.fn(),
 });
 
+/** No review being written, and none just posted. */
+const noReview = (change: Partial<ReviewFlowState> = {}): ReviewFlowState => ({
+  writing: null,
+  sending: false,
+  error: null,
+  posted: null,
+  onWrite: vi.fn(),
+  onClose: vi.fn(),
+  onPost: vi.fn(),
+  ...change,
+});
+
 function renderList(change: Partial<MyReservationsProps> = {}, at = "/reservations") {
   const props: MyReservationsProps = {
     when: "upcoming",
@@ -48,6 +61,7 @@ function renderList(change: Partial<MyReservationsProps> = {}, at = "/reservatio
     cancelled: null,
     refusal: null,
     onCancel: vi.fn(),
+    review: noReview(),
     onFindATable: vi.fn(),
     onFirstPage: vi.fn(),
     ...change,
@@ -183,6 +197,82 @@ test("past bookings: what happened, and a day from another year with its year", 
     "Wednesday 31 December 2025",
   );
   expect(screen.queryByRole("button", { name: /^Cancel booking/ })).toBeNull();
+});
+
+describe("reviewing a visit", () => {
+  const visit = guestPast.find(({ id }) => id === "past-lori")!;
+  const REVIEW_BUTTON = "Review your visit, Lori Smokehouse, Friday 6 November, 20:00";
+  const past = (change: Partial<MyReservationsProps> = {}) =>
+    renderList({ when: "past", list: loaded(guestPast), ...change }, "/reservations/past");
+
+  test("only a visit marked arrived and not reviewed yet offers it, named in full", async () => {
+    const onWrite = vi.fn();
+    past({ review: noReview({ onWrite }) });
+
+    const buttons = screen.getAllByRole("button", { name: /^Review your visit/ });
+    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual([REVIEW_BUTTON]);
+    await userEvent.click(buttons[0]!);
+    expect(onWrite).toHaveBeenCalledWith(visit);
+  });
+
+  test("a visit already reviewed shows the guest's review instead", () => {
+    past();
+
+    const reviewed = screen.getByText(/^Your review:/).closest("p");
+    expect(reviewed?.textContent).toBe(
+      "Your review: 5 out of 5. The best table for New Year’s Eve, and the trout was perfect.",
+    );
+  });
+
+  test("the form opens over the page, for that visit", () => {
+    past({ review: noReview({ writing: visit }) });
+
+    const dialog = screen.getByRole("dialog", { name: "Review your visit" });
+    expect(dialog.textContent).toContain("Your visit to Lori Smokehouse on Friday 6 November.");
+    expect(within(dialog).getByRole("group", { name: "Your rating" })).toBeDefined();
+  });
+
+  test("Post review sends the rating as a number, with the words trimmed", async () => {
+    const onPost = vi.fn();
+    past({ review: noReview({ writing: visit, onPost }) });
+
+    await userEvent.click(screen.getByRole("radio", { name: /Very good/ }));
+    await userEvent.type(screen.getByLabelText("Your review"), "  Lovely terrace.  ");
+    await userEvent.click(screen.getByRole("button", { name: "Post review" }));
+
+    expect(onPost).toHaveBeenCalledWith({ rating: 4, comment: "Lovely terrace." });
+  });
+
+  test("Not now closes the form", async () => {
+    const onClose = vi.fn();
+    past({ review: noReview({ writing: visit, onClose }) });
+
+    await userEvent.click(screen.getByRole("button", { name: "Not now" }));
+
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  test("a refusal shows in the form, which stays open", () => {
+    past({
+      review: noReview({
+        writing: visit,
+        error: new ApiError(409, "ALREADY_REVIEWED", "You’ve already reviewed this visit."),
+      }),
+    });
+
+    const dialog = screen.getByRole("dialog", { name: "Review your visit" });
+    expect(within(dialog).getByRole("alert").textContent).toBe(
+      "You’ve already reviewed this visit.",
+    );
+  });
+
+  test("once posted, it says thank you, and focus moves there", () => {
+    past({ review: noReview({ posted: visit }) });
+
+    const notice = screen.getByText("Thank you. Your review of Lori Smokehouse is posted.");
+    expect(notice.closest("[role=status]")).not.toBeNull();
+    expect(document.activeElement?.contains(notice)).toBe(true);
+  });
 });
 
 test("more than a page: the next one is a link", () => {

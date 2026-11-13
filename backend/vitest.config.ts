@@ -17,6 +17,7 @@ export const FAKE_ENV = {
   CLOUDINARY_API_SECRET: "test-only-cloudinary-secret",
   RESEND_API_KEY: "test",
   EMAIL_FROM: "Test <test@example.com>",
+  GEOAPIFY_API_KEY: "test",
   DEMO_PASSWORD: "test-only-demo-password",
   // Far above the real 10, because the auth tests sign in hundreds of times from one address.
   // tests/rate-limit.test.ts sets the real limit back for itself.
@@ -27,6 +28,8 @@ export default defineConfig({
   test: {
     env: FAKE_ENV,
     include: ["tests/**/*.test.ts"],
+    // No test can reach Resend (tests/setup/outside-services.ts).
+    setupFiles: ["tests/setup/outside-services.ts"],
     exclude: [...configDefaults.exclude, "tests/db/**"],
   },
 });

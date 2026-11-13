@@ -76,6 +76,8 @@ export const guestReservation: GuestReservation = {
   specialRequests: null,
   cancellation: null,
   canCancel: true,
+  review: null,
+  canReview: false,
 };
 
 /** A Reservation row with what a guest's own list selects. */
@@ -90,6 +92,7 @@ export interface GuestReservationRow {
   cancellationReason: string | null;
   restaurant: { slug: string; name: string; timezone: string };
   table: { label: string; zone: TableZone };
+  review: { rating: number; comment: string | null } | null;
 }
 
 /** That same booking as the database holds it: Lori's T1 on Saturday, 19:00 to 21:00, pending. */
@@ -105,6 +108,7 @@ export function guestReservationRow(extra: Partial<GuestReservationRow> = {}): G
     cancellationReason: null,
     restaurant: { slug: "lori-smokehouse", name: "Lori Smokehouse", timezone: "Asia/Yerevan" },
     table: { label: "T1", zone: "INDOOR" },
+    review: null,
     ...extra,
   };
 }

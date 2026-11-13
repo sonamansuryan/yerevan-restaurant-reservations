@@ -1,14 +1,21 @@
 // @vitest-environment jsdom
 // A restaurant's page, through the real routes, shell and hooks, with a fake API.
 import { QueryClient, QueryClientProvider, focusManager } from "@tanstack/react-query";
-import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Mock } from "vitest";
 
-import { loriPage, loriSaturday, sampleBooked, tsiranPage } from "@/features/design/samples";
+import {
+  dolmamaPage,
+  loriPage,
+  loriSaturday,
+  sampleBooked,
+  sampleReviews,
+  tsiranPage,
+} from "@/features/design/samples";
 import { routes } from "@/router";
 import type { AuthUser, Availability } from "@/types/api";
 
@@ -34,13 +41,34 @@ interface FakeOptions {
  */
 function fakeApi({ failures = 0, user = null, booking, availability }: FakeOptions = {}): Mock {
   let failuresLeft = failures;
+  // Whether the guest saved Lori, as the server would remember it.
+  let saved = false;
   const fetch = vi.fn((url: string, init?: RequestInit) => {
+    if (url.startsWith("/api/favorites/")) {
+      if (init?.method === "PUT") saved = true;
+      if (init?.method === "DELETE") saved = false;
+      return Promise.resolve(json({ saved }));
+    }
     if (url.includes("/availability?")) {
       const date = new URLSearchParams(url.split("?")[1]).get("date");
       return Promise.resolve(json({ ...(availability?.() ?? loriSaturday), date }));
     }
     if (url === "/api/reservations" && init?.method === "POST") {
       return Promise.resolve(booking ?? json({ reservation: sampleBooked }, 201));
+    }
+    // Lori's twelve reviews, ten to a page.
+    if (url.startsWith("/api/restaurants/lori-smokehouse/reviews?")) {
+      const page = Number(new URLSearchParams(url.split("?")[1]).get("page"));
+      const all = Array.from({ length: 12 }, (_, index) => ({
+        ...sampleReviews[index % sampleReviews.length]!,
+        id: `review-${index + 1}`,
+      }));
+      return Promise.resolve(
+        json({
+          data: all.slice((page - 1) * 10, page * 10),
+          meta: { page, pageSize: 10, total: all.length },
+        }),
+      );
     }
     if (url === "/api/restaurants") {
       return Promise.resolve(
@@ -53,10 +81,17 @@ function fakeApi({ failures = 0, user = null, booking, availability }: FakeOptio
         return Promise.reject(new TypeError("Failed to fetch"));
       }
       if (url === "/api/restaurants/tsiran-wine-room") {
-        return Promise.resolve(json({ restaurant: tsiranPage }));
+        // No reviews yet, and no map: as with maps not set up.
+        return Promise.resolve(
+          json({ restaurant: { ...tsiranPage, avgRating: 0, reviewCount: 0, mapImageUrl: null } }),
+        );
       }
       if (url === "/api/restaurants/lori-smokehouse") {
         return Promise.resolve(json({ restaurant: loriPage }));
+      }
+      // A demo listing (9.7): real, but not on Seghan.
+      if (url === "/api/restaurants/dolmama") {
+        return Promise.resolve(json({ restaurant: dolmamaPage }));
       }
       return Promise.resolve(
         json(
@@ -84,6 +119,8 @@ const pageRequests = (fetch: Mock): string[] =>
   requests(fetch).filter((url) => url.startsWith("/api/restaurants/") && !url.includes("?"));
 const availabilityRequests = (fetch: Mock): string[] =>
   requests(fetch).filter((url) => url.includes("/availability?"));
+const reviewRequests = (fetch: Mock): string[] =>
+  requests(fetch).filter((url) => url.includes("/reviews?"));
 
 beforeEach(() => {
   // jsdom has no scrollTo(), which ScrollRestoration calls.
@@ -164,6 +201,157 @@ test("an odd address is sent encoded, so it can't change the request", async () 
 
   await main().findByRole("heading", { level: 1, name: "Restaurant not found" });
   expect(pageRequests(fetch)).toEqual(["/api/restaurants/odd%20%26%20name%3Fq"]);
+});
+
+describe("reviews", () => {
+  const reviewsSection = (): HTMLElement =>
+    main().getByRole("heading", { name: "Reviews" }).closest("section")!;
+
+  test("they follow the rating, ten at a time, and Show more adds the rest", async () => {
+    const fetch = fakeApi();
+    renderAt("/restaurants/lori-smokehouse");
+
+    await waitFor(() => expect(within(reviewsSection()).getAllByRole("listitem")).toHaveLength(10));
+    expect(reviewsSection().textContent).toContain("Rated 4.4 out of 5 by 18 guests.");
+
+    await userEvent.click(
+      within(reviewsSection()).getByRole("button", { name: "Show more reviews" }),
+    );
+
+    await waitFor(() => expect(within(reviewsSection()).getAllByRole("listitem")).toHaveLength(12));
+    expect(
+      within(reviewsSection()).queryByRole("button", { name: "Show more reviews" }),
+    ).toBeNull();
+    expect(reviewRequests(fetch)).toEqual([
+      "/api/restaurants/lori-smokehouse/reviews?page=1",
+      "/api/restaurants/lori-smokehouse/reviews?page=2",
+    ]);
+  });
+
+  test("a restaurant without reviews says so, and asks for none", async () => {
+    const fetch = fakeApi();
+    renderAt("/restaurants/tsiran-wine-room");
+
+    await waitFor(() =>
+      expect(reviewsSection().textContent).toContain(
+        "No reviews yet. Guests can leave one after their visit.",
+      ),
+    );
+    expect(reviewRequests(fetch)).toEqual([]);
+  });
+});
+
+describe("the map", () => {
+  const addressSection = (): HTMLElement =>
+    main().getByRole("heading", { name: "Address" }).closest("section")!;
+  const mapImage = (): HTMLImageElement | null => addressSection().querySelector("img");
+
+  test("the picture of its street comes from our own API, above the address, and the link stays", async () => {
+    fakeApi();
+    renderAt("/restaurants/lori-smokehouse");
+    await main().findByRole("heading", { level: 1, name: "Lori Smokehouse" });
+
+    expect(mapImage()!.getAttribute("src")).toBe("/api/restaurants/lori-smokehouse/map");
+    const address = within(addressSection()).getByText(loriPage.address);
+    expect(
+      mapImage()!.compareDocumentPosition(address) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      within(addressSection()).getByRole("link", { name: /Open in Google Maps/ }),
+    ).toBeDefined();
+  });
+
+  test("once the picture has come, the wine dot marks the place", async () => {
+    fakeApi();
+    renderAt("/restaurants/lori-smokehouse");
+    await main().findByRole("heading", { level: 1, name: "Lori Smokehouse" });
+    const frame = addressSection().querySelector('a[aria-hidden="true"]')!;
+    expect(frame.querySelector("span")).toBeNull();
+
+    fireEvent.load(mapImage()!);
+
+    expect(frame.querySelector("span")?.className).toContain("bg-accent");
+  });
+
+  test("when the picture can't load, the address and its link are all there is", async () => {
+    fakeApi();
+    renderAt("/restaurants/lori-smokehouse");
+    await main().findByRole("heading", { level: 1, name: "Lori Smokehouse" });
+
+    fireEvent.error(mapImage()!);
+
+    expect(mapImage()).toBeNull();
+    expect(addressSection().querySelector('a[aria-hidden="true"]')).toBeNull();
+    expect(within(addressSection()).getByText(loriPage.address)).toBeDefined();
+    expect(
+      within(addressSection()).getByRole("link", { name: /Open in Google Maps/ }),
+    ).toBeDefined();
+  });
+
+  test("with maps not set up, there's no map, and no picture is asked for", async () => {
+    fakeApi();
+    renderAt("/restaurants/tsiran-wine-room");
+    await main().findByRole("heading", { level: 1, name: "Tsiran Wine Room" });
+
+    expect(mapImage()).toBeNull();
+    expect(addressSection().querySelector('a[aria-hidden="true"]')).toBeNull();
+  });
+});
+
+describe("saving it", () => {
+  const guest: AuthUser = {
+    id: "user-lilit",
+    email: "lilit@example.com",
+    name: "Lilit Harutyunyan",
+    phone: null,
+    role: "CUSTOMER",
+  };
+  const favoriteCalls = (fetch: Mock): string[] =>
+    fetch.mock.calls
+      .filter(([url]) => String(url).startsWith("/api/favorites/"))
+      .map(([url, init]) => `${(init as RequestInit | undefined)?.method ?? "GET"} ${String(url)}`);
+
+  test("a guest saves Lori from the top of its page, and takes it out again", async () => {
+    const fetch = fakeApi({ user: guest });
+    renderAt("/restaurants/lori-smokehouse");
+
+    const save = await main().findByRole("button", { name: "Save Lori Smokehouse" });
+    await waitFor(() => expect(save.getAttribute("aria-busy")).toBeNull());
+    expect(save.getAttribute("aria-pressed")).toBe("false");
+
+    await userEvent.click(save);
+    const saved = await main().findByRole("button", { name: "Saved Lori Smokehouse" });
+    expect(saved.getAttribute("aria-pressed")).toBe("true");
+
+    await userEvent.click(saved);
+    expect(await main().findByRole("button", { name: "Save Lori Smokehouse" })).toBeDefined();
+    expect(favoriteCalls(fetch)).toEqual([
+      "GET /api/favorites/lori-smokehouse",
+      "PUT /api/favorites/lori-smokehouse",
+      "DELETE /api/favorites/lori-smokehouse",
+    ]);
+  });
+
+  test("signed out, Sign in to save goes to Sign in, and nothing is asked about favorites", async () => {
+    const fetch = fakeApi();
+    const router = renderAt("/restaurants/lori-smokehouse");
+
+    await userEvent.click(await main().findByRole("link", { name: "Sign in to save" }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/login"));
+    expect(favoriteCalls(fetch)).toEqual([]);
+  });
+
+  test("an owner has no favorites, so there's nothing to save, and nothing is asked", async () => {
+    const fetch = fakeApi({ user: { ...guest, name: "Ani Sargsyan", role: "OWNER" } });
+    renderAt("/restaurants/lori-smokehouse");
+
+    await main().findByRole("heading", { level: 1, name: "Lori Smokehouse" });
+    await waitFor(() => expect(fetch.mock.calls.some(([url]) => url === "/api/me")).toBe(true));
+    expect(main().queryByRole("button", { name: /^Save/ })).toBeNull();
+    expect(main().queryByRole("link", { name: "Sign in to save" })).toBeNull();
+    expect(favoriteCalls(fetch)).toEqual([]);
+  });
 });
 
 describe("booking a table", () => {
@@ -319,4 +507,19 @@ describe("booking a table", () => {
     ).toBeDefined();
     expect(main().queryByRole("button", { name: "Book this table" })).toBeNull();
   });
+});
+
+test("a demo listing's page offers its sample tables under one line saying it's a test booking, and has its Reviews", async () => {
+  const fetch = fakeApi();
+  renderAt("/restaurants/dolmama");
+
+  expect(await main().findByRole("heading", { level: 2, name: "Book a table" })).toBeDefined();
+  expect(
+    main().getByText("This is a test booking. The restaurant won’t receive it."),
+  ).toBeDefined();
+  expect(main().queryByRole("heading", { name: "Demo listing" })).toBeNull();
+  expect(main().getByRole("heading", { level: 2, name: "Reviews" })).toBeDefined();
+  // Its times are asked for as any restaurant's are. Its reviews would be too, as soon as it had one.
+  await waitFor(() => expect(availabilityRequests(fetch).length).toBeGreaterThan(0));
+  expect(reviewRequests(fetch)).toEqual([]);
 });

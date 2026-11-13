@@ -33,23 +33,44 @@ export const myReservations: SiteLink = {
   note: "Your bookings",
 };
 
+export const myFavorites: SiteLink = {
+  to: "/favorites",
+  label: "My favorites",
+  note: "Places you saved",
+};
+
 export const dashboard: SiteLink = {
   to: "/dashboard",
   label: "Dashboard",
   note: "Your restaurants",
 };
 
+export const admin: SiteLink = {
+  to: "/admin",
+  label: "Admin",
+  note: "Restaurants and bookings",
+};
+
 /**
- * The main links, by who's signed in: a guest's bookings, an owner's dashboard, and for anyone
- * else the page for restaurants. While the app is still asking who's signed in, only Discover
- * shows, so a wrong link never flashes up.
+ * The main links, by who's signed in: a guest's bookings and favorites, an owner's dashboard,
+ * Seghan's admin area, and for anyone signed out the page for restaurants. While the app is still
+ * asking who's signed in, only Discover shows, so a wrong link never flashes up.
  */
 export function mainLinks(user: AuthUser | null | undefined): SiteLink[] {
   if (user === undefined) return [discover];
   if (user === null) return [discover, forRestaurants];
-  if (user.role === "CUSTOMER") return [discover, myReservations];
+  if (user.role === "CUSTOMER") return [discover, myReservations, myFavorites];
   if (user.role === "OWNER") return [discover, dashboard];
-  return [discover];
+  return [discover, admin];
+}
+
+/**
+ * Whether the header offers Reserve a table: to guests and anyone signed out, who are the ones who
+ * book. Restaurant owners and Seghan's admins never do, so they don't get it. While the app is
+ * still asking who's signed in, the button already shows, so a guest never waits for it.
+ */
+export function offersReserve(user: AuthUser | null | undefined): boolean {
+  return !user || user.role === "CUSTOMER";
 }
 
 // The query matches the `district` filter of GET /api/restaurants.

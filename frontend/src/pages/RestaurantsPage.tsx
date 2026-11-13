@@ -30,7 +30,7 @@ export function RestaurantsPage(): ReactElement {
         onRetry={() => void restaurants.refetch()}
         updating={restaurants.isPlaceholderData}
         filtered={isFiltered(filters)}
-        onClearFilters={() => setFilters({ page: 1 })}
+        onClearFilters={() => setFilters({ page: 1, sort: filters.sort })}
         onFirstPage={() => setFilters({ ...filters, page: 1 })}
         hrefFor={hrefFor}
         className="mt-12"

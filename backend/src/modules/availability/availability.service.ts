@@ -4,6 +4,7 @@ import { Prisma } from "../../generated/prisma/client.ts";
 import type { TableZone } from "../../generated/prisma/enums.ts";
 import { NotFoundError } from "../../lib/errors.ts";
 import { prisma } from "../../lib/prisma.ts";
+import { PUBLISHED } from "../restaurants/restaurants.service.ts";
 import { localClockTime } from "../../lib/time.ts";
 import { ACTIVE_STATUSES } from "../reservations/reservations.rules.ts";
 import { bookingWindow, findFreeTables, generateSlots } from "./availability.rules.ts";
@@ -50,9 +51,9 @@ export async function getAvailability(
   { date, partySize }: AvailabilityQuery,
   now: Date = new Date(),
 ): Promise<Availability> {
-  // Only published restaurants can be booked. Any other answers 404, as on its page.
+  // Only restaurants guests can see can be booked. Any other answers 404, as on its page.
   const restaurant = await prisma.restaurant.findUnique({
-    where: { slug, isPublished: true },
+    where: { slug, ...PUBLISHED },
     select: {
       id: true,
       timezone: true,

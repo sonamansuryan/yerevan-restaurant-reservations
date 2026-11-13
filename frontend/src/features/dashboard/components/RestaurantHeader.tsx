@@ -6,10 +6,14 @@ import type { SectionLink } from "@/components/SectionNav";
 import { PublishedBadge } from "@/features/dashboard/components/PublishedBadge";
 import type { OwnerRestaurant } from "@/types/api";
 
-/** The parts of one restaurant's dashboard. Bookings live at the restaurant's own address. */
+/**
+ * The parts of one restaurant's dashboard. Bookings live at the restaurant's own address, and
+ * Analytics, which counts them, comes next.
+ */
 function sectionLinks(base: string): SectionLink[] {
   return [
     { to: base, label: "Bookings", end: true },
+    { to: `${base}/analytics`, label: "Analytics" },
     { to: `${base}/information`, label: "Information" },
     { to: `${base}/hours`, label: "Opening hours" },
     { to: `${base}/tables`, label: "Tables" },
@@ -19,7 +23,7 @@ function sectionLinks(base: string): SectionLink[] {
 }
 
 interface RestaurantHeaderProps {
-  restaurant: Pick<OwnerRestaurant, "id" | "name" | "slug" | "isPublished">;
+  restaurant: Pick<OwnerRestaurant, "id" | "name" | "slug" | "isPublished" | "hiddenBySeghan">;
   /** 1 on the page. 4 in /design's specimens, which sit under the page's own headings. */
   headingLevel?: 1 | 4;
   /** For /design: where the parts' links start, so the one at that address shows as open. */
@@ -45,9 +49,12 @@ export function RestaurantHeader({
         <Title className="min-w-0 font-display text-section text-balance break-words">
           {restaurant.name}
         </Title>
-        <PublishedBadge isPublished={restaurant.isPublished} />
+        <PublishedBadge
+          isPublished={restaurant.isPublished}
+          hiddenBySeghan={restaurant.hiddenBySeghan}
+        />
       </div>
-      {restaurant.isPublished && (
+      {restaurant.isPublished && !restaurant.hiddenBySeghan && (
         <LinkButton variant="link" to={`/restaurants/${restaurant.slug}`} className="mt-1">
           See the guests’ page
         </LinkButton>

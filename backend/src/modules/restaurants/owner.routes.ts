@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import { requireRestaurantOwner } from "../../middleware/requireRestaurantOwner.ts";
 import { validate } from "../../middleware/validate.ts";
+import { ownerAnalyticsRouter } from "../analytics/analytics.routes.ts";
 import { blocksRouter } from "../blocks/blocks.routes.ts";
 import { openingHoursRouter } from "../opening-hours/opening-hours.routes.ts";
 import { photosRouter } from "../photos/photos.routes.ts";
@@ -42,3 +43,4 @@ ownerRestaurantsRouter.use("/:restaurantId/photos", photosRouter);
 ownerRestaurantsRouter.use("/:restaurantId/reservations", ownerReservationsRouter);
 ownerRestaurantsRouter.use("/:restaurantId/tables", tablesRouter);
 ownerRestaurantsRouter.use("/:restaurantId/blocks", blocksRouter);
+ownerRestaurantsRouter.use("/:restaurantId/analytics", ownerAnalyticsRouter);

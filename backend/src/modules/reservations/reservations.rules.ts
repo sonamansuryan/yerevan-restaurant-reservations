@@ -19,6 +19,11 @@ export function canGuestCancel(
   return GUEST_CANCELLABLE.includes(booking.status) && now < booking.startsAt;
 }
 
+/** Whether the guest can review the booking: they arrived, and haven't reviewed it yet. */
+export function canGuestReview(booking: { status: ReservationStatus }, reviewed: boolean): boolean {
+  return booking.status === "ARRIVED" && !reviewed;
+}
+
 /** The statuses a restaurant can move its bookings to. */
 export const RESTAURANT_CHANGES = ["CONFIRMED", "CANCELLED", "ARRIVED", "NO_SHOW"] as const;
 export type RestaurantChange = (typeof RESTAURANT_CHANGES)[number];

@@ -152,28 +152,40 @@ describe("when something crashes", () => {
   });
 });
 
-test("/design shows the house style in development, inside the shell", async () => {
-  renderRoutes("/design");
+// The house style renders every screen's states, which takes a few seconds in jsdom, and more while
+// the other test files run beside it, so these two get longer than Vitest's usual five seconds.
+const WHOLE_HOUSE_STYLE = { timeout: 20_000 };
 
-  const heading = await screen.findByRole(
-    "heading",
-    { level: 1, name: "The house style" },
-    { timeout: 5000 },
-  );
+test(
+  "/design shows the house style in development, inside the shell",
+  WHOLE_HOUSE_STYLE,
+  async () => {
+    renderRoutes("/design");
 
-  expect(screen.getByRole("main").contains(heading)).toBe(true);
-  expect(screen.getByRole("banner")).toBeDefined();
-  expect(screen.getByRole("contentinfo")).toBeDefined();
-});
+    const heading = await screen.findByRole(
+      "heading",
+      { level: 1, name: "The house style" },
+      { timeout: 15_000 },
+    );
 
-test("/design shows the breathing dot while its code loads, instead of a blank page", async () => {
-  renderRoutes("/design");
+    expect(screen.getByRole("main").contains(heading)).toBe(true);
+    expect(screen.getByRole("banner")).toBeDefined();
+    expect(screen.getByRole("contentinfo")).toBeDefined();
+  },
+);
 
-  const loading = screen.getByRole("status", { name: "Loading the house style" });
+test(
+  "/design shows the breathing dot while its code loads, instead of a blank page",
+  WHOLE_HOUSE_STYLE,
+  async () => {
+    renderRoutes("/design");
 
-  expect(screen.getByRole("main").contains(loading)).toBe(true);
-  await screen.findByRole("heading", { level: 1, name: "The house style" }, { timeout: 5000 });
-});
+    const loading = screen.getByRole("status", { name: "Loading the house style" });
+
+    expect(screen.getByRole("main").contains(loading)).toBe(true);
+    await screen.findByRole("heading", { level: 1, name: "The house style" }, { timeout: 15_000 });
+  },
+);
 
 describe("in a production build", () => {
   test.each(["/dev/error", "/design"])("%s shows the not-found page", async (path) => {
@@ -205,15 +217,22 @@ describe("in a production build", () => {
       "register",
       "reservations",
       "reservations/past",
+      "favorites",
       "dashboard",
       "dashboard/new",
       // One restaurant's dashboard: its parts sit inside dashboard/:restaurantId, Bookings first.
       undefined,
+      "analytics",
       "information",
       "hours",
       "tables",
       "blocks",
       "photos",
+      // The admin area: its parts sit inside admin, Restaurants first.
+      undefined,
+      "reservations",
+      "analytics",
+      "users",
       "*",
     ]);
   });

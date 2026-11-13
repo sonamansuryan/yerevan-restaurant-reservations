@@ -27,3 +27,5 @@ export function storedUser(extra: Partial<StoredUser> = {}): StoredUser {
 /** Two owners, so a test can be one of them asking for the other's restaurant. */
 export const ani = { id: "a1d4c3e2-5b6f-4a7d-8c9e-0f1a2b3c4d5e", role: "OWNER" } as const;
 export const davit = { id: "b2e5d4f3-6c7a-4b8e-9d0f-1a2b3c4d5e6f", role: "OWNER" } as const;
+/** Seghan's admin (9.5). */
+export const nare = { id: "c3f6e5a4-7d8b-4c9f-a01b-2c3d4e5f6a7b", role: "ADMIN" } as const;

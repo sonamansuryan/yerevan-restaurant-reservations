@@ -9,7 +9,7 @@ import { CurrentPageDot, Logo } from "@/components/Logo";
 import { MastheadRow, MastheadStart, MenuToggle } from "@/components/Masthead";
 import { MobileMenu } from "@/components/MobileMenu";
 import { PageContainer } from "@/components/PageContainer";
-import { discover, mainLinks, signIn } from "@/components/site-links";
+import { discover, mainLinks, offersReserve, signIn } from "@/components/site-links";
 import type { SiteLink } from "@/components/site-links";
 import { cx } from "@/lib/cx";
 
@@ -115,12 +115,14 @@ export function SiteHeader({ account }: SiteHeaderProps): ReactElement {
             <span className="max-md:hidden">
               <HeaderAccount account={account} />
             </span>
-            <LinkButton to={discover.to} className="max-md:h-11 max-md:px-4">
-              {/* Phones show the short label, and screen readers still hear all of it. */}
-              <span>
-                Reserve <span className="max-md:sr-only">a table</span>
-              </span>
-            </LinkButton>
+            {offersReserve(account.user) && (
+              <LinkButton to={discover.to} className="max-md:h-11 max-md:px-4">
+                {/* Phones show the short label, and screen readers still hear all of it. */}
+                <span>
+                  Reserve <span className="max-md:sr-only">a table</span>
+                </span>
+              </LinkButton>
+            )}
           </div>
         </MastheadRow>
       </PageContainer>

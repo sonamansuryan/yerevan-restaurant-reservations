@@ -2,6 +2,12 @@ import { TZDate } from "@date-fns/tz";
 
 export const MINUTES_PER_DAY = 1440;
 
+/**
+ * Seghan's restaurants are all in Yerevan, so a day across all of them, as the admin counts it, is
+ * a Yerevan day. Anything about one restaurant uses that restaurant's own `timezone` instead.
+ */
+export const SEGHAN_TIME_ZONE = "Asia/Yerevan";
+
 // Calendar dates are split by hand because new Date("2026-11-20") means midnight UTC, which can
 // be a different day in the restaurant's time zone.
 function parseDate(date: string): { year: number; month: number; day: number } {

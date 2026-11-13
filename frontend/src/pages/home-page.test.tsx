@@ -16,10 +16,21 @@ type TestRouter = ReturnType<typeof createMemoryRouter>;
 const json = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), { status });
 
-/** Answers like the API, with the six demo restaurants, searched by name and paged. */
+/**
+ * Answers like the API, with the six demo restaurants, searched by name and paged. Its featured
+ * three are the first by name, as the API's are when none of the chosen ones is published.
+ */
 function fakeApi(): Mock {
   const fetch = vi.fn((url: string) => {
     const { pathname, searchParams } = new URL(url, "http://seghan.test");
+    if (pathname === "/api/restaurants/featured") {
+      return Promise.resolve(
+        json({
+          data: sampleRestaurants.slice(0, 3),
+          meta: { page: 1, pageSize: 3, total: sampleRestaurants.length },
+        }),
+      );
+    }
     if (pathname === "/api/restaurants") {
       const q = searchParams.get("q")?.toLowerCase();
       const pageSize = Number(searchParams.get("pageSize") ?? 12);
@@ -76,7 +87,7 @@ test("leads with the agreed headline, Seghan in wine italic, and says what the n
   ).toBeDefined();
 });
 
-test("shows three restaurants, asking for only three, and links to all of them", async () => {
+test("shows the three featured restaurants, and links to all of them", async () => {
   const fetch = fakeApi();
   renderAt("/");
 
@@ -85,7 +96,7 @@ test("shows three restaurants, asking for only three, and links to all of them",
     .getAllByRole("heading", { level: 3 })
     .map((heading: HTMLElement) => heading.textContent);
   expect(cards).toEqual(["Kond House", "Lori Smokehouse", "Nurr"]);
-  expect(fetch.mock.calls.map(([url]) => String(url))).toContain("/api/restaurants?pageSize=3");
+  expect(fetch.mock.calls.map(([url]) => String(url))).toContain("/api/restaurants/featured");
   expect(main().getByRole("link", { name: "See all 6 restaurants" }).getAttribute("href")).toBe(
     "/restaurants",
   );

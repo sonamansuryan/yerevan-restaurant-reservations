@@ -11,6 +11,8 @@ export default defineConfig({
   test: {
     env: { ...FAKE_ENV, DATABASE_URL: testDatabaseUrlFrom(readDevelopmentUrl()) },
     include: ["tests/db/**/*.test.ts"],
+    // No test can reach Resend (tests/setup/outside-services.ts).
+    setupFiles: ["tests/setup/outside-services.ts"],
     globalSetup: ["tests/db/global-setup.ts"],
     // The files share one database, so they run one after another.
     fileParallelism: false,

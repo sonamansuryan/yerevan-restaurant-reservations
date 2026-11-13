@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // A value left empty in the address, such as ?page=, means "not given", not a mistake.
-const blankIsMissing = (value: unknown): unknown => (value === "" ? undefined : value);
+export const blankIsMissing = (value: unknown): unknown => (value === "" ? undefined : value);
 
 /**
  * The ?page=&pageSize= every list takes, with the same messages everywhere. Everything in a query

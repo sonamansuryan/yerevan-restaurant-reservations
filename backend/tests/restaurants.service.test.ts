@@ -2,10 +2,12 @@
 // rows into replies. The fake in fake-prisma.ts only does simple lookups, so it isn't used here.
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
+import { mapsEnabled } from "../src/integrations/geoapify/maps.ts";
 import { prisma } from "../src/lib/prisma.ts";
 import {
   getRestaurant,
   googleMapsUrl,
+  listFeatured,
   listRestaurants,
 } from "../src/modules/restaurants/restaurants.service.ts";
 import { detailRow, summaryRow } from "./fixtures/restaurants.ts";
@@ -32,7 +34,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-const firstPage = { page: 1, pageSize: 12 };
+const firstPage = { page: 1, pageSize: 12, sort: "name" } as const;
 
 /** What the list asked the database for. */
 function askedFor(): Record<string, unknown> {
@@ -44,12 +46,24 @@ describe("listRestaurants", () => {
     await listRestaurants(firstPage);
 
     expect(askedFor()).toMatchObject({
-      where: { isPublished: true },
+      where: { isPublished: true, hiddenAt: null },
       orderBy: [{ name: "asc" }, { id: "asc" }],
       skip: 0,
       take: 12,
     });
-    expect(count).toHaveBeenCalledWith({ where: { isPublished: true } });
+    expect(count).toHaveBeenCalledWith({ where: { isPublished: true, hiddenAt: null } });
+  });
+
+  test("by rating: the best rated first, more reviews before fewer at the same rating, then by name", async () => {
+    await listRestaurants({ ...firstPage, sort: "rating" });
+
+    // No reviews is a rating of 0, so restaurants without any come last.
+    expect(askedFor()["orderBy"]).toEqual([
+      { avgRating: "desc" },
+      { reviewCount: "desc" },
+      { name: "asc" },
+      { id: "asc" },
+    ]);
   });
 
   test("reads the page and the total in one transaction, at REPEATABLE READ", async () => {
@@ -65,6 +79,7 @@ describe("listRestaurants", () => {
 
     const where = {
       isPublished: true,
+      hiddenAt: null,
       cuisines: { has: "GEORGIAN" },
       district: "KENTRON",
       priceLevel: 1,
@@ -78,6 +93,7 @@ describe("listRestaurants", () => {
 
     expect(askedFor()["where"]).toEqual({
       isPublished: true,
+      hiddenAt: null,
       OR: [
         { name: { contains: "khachapuri", mode: "insensitive" } },
         { description: { contains: "khachapuri", mode: "insensitive" } },
@@ -87,7 +103,7 @@ describe("listRestaurants", () => {
   });
 
   test("page 3 of 6 skips the first 12", async () => {
-    await listRestaurants({ page: 3, pageSize: 6 });
+    await listRestaurants({ page: 3, pageSize: 6, sort: "name" });
 
     expect(askedFor()).toMatchObject({ skip: 12, take: 6 });
   });
@@ -101,6 +117,8 @@ describe("listRestaurants", () => {
       "cuisines",
       "description",
       "district",
+      // Whether it's a demo listing (9.7), so its card can say so.
+      "isDemoListing",
       "name",
       "photos",
       "priceLevel",
@@ -112,7 +130,7 @@ describe("listRestaurants", () => {
   test("returns the page as summaries, with the total for paging", async () => {
     count.mockResolvedValue(30 as never);
 
-    const result = await listRestaurants({ page: 2, pageSize: 12 });
+    const result = await listRestaurants({ ...firstPage, page: 2 });
 
     expect(result).toEqual({
       data: [
@@ -127,6 +145,7 @@ describe("listRestaurants", () => {
           avgRating: 0,
           reviewCount: 0,
           coverPhotoUrl: null,
+          isDemoListing: false,
         },
       ],
       meta: { page: 2, pageSize: 12, total: 30 },
@@ -148,13 +167,24 @@ describe("listRestaurants", () => {
 });
 
 describe("getRestaurant", () => {
+  test("says where its map is, once maps are set up, and nothing when they aren't", async () => {
+    findUnique.mockResolvedValue(detailRow() as never);
+
+    expect((await getRestaurant("tsiran-wine-room")).mapImageUrl).toBe(
+      "/api/restaurants/tsiran-wine-room/map",
+    );
+
+    vi.mocked(mapsEnabled).mockReturnValueOnce(false);
+    expect((await getRestaurant("tsiran-wine-room")).mapImageUrl).toBeNull();
+  });
+
   test("asks for that slug, published only", async () => {
     findUnique.mockResolvedValue(detailRow() as never);
 
     await getRestaurant("tsiran-wine-room");
 
     expect(findUnique.mock.calls[0]?.[0]).toMatchObject({
-      where: { slug: "tsiran-wine-room", isPublished: true },
+      where: { slug: "tsiran-wine-room", isPublished: true, hiddenAt: null },
     });
   });
 
@@ -201,6 +231,50 @@ describe("getRestaurant", () => {
     expect(restaurant.mapsUrl).toContain("query_place_id=ChIJ-test-place");
     expect(Object.keys(restaurant)).not.toContain("googlePlaceId");
   });
+
+  test("a demo listing (9.7) says so, has no price, names its place at OpenStreetMap, and credits its photos", async () => {
+    findUnique.mockResolvedValue(
+      detailRow({
+        slug: "dolmama",
+        isDemoListing: true,
+        priceLevel: null,
+        osmRef: "node/6566646015",
+        photos: [
+          {
+            url: "https://res.cloudinary.com/x/dolmama.jpg",
+            isCover: true,
+            credit: "Benoît Prieur, CC0",
+            creditUrl: "https://commons.wikimedia.org/wiki/File:Dolmama.jpg",
+          },
+        ],
+      }) as never,
+    );
+
+    const restaurant = await getRestaurant("dolmama");
+
+    expect(restaurant).toMatchObject({
+      isDemoListing: true,
+      priceLevel: null,
+      osmUrl: "https://www.openstreetmap.org/node/6566646015",
+      photos: [
+        {
+          url: "https://res.cloudinary.com/x/dolmama.jpg",
+          isCover: true,
+          credit: "Benoît Prieur, CC0",
+          creditUrl: "https://commons.wikimedia.org/wiki/File:Dolmama.jpg",
+        },
+      ],
+    });
+    expect(Object.keys(restaurant)).not.toContain("osmRef");
+  });
+
+  test("any other restaurant has no OpenStreetMap place, even with one set", async () => {
+    findUnique.mockResolvedValue(detailRow({ osmRef: "node/1" }) as never);
+
+    const restaurant = await getRestaurant("tsiran-wine-room");
+
+    expect(restaurant).toMatchObject({ isDemoListing: false, osmUrl: null });
+  });
 });
 
 describe("googleMapsUrl", () => {
@@ -226,5 +300,34 @@ describe("googleMapsUrl", () => {
     );
 
     expect(url.searchParams.get("query_place_id")).toBe("ChIJ123");
+  });
+});
+
+describe("listFeatured", () => {
+  test("the chosen ones, then the first others by name, from published restaurants only, with the total", async () => {
+    findMany
+      .mockResolvedValueOnce([
+        summaryRow({ slug: "dolmama", name: "Dolmama" }),
+        summaryRow({ slug: "gustav", name: "Gustav" }),
+      ] as never)
+      .mockResolvedValueOnce([summaryRow({ slug: "abovyan-12", name: "Abovyan 12" })] as never);
+    count.mockResolvedValue(16 as never);
+
+    const featured = await listFeatured();
+
+    expect(featured.data.map(({ slug }) => slug)).toEqual(["gustav", "dolmama", "abovyan-12"]);
+    expect(featured.meta).toEqual({ page: 1, pageSize: 3, total: 16 });
+    const [chosen, byName] = findMany.mock.calls.map(([query]) => query as Record<string, unknown>);
+    expect(chosen?.["where"]).toEqual({
+      isPublished: true,
+      hiddenAt: null,
+      slug: { in: ["gustav", "paul", "dolmama"] },
+    });
+    expect(byName).toMatchObject({
+      where: { isPublished: true, hiddenAt: null, slug: { notIn: ["gustav", "paul", "dolmama"] } },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      take: 3,
+    });
+    expect(count).toHaveBeenCalledWith({ where: { isPublished: true, hiddenAt: null } });
   });
 });

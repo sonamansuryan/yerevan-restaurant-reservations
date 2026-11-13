@@ -25,12 +25,15 @@ export interface OwnerRestaurant {
   address: string;
   phone: string | null;
   website: string | null;
-  priceLevel: number;
+  /** 1 to 4. Only a demo listing (9.7), which nobody can sign in to manage, has none. */
+  priceLevel: number | null;
   /** Minutes between the start times guests can choose. */
   slotIntervalMin: number;
   /** How long one booking holds its table, in minutes. */
   reservationDurationMin: number;
   isPublished: boolean;
+  /** Seghan has hidden it (9.5): guests can't find or book it, even while it's published. */
+  hiddenBySeghan: boolean;
 }
 
 // Only what the owner's view shows: never the owner's id or the Google place id.
@@ -48,6 +51,7 @@ const ownerFields = {
   slotIntervalMin: true,
   reservationDurationMin: true,
   isPublished: true,
+  hiddenAt: true,
 } satisfies Prisma.RestaurantSelect;
 
 type OwnerRow = Prisma.RestaurantGetPayload<{ select: typeof ownerFields }>;
@@ -220,5 +224,7 @@ export function toOwnerRestaurant(row: OwnerRow): OwnerRestaurant {
     slotIntervalMin: row.slotIntervalMin,
     reservationDurationMin: row.reservationDurationMin,
     isPublished: row.isPublished,
+    // Only whether, not when: the moment is Seghan's own record.
+    hiddenBySeghan: row.hiddenAt !== null,
   };
 }

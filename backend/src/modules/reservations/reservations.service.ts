@@ -10,11 +10,13 @@ import { localClockTime, localDate } from "../../lib/time.ts";
 import { generateSlots, tableProblem } from "../availability/availability.rules.ts";
 import type { TableProblem } from "../availability/availability.rules.ts";
 import type { StatusChangeInput } from "./owner.schemas.ts";
+import { emailGuest } from "./reservation-emails.ts";
 import { ownerReservationFields, toOwnerReservation } from "./owner.service.ts";
 import type { OwnerReservation } from "./owner.service.ts";
 import {
   ACTIVE_STATUSES,
   canGuestCancel,
+  canGuestReview,
   EARLY_ARRIVAL_MINUTES,
   GUEST_CANCELLABLE,
   RESTAURANT_CHANGES_FROM,
@@ -42,6 +44,10 @@ export interface GuestReservation {
   cancellation: { by: CancelledBy | null; reason: string | null } | null;
   /** Whether the guest can still cancel it: pending or confirmed, and not started yet. */
   canCancel: boolean;
+  /** The guest's review of this visit, once they've written one. */
+  review: { rating: number; comment: string | null } | null;
+  /** Whether the guest can review it: the restaurant marked them arrived, and there's no review yet. */
+  canReview: boolean;
 }
 
 /** One page of a guest's bookings. */
@@ -67,6 +73,7 @@ interface LockedRestaurant {
   slotIntervalMin: number;
   reservationDurationMin: number;
   isPublished: boolean;
+  hiddenAt: Date | null;
 }
 
 /**
@@ -77,14 +84,18 @@ interface LockedRestaurant {
  * checks every table (PROJECT_PLAN.md §5.4). Only then does it run the four checks, so they see
  * whatever was saved before. If the overlap constraint still refuses the booking, that's a real
  * conflict too. Any other database error is left to become a 500.
+ *
+ * Once the booking is saved, the guest is emailed in the background. The email is never part of the
+ * transaction, and never holds up or fails the booking (PROJECT_PLAN.md 9.3).
  */
 export async function createReservation(
   userId: string,
   input: CreateReservationInput,
   now: Date = new Date(),
 ): Promise<GuestReservation> {
+  let reservation: GuestReservation;
   try {
-    return await prisma.$transaction(async (tx) => {
+    reservation = await prisma.$transaction(async (tx) => {
       const [table] = await tx.$queryRaw<LockedTable[]>`
         SELECT "id", "restaurantId", "label", "zone", "capacity", "minCapacity", "isActive"
         FROM "Table" WHERE "id" = ${input.tableId}
@@ -92,11 +103,15 @@ export async function createReservation(
       if (!table) throw new NotFoundError("TABLE_NOT_FOUND");
 
       const [restaurant] = await tx.$queryRaw<LockedRestaurant[]>`
-        SELECT "slug", "name", "timezone", "slotIntervalMin", "reservationDurationMin", "isPublished"
+        SELECT "slug", "name", "timezone", "slotIntervalMin", "reservationDurationMin", "isPublished",
+          "hiddenAt"
         FROM "Restaurant" WHERE "id" = ${table.restaurantId}
         FOR KEY SHARE`;
-      // Guests only see published restaurants, so any other table isn't there for them.
-      if (!restaurant?.isPublished) throw new NotFoundError("TABLE_NOT_FOUND");
+      // Guests only see restaurants that are published and not hidden by Seghan (9.5), so any
+      // other table isn't there for them.
+      if (!restaurant?.isPublished || restaurant.hiddenAt !== null) {
+        throw new NotFoundError("TABLE_NOT_FOUND");
+      }
 
       // Is the restaurant open? Only a time generateSlots offers can be booked.
       const openingHours = await tx.openingHour.findMany({
@@ -156,6 +171,8 @@ export async function createReservation(
         specialRequests,
         cancellation: null,
         canCancel: canGuestCancel({ status: saved.status, startsAt: slot.startsAt }, now),
+        review: null,
+        canReview: false,
       };
     });
   } catch (error) {
@@ -163,6 +180,9 @@ export async function createReservation(
     if (isExclusionViolation(error)) throw new ConflictError("SLOT_TAKEN");
     throw error;
   }
+  // Committed, so the booking is real now.
+  emailGuest("REQUESTED", reservation.id);
+  return reservation;
 }
 
 /** What a guest sees of their booking, and the restaurant's time zone to show its times in. */
@@ -177,6 +197,7 @@ const guestReservationFields = {
   cancellationReason: true,
   restaurant: { select: { slug: true, name: true, timezone: true } },
   table: { select: { label: true, zone: true } },
+  review: { select: { rating: true, comment: true } },
 } satisfies Prisma.ReservationSelect;
 
 type GuestReservationRow = Prisma.ReservationGetPayload<{ select: typeof guestReservationFields }>;
@@ -253,6 +274,8 @@ export async function cancelReservation(
   if (count === 0) {
     throw new ConflictError(row.status === "CANCELLED" ? "ALREADY_CANCELLED" : "CANCEL_TOO_LATE");
   }
+  // Only the cancel that applied gets here, so the guest is emailed once.
+  emailGuest("CANCELLED_BY_GUEST", reservationId);
   return toGuestReservation(row, now);
 }
 
@@ -324,6 +347,9 @@ export async function changeReservationStatus(
       change,
     );
   }
+  // The guest hears about a confirmation or a cancellation. Arrivals and no-shows send nothing.
+  if (change === "CONFIRMED") emailGuest("CONFIRMED", reservationId);
+  if (change === "CANCELLED") emailGuest("CANCELLED_BY_RESTAURANT", reservationId);
   return toOwnerReservation(after, after.restaurant.timezone, now);
 }
 
@@ -376,6 +402,8 @@ function toGuestReservation(row: GuestReservationRow, now: Date): GuestReservati
     cancellation:
       row.status === "CANCELLED" ? { by: row.cancelledBy, reason: row.cancellationReason } : null,
     canCancel: canGuestCancel(row, now),
+    review: row.review,
+    canReview: canGuestReview(row, row.review !== null),
   };
 }
 

@@ -28,6 +28,7 @@ test.each([
   ["Sign in", "/login"],
   ["Create an account", "/register"],
   ["My reservations", "/reservations"],
+  ["My favorites", "/favorites"],
   ["List your restaurant", "/register?role=owner"],
   ["Owner dashboard", "/dashboard"],
   ["Seghan, home", "/"],

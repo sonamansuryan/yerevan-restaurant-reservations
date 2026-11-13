@@ -43,6 +43,7 @@ test("a restaurant's header names it, and its parts link to their own addresses"
     [...parts.querySelectorAll("a")].map((link) => [link.textContent, link.getAttribute("href")]),
   ).toEqual([
     ["Bookings", base],
+    ["Analytics", `${base}/analytics`],
     ["Information", `${base}/information`],
     ["Opening hours", `${base}/hours`],
     ["Tables", `${base}/tables`],
@@ -92,4 +93,33 @@ test("a published restaurant can be hidden again", async () => {
 
   expect(onChange).toHaveBeenCalledWith(false);
   expect(screen.getByText("Guests can find it and book a table.")).toBeDefined();
+});
+
+test("a restaurant Seghan hid says so, in the list and its header, with no guests' page to link to", () => {
+  const hidden = { ...ownedLori, hiddenBySeghan: true };
+  render(
+    <MemoryRouter>
+      <RestaurantList restaurants={[hidden]} />
+      <RestaurantHeader restaurant={hidden} />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getAllByText("Hidden by Seghan")).toHaveLength(2);
+  expect(screen.queryByText("Published")).toBeNull();
+  expect(screen.queryByRole("link", { name: "See the guests’ page" })).toBeNull();
+});
+
+test("while Seghan hides it, the panel says so, and the owner's own choice still works", async () => {
+  const onChange = vi.fn();
+
+  render(<PublishPanel isPublished hiddenBySeghan onChange={onChange} />);
+  await userEvent.click(screen.getByRole("button", { name: "Unpublish" }));
+
+  expect(screen.getByText("Hidden by Seghan")).toBeDefined();
+  expect(
+    screen.getByText(
+      "Seghan has hidden it, so guests can’t find or book it. Its bookings stay as they are. Your choice here applies again once Seghan shows it.",
+    ),
+  ).toBeDefined();
+  expect(onChange).toHaveBeenCalledWith(false);
 });

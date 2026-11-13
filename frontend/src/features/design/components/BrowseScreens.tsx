@@ -5,6 +5,9 @@ import type { To } from "react-router";
 import { Group, Specimens } from "@/features/design/components/parts";
 import {
   armenianName,
+  dolmamaListing,
+  gustavListing,
+  highestRated,
   manyCuisines,
   noDescription,
   sampleRestaurants,
@@ -43,6 +46,9 @@ const filters: Record<StateOf<"browseFilters">, ReactElement> = {
       onChange={ignore}
     />
   ),
+  "Highest rated first": (
+    <RestaurantFilters filters={{ sort: "rating", page: 1 }} onChange={ignore} />
+  ),
 };
 
 const page = (data: typeof sampleRestaurants, total: number, at = 1) => ({
@@ -67,6 +73,9 @@ const results: Record<StateOf<"browseResults">, ReactElement> = {
   "Nothing yet": <BrowseResults results={page([], 0)} filtered={false} {...actions} />,
   "Couldn’t load": <BrowseResults failed filtered={false} {...actions} />,
   "Past the last page": <BrowseResults results={page([], 9, 5)} filtered={false} {...actions} />,
+  "Highest rated first": (
+    <BrowseResults results={page(highestRated, 6)} filtered={false} {...actions} />
+  ),
 };
 
 const cards: Record<StateOf<"restaurantCard">, ReactElement> = {
@@ -74,6 +83,16 @@ const cards: Record<StateOf<"restaurantCard">, ReactElement> = {
   "A long Armenian name": <RestaurantCard restaurant={armenianName} heading="h4" />,
   "Several cuisines": <RestaurantCard restaurant={manyCuisines} heading="h4" />,
   "No description": <RestaurantCard restaurant={noDescription} heading="h4" />,
+  "Rated by guests": (
+    <RestaurantCard restaurant={sampleRestaurants[2] ?? noDescription} heading="h4" />
+  ),
+  "Rated by one guest": (
+    <RestaurantCard restaurant={sampleRestaurants[5] ?? noDescription} heading="h4" />
+  ),
+  "A demo listing": <RestaurantCard restaurant={dolmamaListing} heading="h4" />,
+  // A square cover a crop would spoil, such as Gustav's with its sign at the top: whole, on the
+  // paper tint (covers.ts).
+  "A cover shown whole": <RestaurantCard restaurant={gustavListing} heading="h4" coverWhole />,
 };
 
 /** Browse, /restaurants, in its states. */
@@ -82,7 +101,7 @@ export function BrowseScreens(): ReactElement {
     <>
       <Group
         title="Browse, the search and filters"
-        note="At the top of /restaurants. A choice in a list applies at once. The search applies when it's sent, so the list doesn't reload at every letter."
+        note="At the top of /restaurants. A choice in a list applies at once. The search applies when it's sent, so the list doesn't reload at every letter. Sort by is by name, or the highest rated first; clearing the filters keeps it."
       >
         <Specimens wide specimens={filters} />
       </Group>
@@ -94,7 +113,7 @@ export function BrowseScreens(): ReactElement {
       </Group>
       <Group
         title="Restaurant card"
-        note="A restaurant with no photo gets a menu cover: its name on one of the photo tones, always the same one. The whole card is one link, named by the restaurant."
+        note="A restaurant with no photo gets a menu cover: its name on one of the photo tones, always the same one. The whole card is one link, named by the restaurant. Once guests have reviewed it, a line says how they rate it."
       >
         <Specimens specimens={cards} />
       </Group>
