@@ -10,8 +10,54 @@ import type {
 } from "../src/generated/prisma/enums.ts";
 import { addDays, dayOfWeek, localDate, localTimeToUtc } from "../src/lib/time.ts";
 
-/** The only database the seed will write to. */
-export const SEED_DATABASE = "yerevan_dev";
+/** The local database, which holds only demo data. */
+export const LOCAL_DATABASE = "yerevan_dev";
+/** The public demo's database (PROJECT_PLAN.md 10.1). */
+export const DEMO_DATABASE = "seghan_demo";
+
+/**
+ * Whether the seed and the demo-listing import may write to this database. Only the two above:
+ * every other one is refused, yerevan_test included, because its tests start from empty tables.
+ */
+export function isSeedDatabase(name: string | undefined): boolean {
+  return name === LOCAL_DATABASE || name === DEMO_DATABASE;
+}
+
+/** The password each kind of demo account signs in with. */
+export interface DemoPasswords {
+  everyone: string;
+  admin: string;
+}
+
+/**
+ * Chooses the demo accounts' passwords. Locally, every account signs in with DEMO_PASSWORD. On the
+ * public demo, the admin gets DEMO_ADMIN_PASSWORD instead: the guests' and owners' password is
+ * given to visitors, and the admin area lists every user.
+ */
+export function demoPasswords(
+  database: string,
+  demoPassword: string | undefined,
+  adminPassword: string | undefined,
+): DemoPasswords {
+  if (!demoPassword) {
+    throw new Error("Set DEMO_PASSWORD first: the demo accounts get it as their password.");
+  }
+  if (database !== DEMO_DATABASE) return { everyone: demoPassword, admin: demoPassword };
+  if (!adminPassword) {
+    throw new Error(`Set DEMO_ADMIN_PASSWORD first: ${DEMO_DATABASE}'s admin gets it.`);
+  }
+  if (adminPassword === demoPassword) {
+    throw new Error(
+      "DEMO_ADMIN_PASSWORD must differ from DEMO_PASSWORD, which visitors are given.",
+    );
+  }
+  return { everyone: demoPassword, admin: adminPassword };
+}
+
+/** The password a demo account signs in with. */
+export function passwordFor(role: Role, passwords: DemoPasswords): string {
+  return role === "ADMIN" ? passwords.admin : passwords.everyone;
+}
 
 export const TIME_ZONE = "Asia/Yerevan";
 
@@ -86,8 +132,9 @@ interface SeedReservation {
 }
 
 // All addresses use example.com, which is reserved and can never reach a real person. The phone
-// numbers use a prefix that isn't assigned in Armenia. Every account signs in with DEMO_PASSWORD
-// from backend/.env, which seed.ts hashes, so no password is ever written here.
+// numbers use a prefix that isn't assigned in Armenia. Every account signs in with DEMO_PASSWORD,
+// apart from seghan_demo's admin (demoPasswords()). seed.ts hashes them, so no password is ever
+// written here.
 export const USERS: SeedUser[] = [
   { email: "admin@example.com", name: "Demo Admin", phone: null, role: "ADMIN" },
   { email: "ani.owner@example.com", name: "Ani Sargsyan", phone: "+37400000001", role: "OWNER" },

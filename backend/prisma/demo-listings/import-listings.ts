@@ -51,7 +51,7 @@ const commonsPhoto = z.object({
   freeLicense: z.literal(true),
 });
 // A photo from the restaurant's own site, known by its address. It isn't under a free license,
-// so it's only for a private demo (rules.ts).
+// so it's only for a private demo (rules.ts): withFreePhotosOnly() leaves it out of the public one.
 const ownPhoto = z
   .object({
     title: z.url().startsWith("https://"),
@@ -117,6 +117,28 @@ export const listingsFileSchema = z
 export type ListingsFile = z.infer<typeof listingsFileSchema>;
 
 export type CopyPhoto = (sourceUrl: string, publicId: string) => Promise<CopiedPhoto>;
+
+/**
+ * The file with only its freely licensed photos (Commons), for the public demo (PROJECT_PLAN.md
+ * 10.1). It runs before the import, so a photo left out is never copied, and one saved earlier
+ * leaves the page as any photo taken out of the file does. A listing left without photos shows its
+ * color cover, and its first free photo becomes the cover.
+ */
+export function withFreePhotosOnly(file: ListingsFile): {
+  file: ListingsFile;
+  kept: number;
+  leftOut: number;
+} {
+  let kept = 0;
+  let leftOut = 0;
+  const listings = file.listings.map((item) => {
+    const photos = item.photos.filter(({ freeLicense }) => freeLicense);
+    kept += photos.length;
+    leftOut += item.photos.length - photos.length;
+    return { ...item, photos };
+  });
+  return { file: { listings }, kept, leftOut };
+}
 
 export interface ImportReport {
   added: string[];

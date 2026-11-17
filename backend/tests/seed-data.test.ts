@@ -2,7 +2,10 @@ import { describe, expect, test } from "vitest";
 import { z } from "zod";
 
 import {
+  demoPasswords,
+  isSeedDatabase,
   openingHoursFor,
+  passwordFor,
   planReservations,
   RESERVATIONS,
   RESTAURANTS,
@@ -131,6 +134,49 @@ describe("users", () => {
       expect(email.endsWith("@example.com")).toBe(true);
     }
     expect(new Set(emails).size).toBe(emails.length);
+  });
+});
+
+describe("which databases the seed and the import write to", () => {
+  test("only the local one and the public demo's", () => {
+    expect(isSeedDatabase("yerevan_dev")).toBe(true);
+    expect(isSeedDatabase("seghan_demo")).toBe(true);
+  });
+
+  test("never the test database, whose tests start from empty tables, nor any other", () => {
+    for (const name of ["yerevan_test", "postgres", "neondb", "Seghan_demo", "seghan_demo ", ""]) {
+      expect(isSeedDatabase(name)).toBe(false);
+    }
+    expect(isSeedDatabase(undefined)).toBe(false);
+  });
+});
+
+describe("demo passwords", () => {
+  const PUBLIC = "public-demo-pass";
+  const PRIVATE = "private-admin-pass";
+
+  test("locally, every account gets DEMO_PASSWORD, the admin's too", () => {
+    const passwords = demoPasswords("yerevan_dev", PUBLIC, PRIVATE);
+
+    for (const { role } of USERS) expect(passwordFor(role, passwords)).toBe(PUBLIC);
+  });
+
+  test("on the public demo, only the admin gets DEMO_ADMIN_PASSWORD", () => {
+    const passwords = demoPasswords("seghan_demo", PUBLIC, PRIVATE);
+
+    expect(passwordFor("ADMIN", passwords)).toBe(PRIVATE);
+    expect(passwordFor("OWNER", passwords)).toBe(PUBLIC);
+    expect(passwordFor("CUSTOMER", passwords)).toBe(PUBLIC);
+  });
+
+  test("refuses without DEMO_PASSWORD, wherever it runs", () => {
+    expect(() => demoPasswords("yerevan_dev", undefined, undefined)).toThrow(/DEMO_PASSWORD/);
+    expect(() => demoPasswords("seghan_demo", undefined, PRIVATE)).toThrow(/DEMO_PASSWORD/);
+  });
+
+  test("the public demo refuses without its admin password, or with the public one", () => {
+    expect(() => demoPasswords("seghan_demo", PUBLIC, undefined)).toThrow(/DEMO_ADMIN_PASSWORD/);
+    expect(() => demoPasswords("seghan_demo", PUBLIC, PUBLIC)).toThrow(/must differ/);
   });
 });
 

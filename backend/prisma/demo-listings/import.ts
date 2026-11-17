@@ -1,26 +1,35 @@
 // Imports the reviewed demo listings (PROJECT_PLAN.md 9.7): copies their photos to Cloudinary and
-// adds or updates them in yerevan_dev, and nothing else. Run it only once listings.json has been
+// adds or updates them in yerevan_dev, or in the public demo's seghan_demo, and nothing else. The
+// public demo gets only the freely licensed photos (10.1). Run it only once listings.json has been
 // approved, after the seed:
 //   npm run demo:import -w backend
 import { readFileSync } from "node:fs";
 
 import { copyPhoto } from "../../src/integrations/cloudinary/remote-photos.ts";
 import { prisma } from "../../src/lib/prisma.ts";
-import { SEED_DATABASE } from "../seed-data.ts";
-import { importListings, listingsFileSchema } from "./import-listings.ts";
+import { DEMO_DATABASE, isSeedDatabase } from "../seed-data.ts";
+import { importListings, listingsFileSchema, withFreePhotosOnly } from "./import-listings.ts";
 
 async function main(): Promise<void> {
-  // The same one database as the seed.
+  // The same two databases as the seed.
   const [row] = await prisma.$queryRaw<{ name: string }[]>`SELECT current_database() AS name`;
-  if (row?.name !== SEED_DATABASE) {
-    throw new Error(`Refusing to import into "${row?.name}": only ${SEED_DATABASE}.`);
+  if (!row || !isSeedDatabase(row.name)) {
+    throw new Error(`Refusing to import into "${row?.name}": only yerevan_dev and seghan_demo.`);
   }
 
   const file = listingsFileSchema.parse(
     JSON.parse(readFileSync(new URL("./listings.json", import.meta.url), "utf8")),
   );
-  const report = await importListings(prisma, file, copyPhoto);
-  console.log(`Imported into ${SEED_DATABASE}:`, report);
+  const photos =
+    row.name === DEMO_DATABASE
+      ? withFreePhotosOnly(file)
+      : { file, kept: file.listings.flatMap(({ photos }) => photos).length, leftOut: 0 };
+  const report = await importListings(prisma, photos.file, copyPhoto);
+  console.log(`Imported into ${row.name}:`, {
+    ...report,
+    photosKept: photos.kept,
+    photosLeftOut: photos.leftOut,
+  });
 }
 
 try {

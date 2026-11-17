@@ -98,6 +98,13 @@ The database commands are in `backend/CLAUDE.md`.
   - Give every new variable a placeholder in `.env.example`.
   - Never put a token or password in a remote URL, a command or a committed file.
 
+## Deployment
+
+- **The public demo** (`PROJECT_PLAN.md` Step 10): the database `seghan_demo` on Neon, the API on Render and the app on Vercel. It never accepts or processes real reservations.
+- **Production secrets** live only in the providers' settings and in the gitignored `backend/.env.demo`. Only the user reads that file, and its values never appear in a command, a commit or the conversation.
+- **Production commands** are the user's to run. Migrations reach `seghan_demo` only through `db:deploy`. It's never reset, and the only data written to it is the agreed demo load: `db:seed`, then `demo:import`.
+- **What runs in production** is reviewed code from `main`.
+
 ## TypeScript
 
 - **Strict mode:** `strict` and `noUncheckedIndexedAccess` are on. Don't use `any` (use `unknown` and narrow it) or `@ts-ignore`. Use `@ts-expect-error` only with a reason.
