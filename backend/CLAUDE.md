@@ -7,7 +7,7 @@ The backend's own rules: Express, Prisma and PostgreSQL. They add to the shared 
 - `src/modules/<name>/`: routes · controller · service · schemas (· rules)
 - `src/config/env.ts`: checked settings; the only file that reads `process.env`
 - `src/lib/`: prisma · errors · db-errors · logger · paging · password · time
-- `src/middleware/`: errorHandler · rateLimit · requireAuth · requireRestaurantOwner · requireRole · validate
+- `src/middleware/`: errorHandler · publicDemo · rateLimit · requireAuth · requireRestaurantOwner · requireRole · validate
 - `src/integrations/`: cloudinary · email · geoapify · google · wikimedia
 - `prisma/`: schema.prisma · migrations/ · seed.ts · seed-data.ts · demo-listings/
 - `docker/`: docker-compose.yml (local PostgreSQL 17)

@@ -9,8 +9,9 @@ import { TooManyRequestsError } from "../lib/errors.ts";
  * Once they're used up, requests are refused with 429 before the input check and the password
  * hashing, so a guessing script can't keep the server busy either.
  *
- * The counts live in this server's memory, so a restart clears them. Behind a hosting proxy, every
- * visitor would share the proxy's address until `app.set("trust proxy", 1)` is set (Step 10).
+ * The counts live in this server's memory, so a restart clears them. Behind hosting proxies, each
+ * visitor is counted by their own address, as far back as TRUST_PROXY_HOPS says (app.ts). Without
+ * it, every visitor would share the proxy's address.
  */
 export const signInLimiter = rateLimit({
   windowMs: 60_000,

@@ -102,6 +102,7 @@ The database commands are in `backend/CLAUDE.md`.
 
 - **The public demo** (`PROJECT_PLAN.md` Step 10): the database `seghan_demo` on Neon, the API on Render and the app on Vercel. It never accepts or processes real reservations.
 - **Production secrets** live only in the providers' settings and in the gitignored `backend/.env.demo`. Only the user reads that file, and its values never appear in a command, a commit or the conversation.
+- **The public demo's own settings,** on Render only: `PUBLIC_DEMO=true` makes the four photo changes answer `403 DEMO_READ_ONLY` and stops every email, and `TRUST_PROXY_HOPS` is how many proxies stand in front of the API. Locally both stay unset, so nothing changes.
 - **Production commands** are the user's to run. Migrations reach `seghan_demo` only through `db:deploy`. It's never reset, and the only data written to it is the agreed demo load: `db:seed`, then `demo:import`.
 - **What runs in production** is reviewed code from `main`.
 

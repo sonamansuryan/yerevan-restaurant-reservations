@@ -2,6 +2,7 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import helmet from "helmet";
 
+import { env } from "./config/env.ts";
 import { ServiceUnavailableError } from "./lib/errors.ts";
 import { requestLogger } from "./lib/logger.ts";
 import { isDatabaseReachable } from "./lib/prisma.ts";
@@ -16,6 +17,11 @@ import { ownerRestaurantsRouter } from "./modules/restaurants/owner.routes.ts";
 import { restaurantsRouter } from "./modules/restaurants/restaurants.routes.ts";
 
 export const app = express();
+
+// Hosting proxies pass each visitor's address on in X-Forwarded-For, and this says how many of them
+// to trust (TRUST_PROXY_HOPS in env.ts), so the sign-in limit counts visitors separately. Locally
+// there are none, and Express ignores the header, as before.
+if (env.TRUST_PROXY_HOPS > 0) app.set("trust proxy", env.TRUST_PROXY_HOPS);
 
 app.use(requestLogger);
 app.use(helmet());

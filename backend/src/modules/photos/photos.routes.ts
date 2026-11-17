@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { photosReadOnlyInDemo } from "../../middleware/publicDemo.ts";
 import { validate } from "../../middleware/validate.ts";
 import { cover, list, remove, save, uploadPermission } from "./photos.controller.ts";
 import { coverSchema, photoIdSchema, savePhotoSchema } from "./photos.schemas.ts";
@@ -12,10 +13,18 @@ export const photosRouter = Router();
 // The photos as saved, in the same shape every change answers with.
 photosRouter.get("/", list);
 
+// Each change below answers 403 DEMO_READ_ONLY in the public demo (PROJECT_PLAN.md 10.2).
+
 // An upload has two steps: permission first, then the photo goes straight from the browser to
 // Cloudinary, and Cloudinary's answer is saved here.
-photosRouter.post("/signature", uploadPermission);
-photosRouter.post("/", validate(savePhotoSchema), save);
+photosRouter.post("/signature", photosReadOnlyInDemo, uploadPermission);
+photosRouter.post("/", photosReadOnlyInDemo, validate(savePhotoSchema), save);
 
-photosRouter.patch("/:photoId", validate(photoIdSchema, "params"), validate(coverSchema), cover);
-photosRouter.delete("/:photoId", validate(photoIdSchema, "params"), remove);
+photosRouter.patch(
+  "/:photoId",
+  photosReadOnlyInDemo,
+  validate(photoIdSchema, "params"),
+  validate(coverSchema),
+  cover,
+);
+photosRouter.delete("/:photoId", photosReadOnlyInDemo, validate(photoIdSchema, "params"), remove);

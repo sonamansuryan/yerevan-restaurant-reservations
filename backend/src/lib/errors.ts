@@ -33,6 +33,7 @@ const MESSAGES: Record<string, string> = {
   BLOCK_NOT_FOUND: "We couldn’t find this block.",
   UPLOAD_NOT_VERIFIED: "We couldn’t confirm this upload. Please upload the photo again.",
   PHOTO_ALREADY_SAVED: "This photo is already saved.",
+  DEMO_READ_ONLY: "Photos can’t be changed in the demo.",
 };
 
 /** An error we expected and can explain to the client. Anything else is treated as a bug. */

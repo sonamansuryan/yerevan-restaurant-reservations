@@ -49,6 +49,15 @@ const envSchema = z.object({
     .min(8, "must be at least 8 characters, like any account password")
     .max(128, "must be at most 128 characters, like any account password")
     .optional(),
+  // The public demo (PROJECT_PLAN.md 10.2), turned on only on Render: photos can't be changed, so no
+  // visitor can put files in Seghan's Cloudinary account, and no email is sent. "true" or "false",
+  // and off when it isn't set.
+  PUBLIC_DEMO: z.stringbool().default(false),
+  // How many proxies stand in front of the server: none locally, Render's own on Render, and Vercel's
+  // too once it forwards /api (10.3). The sign-in limit then counts each visitor by the address that
+  // many hops back in X-Forwarded-For (app.ts). Never more than are really there, or a visitor could
+  // choose their own address.
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
 });
 
 const result = envSchema.safeParse(process.env);
