@@ -202,13 +202,13 @@ npm run test:db -w backend               # database tests on yerevan_test, with 
 ## UI/UX: the Seghan design
 
 **Direction:**
-- **Feel:** Seghan should feel like a fine restaurant, elegant, warm and welcoming. (*Seghan* is Armenian for table.)
-- **The look** follows **the reservation book** a maître d' keeps: serif names, thin lines instead of boxes, warm paper colors and one deep wine, used sparingly.
-- **Type, space and thin lines** do the work that boxes and icons do in most apps.
+- **Feel:** Seghan should feel like a good restaurant: warm, welcoming and confident. (*Seghan* is Armenian for table.)
+- **The look** is the approved design (`PROJECT_PLAN.md` §6): warm off-white pages and white cards with soft corners, Bricolage Grotesque for the logo and every heading, Inter for text, and one wine for the brand and the booking actions.
+- **The logo** is a wine square holding a table with a covered dish, then lowercase `seghan`. The favicon is the same mark.
 - **Focus:** each screen has one clear next step.
 - **Motion** is subtle, and stops for people who ask for less.
 - **Details:** `֏`, Armenian names and long names render well.
-- **The owner's dashboard** is the back room of the same house: denser, but never a generic admin panel.
+- **The owner's dashboard and the admin area** share a full-height dark menu (`OfficeLayout`): denser than the guest pages, but never a generic admin panel.
 
 **Rules:**
 - **Usability first:** readability and accessibility outrank every visual idea, and nothing may slow a booking.
@@ -224,10 +224,9 @@ npm run test:db -w backend               # database tests on yerevan_test, with 
   - Show the change in the browser, then wait for approval.
   - Minor visual adjustments, such as spacing, alignment or small fixes within the agreed design, don't need approval. List them in the task's summary.
 - **Distinctive ideas** are welcome but not required. They come from layout, type or interaction, never from decoration or clever wording.
-- **Limits:** we borrow the logic of menus and books, not their costume. So no paper textures, script fonts, ornaments, fake book pages, generic templates, heavy decoration, needless gradients or dated effects. Places at every price, from ֏ to ֏֏֏֏, get the same care.
-- **The old mockup** exists only in git history (`design-reference/seghan/`, commit `81c686b`). It's a reference, never copied, and the plan decides scope.
+- **Limits:** no paper textures, script fonts, ornaments, generic templates, heavy decoration, needless gradients or dated effects. Places at every price, from ֏ to ֏֏֏֏, get the same care.
 
-**Protected designs.** `EmptyState` and `ErrorState` keep their approved look on purpose. They don't follow the reservation-book direction, and token changes don't reach them. Never restyle them or change these values unless explicitly asked:
+**Protected designs.** `EmptyState` and `ErrorState` keep their approved look on purpose. They don't follow the current design, and token changes don't reach them. Never restyle them or change these values unless explicitly asked:
 
 | Part | Stays as |
 |---|---|
@@ -241,11 +240,11 @@ The values are frozen in the `state-card` block in `index.css`. `Button`'s `clas
 ## Writing
 
 The visual design carries Seghan's hospitality, so the words stay plain.
-- **Expressive language is rare:** only branding, the homepage and key marketing sections, such as "Choose your *Seghan.*" and the footer's "See you at the *table.*" These lines end with a full stop.
-- **Functional headings everywhere else,** such as "Sign in" and "Page not found". They're upright, in ink, with no full stop.
-- **Wine italic** is only for branding and selected editorial content.
-- **Supporting text** is short, natural and useful. It doesn't repeat the heading or the reservation-book metaphor.
-- **Buttons** say what they do: "Book this table", not "Submit".
+- **Expressive language is rare:** only branding, the homepage and key marketing sections, such as the home page's "Find a table in Yerevan, tonight or any night." and the sign-in panel's "Your table is waiting." These lines end with a full stop.
+- **Functional headings everywhere else,** such as "My reservations" and "Page not found". They're upright, in ink, with no full stop.
+- **A word in wine,** such as "table." in the phone menu's "See you at the table.", is only for branding and selected editorial lines.
+- **Supporting text** is short, natural and useful. It doesn't repeat the heading.
+- **Buttons** say what they do: "Find a table" or "Add a table", not "Submit".
 - **Names:** people see `Seghan`, and the logo says `seghan`. "Yerevan Reservations" and "Yerevan Tables" are retired names.
 
 ## Git
