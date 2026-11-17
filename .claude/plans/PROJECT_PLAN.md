@@ -313,14 +313,17 @@ Steps 1–9 are done, and Step 10 is next. Where it helps, a task's **Check** sa
 
 **The goal:** anyone can open Seghan online and explore it. It stays a demo: it never accepts or processes real reservations, so every booking is a test that reaches no restaurant, and no email goes out. Only what visitors need to explore the interface and its functionality is deployed: no custom domain, monitoring, backups or real restaurant accounts. Before the live address is shared (10.4), the deployment changes get a security review.
 
-- [ ] **10.1 Database** on Neon or Supabase. Check it supports `btree_gist`, then apply the migrations and load the demo data.
+- [x] **10.1 Database** on Neon, PostgreSQL 17 in Frankfurt. Check it supports `btree_gist`, then apply the migrations and load the demo data.
   - **Its name is `seghan_demo`.** The seed and the demo-listing import accept exactly `yerevan_dev` and `seghan_demo`, and still refuse every other database, `yerevan_test` included.
+  - **PostgreSQL 17,** like the local database and every test. Neon can't change a project's version later.
+  - **The direct address,** not the pooled one: the app sets its UTC time zone when it connects, and migrations need a direct connection. The backend (10.2) runs in Frankfurt too, because every statement waits for a round trip.
   - **Free photos only:** for `seghan_demo`, the import keeps only freely licensed photos (Commons). A listing whose photos come from its restaurant's own site shows a color cover instead (9.7).
   - **Demo accounts:** guests and owners share one public demo password, which the README gives. The admin account gets its own private password (`DEMO_ADMIN_PASSWORD`), because the admin area lists every user.
   - **Production secrets:** you run the production commands yourself, with the database address and the passwords in a gitignored `backend/.env.demo` that Claude never reads.
+  - **Loading order:** `db:deploy`, `db:seed`, then `demo:import`. The seed refuses once the listings exist.
 
   *Check:* the tables, the constraint and the demo restaurants exist, with only freely licensed photos.
-- [ ] **10.2 Backend** on Render or Railway, with `PUBLIC_DEMO` turned on. Its secrets live only in the provider's settings: Cloudinary for the photos and, optionally, Geoapify for the maps.
+- [ ] **10.2 Backend** on Render, with `PUBLIC_DEMO` turned on. Its secrets live only in the provider's settings: Cloudinary for the photos and, optionally, Geoapify for the maps.
   - **Photos are read-only:** uploading, saving, choosing a cover and deleting answer `403 DEMO_READ_ONLY`, so no visitor can put files in our Cloudinary account.
   - **Email sending is off:** the backend never calls Resend, so it needs no real Resend key.
   - **`trust proxy`** lets the sign-in limit count each visitor separately.
