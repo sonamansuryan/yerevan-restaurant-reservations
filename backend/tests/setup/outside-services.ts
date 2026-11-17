@@ -44,5 +44,6 @@ vi.mock("../../src/integrations/cloudinary/remote-photos.ts", () => ({
 
 vi.mock("../../src/integrations/email/resend.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../src/integrations/email/resend.ts")>()),
-  sendEmail: vi.fn(async () => {}),
+  // As Resend would answer: the email went out.
+  sendEmail: vi.fn(async () => true),
 }));

@@ -75,6 +75,7 @@ test("a booking's email goes to the guest only once the booking is committed", a
   send.mockImplementation(async (_message, key) => {
     const id = key.split("/")[1] ?? "";
     committedWhenSent.push((await prisma.reservation.count({ where: { id } })) === 1);
+    return true;
   });
 
   const id = await book();

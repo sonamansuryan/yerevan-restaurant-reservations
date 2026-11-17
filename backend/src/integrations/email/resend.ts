@@ -29,11 +29,13 @@ export class EmailNotSentError extends Error {
 }
 
 /**
- * Sends one email from EMAIL_FROM. It throws if Resend refuses it, can't be reached, or takes
- * longer than SEND_TIMEOUT_MS. The key makes a repeat harmless: Resend sends one email per key
- * within a day, however often it's asked.
+ * Sends one email from EMAIL_FROM, and says whether it went out. The public demo (PUBLIC_DEMO)
+ * sends none: it answers false without calling Resend. Otherwise it throws if Resend refuses the
+ * email, can't be reached, or takes longer than SEND_TIMEOUT_MS. The key makes a repeat harmless:
+ * Resend sends one email per key within a day, however often it's asked.
  */
-export async function sendEmail(message: EmailMessage, idempotencyKey: string): Promise<void> {
+export async function sendEmail(message: EmailMessage, idempotencyKey: string): Promise<boolean> {
+  if (env.PUBLIC_DEMO) return false;
   const { error } = await resend.emails.send(
     {
       from: env.EMAIL_FROM,
@@ -45,4 +47,5 @@ export async function sendEmail(message: EmailMessage, idempotencyKey: string): 
     { idempotencyKey, signal: AbortSignal.timeout(SEND_TIMEOUT_MS) },
   );
   if (error) throw new EmailNotSentError(error.name);
+  return true;
 }

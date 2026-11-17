@@ -29,7 +29,8 @@ afterEach(() => {
 test("sends from EMAIL_FROM, with the key that makes a repeat harmless, and a time limit", async () => {
   resendSend.mockResolvedValue({ data: { id: "email-1" }, error: null, headers: null });
 
-  await sendEmail(message, "confirmed/booking-1");
+  // It says the email went out. Only the public demo answers false (public-demo.test.ts).
+  expect(await sendEmail(message, "confirmed/booking-1")).toBe(true);
 
   expect(resendSend).toHaveBeenCalledWith(
     { from: "Test <test@example.com>", ...message },

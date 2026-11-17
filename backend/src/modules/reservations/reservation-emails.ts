@@ -203,8 +203,14 @@ export async function sendBookingEmail(email: BookingEmail, reservationId: strin
     cancellationReason: row.cancellationReason,
   });
   // One email per booking and event, even if this ever runs twice.
-  await sendEmail({ to: row.user.email, ...message }, `${email.toLowerCase()}/${reservationId}`);
-  logger.info({ kind: email, reservationId }, "Booking email sent");
+  const sent = await sendEmail(
+    { to: row.user.email, ...message },
+    `${email.toLowerCase()}/${reservationId}`,
+  );
+  logger.info(
+    { kind: email, reservationId },
+    sent ? "Booking email sent" : "Booking email skipped: the public demo sends none",
+  );
 }
 
 /**

@@ -300,6 +300,8 @@ export interface OwnerPhoto {
  * - POST /api/owner/restaurants/:restaurantId/photos (201), saving an upload
  * - PATCH /api/owner/restaurants/:restaurantId/photos/:photoId, choosing the cover
  * - DELETE /api/owner/restaurants/:restaurantId/photos/:photoId
+ *
+ * In the public demo, every change answers 403 DEMO_READ_ONLY instead, and so does /signature.
  */
 export interface OwnerPhotosResponse {
   photos: OwnerPhoto[];

@@ -323,10 +323,11 @@ Steps 1–9 are done, and Step 10 is next. Where it helps, a task's **Check** sa
   - **Loading order:** `db:deploy`, `db:seed`, then `demo:import`. The seed refuses once the listings exist.
 
   *Check:* the tables, the constraint and the demo restaurants exist, with only freely licensed photos.
-- [ ] **10.2 Backend** on Render, with `PUBLIC_DEMO` turned on. Its secrets live only in the provider's settings: Cloudinary for the photos and, optionally, Geoapify for the maps.
+- [ ] **10.2 Backend** on Render, in Frankfurt, with `PUBLIC_DEMO` turned on. Its secrets live only in the provider's settings: the database address, the sign-in secret and, optionally, Geoapify's key for the maps. It holds no Cloudinary keys, because it never changes a photo.
   - **Photos are read-only:** uploading, saving, choosing a cover and deleting answer `403 DEMO_READ_ONLY`, so no visitor can put files in our Cloudinary account.
   - **Email sending is off:** the backend never calls Resend, so it needs no real Resend key.
-  - **`trust proxy`** lets the sign-in limit count each visitor separately.
+  - **`trust proxy`** lets the sign-in limit count each visitor separately. `TRUST_PROXY_HOPS` says how many proxies stand in front: 1 on Render, 2 once Vercel forwards `/api` (10.3).
+  - **Deploys are manual,** from the public repository, so Render gets no access to the GitHub account.
 
   *Check:* `/api/health` answers ok, and API tests prove both refusals and that no email is sent.
 - [ ] **10.3 Frontend** on Vercel, forwarding `/api` to the backend. In the public demo, the photo manager shows the photos and says they can't be changed in the demo, with that state in `/design`. *Check:* sign in on the live site.
