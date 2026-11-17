@@ -1,12 +1,12 @@
 # Seghan: Project Plan
 
-Yerevan Restaurant Reservation Platform, an internship project. Final version, 13 November 2026.
+Yerevan Restaurant Reservation Platform, an internship project. Version 3, 9 November 2026, updated 17 November 2026.
 
-**Seghan is complete as a local internship demo.** It runs on a computer with Docker and demo data, as `README.md` explains, and isn't deployed. Its demo bookings never reach a restaurant.
+**Steps 1–9 are built, and Step 10 puts Seghan online as a public demo.** Visitors explore it, and it never accepts or processes real reservations: its bookings never reach a restaurant. Until then it runs locally with Docker and demo data, as `README.md` explains.
 
 - **Requirements:** your Team Lead's assignment, word for word, in `ASSIGNMENT.md` (kept on your machine only). If this plan disagrees with it, the assignment wins.
 - **How we work:** `.claude/rules/general-rules.md`.
-- **This plan:** what was built (§2–§6), the work step by step (§7), and the limitations that still apply (§8).
+- **Using this plan:** work through §7 one task at a time. The current task is the first one not ticked, and each task has a goal and a **Check**.
 
 ## 1. Goal
 
@@ -48,13 +48,13 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | Google Maps | 9 | ✅ Each restaurant page shows a map of its street, from OpenStreetMap (9.4) |
 | Admin panel | 9 | ✅ Admins look through every user, restaurant and booking, and hide a restaurant from guests (9.5) |
 | Basic analytics | 9 | ✅ Owners see each restaurant's numbers on its dashboard, and admins all of Seghan's (9.6) |
-
-Deployment isn't part of the final project: Seghan is a local demo.
+| **Delivery** | | |
+| Deployment: Vercel, Render or Railway, Supabase or Neon | 10 | ⬜ A public demo that visitors can explore. It never accepts or processes real reservations |
 
 ### 2.2 Technical decisions
 
 - ✅ **Stack:** React, TypeScript, React Router and Tailwind; Node.js, Express and REST; PostgreSQL and Prisma, run locally in Docker.
-- ✅ **One address for the browser:** Vite forwards `/api` to Express.
+- ✅ **One address for the browser:** Vite forwards `/api` to Express now, and Vercel will in Step 10.
 - ✅ **Sign-in:** passwords hashed with argon2. Sessions use `httpOnly` cookies with a rotating refresh token.
 - ✅ **Roles:** guest, restaurant and admin, checked by `requireRole` on the server and by the route guard in the browser. Asking for someone else's restaurant returns `404` (4.1).
 - ✅ **Safety basics:** Zod checks every input, all errors share one JSON format, secrets live only in `backend/.env`, and logs never contain secrets. Sign-in and sign-up allow 10 tries per minute per address.
@@ -65,7 +65,7 @@ Deployment isn't part of the final project: Seghan is a local demo.
 
 ### 2.3 Possible future work
 
-None of these is required:
+None of these is required. Add one only after Step 10, or when your Team Lead asks:
 
 - password recovery
 - editing and deleting reviews, and an owner's reviews page
@@ -84,7 +84,7 @@ None of these is required:
 
 ## 3. Status (13 November 2026)
 
-Every requirement in §2.1 is built, in Steps 1–9 (§7).
+Every requirement in §2.1 is built, in Steps 1–9 (§7), except deployment: Step 10 is next.
 
 - **Checks:** typecheck ✅, lint ✅, 2455 tests ✅ (1347 frontend, 1108 backend), and 122 database tests on real PostgreSQL ✅.
 - **Demo data:**
@@ -141,6 +141,8 @@ Every requirement in §2.1 is built, in Steps 1–9 (§7).
 - **Midnight:** bookings start before midnight, but may end after it.
 - **How far ahead:** at least 1 hour, and at most 60 days.
 - **Who can be booked:** only published restaurants.
+- **Last active table (5.1):** a published restaurant always keeps at least one active table. Switching off its last one answers `409 LAST_ACTIVE_TABLE`; to stop taking bookings, unpublish. Publishing checks and saves in one transaction that locks the restaurant's row, and switching a table off takes that lock too, after the table's, so the two can't cross.
+- **Hidden by Seghan (9.5):** an admin's hide sets `Restaurant.hiddenAt` (migration `hide_restaurants`), kept apart from the owner's `isPublished`: while set, guests can't find, open, book or save the restaurant, or see its reviews or map, whatever the owner chooses, and the owner's dashboard says Seghan hid it. Its bookings stay. Showing it again clears only `hiddenAt`.
 
 ### 5.3 Statuses
 
@@ -211,9 +213,9 @@ Every requirement in §2.1 is built, in Steps 1–9 (§7).
 
 **Sign-in design.** From 1024 px wide, the dark panel takes the left half, with the logo, "Your table is waiting." and what an account is for; on a phone it's a band across the top. The form has a Sign in / Create account switch, then Google's button, the "or with email" divider and the fields.
 
-## 7. The work, step by step
+## 7. Roadmap
 
-Every task is done. Where it helps, a task's **Check** says what proved it.
+Steps 1–9 are done, and Step 10 is next. Where it helps, a task's **Check** says what proves it.
 
 ### Step 1: Project setup ✅
 
@@ -307,10 +309,30 @@ Every task is done. Where it helps, a task's **Check** says what proved it.
 - [x] **9.6 Basic analytics:** bookings, guests, cancellations, no-shows and ratings, shown as numbers and simple bars.
 - [x] **9.7 Real Yerevan restaurants, as demo listings:** a reviewed list of real restaurants and their photos, imported by a repeatable script, with sample tables to try booking, each booking clearly marked as a test.
 
+### Step 10: Deployment, as a public demo ⬜
+
+**The goal:** anyone can open Seghan online and explore it. It stays a demo: it never accepts or processes real reservations, so every booking is a test that reaches no restaurant, and no email goes out. Only what visitors need to explore the interface and its functionality is deployed: no custom domain, monitoring, backups or real restaurant accounts. Before the live address is shared (10.4), the deployment changes get a security review.
+
+- [ ] **10.1 Database** on Neon or Supabase. Check it supports `btree_gist`, then apply the migrations and load the demo data.
+  - **Its name is `seghan_demo`.** The seed and the demo-listing import accept exactly `yerevan_dev` and `seghan_demo`, and still refuse every other database, `yerevan_test` included.
+  - **Free photos only:** for `seghan_demo`, the import keeps only freely licensed photos (Commons). A listing whose photos come from its restaurant's own site shows a color cover instead (9.7).
+  - **Demo accounts:** guests and owners share one public demo password, which the README gives. The admin account gets its own private password (`DEMO_ADMIN_PASSWORD`), because the admin area lists every user.
+  - **Production secrets:** you run the production commands yourself, with the database address and the passwords in a gitignored `backend/.env.demo` that Claude never reads.
+
+  *Check:* the tables, the constraint and the demo restaurants exist, with only freely licensed photos.
+- [ ] **10.2 Backend** on Render or Railway, with `PUBLIC_DEMO` turned on. Its secrets live only in the provider's settings: Cloudinary for the photos and, optionally, Geoapify for the maps.
+  - **Photos are read-only:** uploading, saving, choosing a cover and deleting answer `403 DEMO_READ_ONLY`, so no visitor can put files in our Cloudinary account.
+  - **Email sending is off:** the backend never calls Resend, so it needs no real Resend key.
+  - **`trust proxy`** lets the sign-in limit count each visitor separately.
+
+  *Check:* `/api/health` answers ok, and API tests prove both refusals and that no email is sent.
+- [ ] **10.3 Frontend** on Vercel, forwarding `/api` to the backend. In the public demo, the photo manager shows the photos and says they can't be changed in the demo, with that state in `/design`. *Check:* sign in on the live site.
+- [ ] **10.4 Visitors' access:** Google sign-in accepts the live address, and the README gives the live address and the demo accounts visitors can use. *Check:* the final result works on the live site with a test booking: find a restaurant → choose date, time and guests → see a free table → book it → the demo owner sees it on their dashboard.
+
 ## 8. Limitations that still apply
 
-- **A local demo:** Seghan isn't deployed, and has no live address. Bookings stay on the computer it runs on, and never reach a restaurant.
-- **Private demo photos:** the demo listings' photos from the restaurants' own sites are for the private demo only (9.7). Before any public use, they must be replaced, or permission asked. Commons photos keep their credits.
+- **A demo, not a booking service:** Seghan runs locally until Step 10, then online as a public demo. Either way, bookings are tests that never reach a restaurant. The public demo also keeps photos read-only and sends no email (10.2).
+- **Private demo photos:** the demo listings' photos from the restaurants' own sites are for the private demo only (9.7). The public demo leaves them out (10.1); any other public use needs the restaurant's permission. Commons photos keep their credits.
 - **Demo listings stay pending:** nobody can confirm a demo listing's bookings or mark guests arrived, so they stay pending, and its reviews stay empty.
 - **Emails:** they need a Resend key. Until a domain is verified, Resend's test sender only delivers to its own account's address.
 - **Opening hours:** saving them doesn't check upcoming bookings. New hours may leave a booking outside them, which tables refuse (5.1) but hours don't (4.3).
