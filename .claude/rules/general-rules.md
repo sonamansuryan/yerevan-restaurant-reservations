@@ -1,6 +1,6 @@
 # General rules
 
-How we work on Seghan, which is complete as a local internship demo. The Team Lead's requirements are in `.claude/plans/ASSIGNMENT.md`, what was built is in `.claude/plans/PROJECT_PLAN.md`, and how we work is here. These rules apply to any further change.
+How we work on Seghan. The Team Lead's requirements are in `.claude/plans/ASSIGNMENT.md`, what we build is in `.claude/plans/PROJECT_PLAN.md`, and how we work is here.
 
 ## Working together
 
