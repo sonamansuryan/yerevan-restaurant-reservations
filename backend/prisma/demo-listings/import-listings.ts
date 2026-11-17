@@ -210,7 +210,10 @@ export async function importListings(
     }
   }
 
-  // Prisma's usual 5 seconds is plenty: even 99 listings with 4 photos each take under one.
+  // Each statement waits for a round trip to the database: nothing locally, but around 0.1 s to
+  // the public demo's database (PROJECT_PLAN.md 10.1), where 10 listings take about 200 of them.
+  // So it gets two minutes, not Prisma's usual 5 seconds.
+  const timeLimit = { timeout: 120_000 };
   const unpublished = await db.$transaction(async (tx) => {
     const { id: ownerId } = await tx.user.upsert({
       where: { email: LISTINGS_OWNER.email },
@@ -343,7 +346,7 @@ export async function importListings(
       data: { isPublished: false },
     });
     return gone.map(({ slug }) => slug);
-  });
+  }, timeLimit);
 
   return {
     added: listings.filter((item) => !existing.has(listingKey(item))).map(({ slug }) => slug),
