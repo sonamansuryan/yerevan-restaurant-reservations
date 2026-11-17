@@ -271,9 +271,11 @@ async function main(): Promise<void> {
     admin: await hashPassword(passwords.admin),
   };
 
-  // One transaction, so a failure partway through leaves nothing half-written. The timeout is
-  // longer than the app's 5 seconds because this runs well over a hundred statements.
-  await prisma.$transaction((tx) => writeSeedData(tx, hashes), { timeout: 30_000 });
+  // One transaction, so a failure partway through leaves nothing half-written. It runs over a
+  // hundred statements, each waiting for a round trip to the database: nothing locally, but around
+  // 0.1 s to the public demo's database (PROJECT_PLAN.md 10.1). So it gets two minutes, not the
+  // app's 5 seconds.
+  await prisma.$transaction((tx) => writeSeedData(tx, hashes), { timeout: 120_000 });
 
   const counts = {
     users: await prisma.user.count(),
