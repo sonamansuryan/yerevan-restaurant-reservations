@@ -18,8 +18,8 @@ The agreed plan for setting up Claude Code, its progress, and what comes after i
 - [x] **2. Rules restructure:** shared rules only in `general-rules.md` (under 200 lines), with the lock order and layout fixed; each side's rules in `backend/CLAUDE.md` and `frontend/CLAUDE.md` (commit `8cf4b6d`).
 - [x] **3a. Skill `summarize-changes`:** shows new files and Seghan's own risks (commit `5df6175`).
 - [x] **3b–3e. Instruction skills, one commit:** `migration` and `new-endpoint` (backend), `new-screen` (frontend), `explain` (root) (commit `e7278dc`).
-- [ ] **3f. Skill `browser-check`** (root): checks on :4001 and :5174 that never touch your dev servers. Its own commit.
-- [ ] **4. Memory cleanup:** notes keep only preferences, and their status lines point here.
+- [x] **3f. Skill `browser-check`** (root): checks on :4001 and :5174 that never touch your dev servers. Its own commit (commit `9a8bca0`).
+- [x] **4. Memory cleanup:** notes keep only preferences, and their status lines point here (no commit: memory lives outside the repo).
 - [ ] **5. Deployment:** `PROJECT_PLAN.md` Step 10, tasks 10.1 to 10.4, one at a time.
 - [ ] **6. Wrap-up:** the README gets the live address and the demo accounts, and the memory notes are updated.
 
