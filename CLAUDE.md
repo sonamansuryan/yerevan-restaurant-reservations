@@ -15,5 +15,6 @@
 
 - **[ASSIGNMENT.md](.claude/plans/ASSIGNMENT.md)** is the Team Lead's assignment, word for word, and the source of truth for requirements. It stays on this machine and is never committed.
 - **[PROJECT_PLAN.md](.claude/plans/PROJECT_PLAN.md)** says what we build: the requirements, booking rules, data model and roadmap. The current task is the first unticked box in §7.
+- **[SETUP_PLAN.md](.claude/plans/SETUP_PLAN.md)** is the single source of truth for what we do next, in order, Step 10 included: start from its first unticked box.
 - **[README.md](README.md)** explains how to set up, run, try and test the demo.
-- **[general-rules.md](.claude/rules/general-rules.md)** says how we work: the workflow, tech stack, commands, and the security, database, testing and design rules. Claude Code loads it automatically.
+- **[general-rules.md](.claude/rules/general-rules.md)** says how we work across the project, and Claude Code loads it automatically. Each side's own rules are in `backend/CLAUDE.md` and `frontend/CLAUDE.md`, which load when Claude works there.
