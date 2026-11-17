@@ -7,14 +7,14 @@ The agreed plan for setting up Claude Code, its progress, and what comes after i
 - **Before each step**, Claude explains it and waits for explicit approval. No file changes before that.
 - **Ticks:** a step is ticked only once it's completed and committed, so its tick goes into the next change to this file.
 - **Decisions:** each newly approved decision is added to the list below right away.
-- **Subagents:** Claude says first whether one would help, why and at what cost, and starts one only with approval. One writer at a time; helpers only read.
+- **Working rules,** subagents included, are in `.claude/rules/general-rules.md`.
 
 ## Progress
 
 - [x] **0. Design rules** match the approved redesign (PR #10).
 - [x] **1b. Docs restored:** Step 10, as a public demo, and two business rules (PR #11).
 - [x] **1. Permission rules** in `.claude/settings.json` (commit `37c54dd`).
-- [ ] **1c. Session continuity:** this file, the session-start hook and the pointer in `CLAUDE.md`.
+- [x] **1c. Session continuity:** this file, the session-start hook and the pointer in `CLAUDE.md` (commit `11d59fe`).
 - [ ] **2. Rules restructure:** shared rules only in `general-rules.md` (under 200 lines), with the lock order and layout fixed; each side's rules in `backend/CLAUDE.md` and `frontend/CLAUDE.md`.
 - [ ] **3a. Skill `summarize-changes`:** shows new files and Seghan's own risks.
 - [ ] **3b. Skill `migration`** (backend): safe schema changes, and the production part for 10.1.
