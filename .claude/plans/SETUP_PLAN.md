@@ -20,12 +20,13 @@ The agreed plan for setting up Claude Code, its progress, and what comes after i
 - [x] **3b–3e. Instruction skills, one commit:** `migration` and `new-endpoint` (backend), `new-screen` (frontend), `explain` (root) (commit `e7278dc`).
 - [x] **3f. Skill `browser-check`** (root): checks on :4001 and :5174 that never touch your dev servers. Its own commit (commit `9a8bca0`).
 - [x] **4. Memory cleanup:** notes keep only preferences, and their status lines point here (no commit: memory lives outside the repo).
-- [ ] **5. Deployment:** `PROJECT_PLAN.md` Step 10, tasks 10.1 to 10.4, one at a time.
+- [ ] **5. Deployment:** `PROJECT_PLAN.md` Step 10, tasks 10.1 to 10.4, one at a time. 10.1 is done (PRs #13 and #14).
 - [ ] **6. Wrap-up:** the README gets the live address and the demo accounts, and the memory notes are updated.
 
 ## Decisions
 
 - **Deployment** is a public demo (Step 10): no real reservations, read-only photos, no emails, a private admin password, and the `seghan_demo` database. Its secrets live in a gitignored `backend/.env.demo` that only you use.
+- **Providers:** Neon (PostgreSQL 17 in Frankfurt, through its direct address), Render and Vercel. The rehearsal's local `seghan_demo` stays, for trying 10.2.
 - **Each side's rules and skills:**
   - The rules go in `backend/CLAUDE.md` and `frontend/CLAUDE.md`.
   - The skills go in `backend/.claude/skills/` and `frontend/.claude/skills/`.
