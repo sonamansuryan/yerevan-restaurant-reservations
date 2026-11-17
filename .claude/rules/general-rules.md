@@ -127,6 +127,6 @@ The visual design carries Seghan's hospitality, so the words stay plain.
 ## Git
 
 - **Commits:** small and meaningful, with Conventional Commit messages (`feat:`, `fix:`, `test:`, `docs:`, `chore:`). A separate branch is optional.
-- **Approval:** ask before every commit and push, and show the changes first.
+- **Approval:** ask before every commit and push. First give a short summary of the changed files and the checks' results (`/summarize-changes`); show the full diff only when asked.
 - **Never commit** `.env` files, `.claude/plans/ASSIGNMENT.md`, `backend/src/generated/`, `dist/` or `.idea/`.
 - **Authentication:** use SSH. Never put a token in a remote URL.

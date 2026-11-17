@@ -15,7 +15,7 @@ The agreed plan for setting up Claude Code, its progress, and what comes after i
 - [x] **1b. Docs restored:** Step 10, as a public demo, and two business rules (PR #11).
 - [x] **1. Permission rules** in `.claude/settings.json` (commit `37c54dd`).
 - [x] **1c. Session continuity:** this file, the session-start hook and the pointer in `CLAUDE.md` (commit `11d59fe`).
-- [ ] **2. Rules restructure:** shared rules only in `general-rules.md` (under 200 lines), with the lock order and layout fixed; each side's rules in `backend/CLAUDE.md` and `frontend/CLAUDE.md`.
+- [x] **2. Rules restructure:** shared rules only in `general-rules.md` (under 200 lines), with the lock order and layout fixed; each side's rules in `backend/CLAUDE.md` and `frontend/CLAUDE.md` (commit `8cf4b6d`).
 - [ ] **3a. Skill `summarize-changes`:** shows new files and Seghan's own risks.
 - [ ] **3b. Skill `migration`** (backend): safe schema changes, and the production part for 10.1.
 - [ ] **3c. Skill `new-endpoint`** (backend).
