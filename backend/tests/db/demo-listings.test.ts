@@ -6,7 +6,7 @@
 import request from "supertest";
 import { afterAll, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { importListings } from "../../prisma/demo-listings/import-listings.ts";
+import { importListings, withFreePhotosOnly } from "../../prisma/demo-listings/import-listings.ts";
 import type { ListingsFile } from "../../prisma/demo-listings/import-listings.ts";
 import { LISTINGS_OWNER, photoPublicId } from "../../prisma/demo-listings/rules.ts";
 import { app } from "../../src/app.ts";
@@ -423,5 +423,41 @@ describe("importing again", () => {
 
     expect((await listing("dolmama")).hiddenAt).not.toBeNull();
     expect((await request(app).get("/api/restaurants/dolmama")).status).toBe(404);
+  });
+});
+
+describe("the public demo's import (10.1)", () => {
+  const savedPhotos = () =>
+    prisma.restaurantPhoto.findMany({
+      select: { creditUrl: true, restaurant: { select: { slug: true } } },
+    });
+
+  test("saves only Commons photos: a restaurant's own is never copied, and its page shows none", async () => {
+    const { file, kept, leftOut } = withFreePhotosOnly(FILE);
+    const report = await importListings(prisma, file, copyPhoto);
+
+    expect([kept, leftOut, report.photosCopied]).toEqual([2, 1, 2]);
+    expect(copyPhoto).not.toHaveBeenCalledWith(`${YASAMAN_SITE}hall.jpg`, expect.anything());
+    const photos = await savedPhotos();
+    expect(photos).toHaveLength(2);
+    for (const { creditUrl } of photos) {
+      expect(creditUrl?.startsWith("https://commons.wikimedia.org/")).toBe(true);
+    }
+    // Yasaman is still listed and can be booked, with its color cover instead of a photo.
+    expect((await listing("yasaman")).photos).toEqual([]);
+    expect((await request(app).get("/api/restaurants/yasaman")).status).toBe(200);
+  });
+
+  test("an own photo saved by an earlier import leaves the page, and the Commons ones stay", async () => {
+    await importListings(prisma, FILE, copyPhoto);
+    copyPhoto.mockClear();
+
+    await importListings(prisma, withFreePhotosOnly(FILE).file, copyPhoto);
+
+    expect(copyPhoto).not.toHaveBeenCalled();
+    expect((await savedPhotos()).map(({ restaurant }) => restaurant.slug).sort()).toEqual([
+      "dolmama",
+      "dolmama",
+    ]);
   });
 });

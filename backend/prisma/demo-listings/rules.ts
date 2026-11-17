@@ -249,8 +249,8 @@ export interface Checked<T> {
 
 /**
  * A photo from the restaurant's own site. Its license doesn't let anyone reuse it, so it's shown,
- * credited to that site, only while Seghan is a private demo: before Seghan is deployed, it's
- * replaced, or the restaurant's permission is asked (PROJECT_PLAN.md 9.7).
+ * credited to that site, only in the private, local demo: the public demo's import leaves it out
+ * (PROJECT_PLAN.md 9.7 and 10.1).
  */
 export interface OwnPhoto {
   /** The file, for Cloudinary to fetch. */

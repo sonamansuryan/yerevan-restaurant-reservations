@@ -42,6 +42,13 @@ const envSchema = z.object({
     .min(8, "must be at least 8 characters, like any account password")
     .max(128, "must be at most 128 characters, like any account password")
     .optional(),
+  // Only the seed reads this, and only on the public demo's seghan_demo: its admin's own password,
+  // because visitors are given DEMO_PASSWORD (PROJECT_PLAN.md 10.1). The same rule of 8 to 128.
+  DEMO_ADMIN_PASSWORD: z
+    .string()
+    .min(8, "must be at least 8 characters, like any account password")
+    .max(128, "must be at most 128 characters, like any account password")
+    .optional(),
 });
 
 const result = envSchema.safeParse(process.env);

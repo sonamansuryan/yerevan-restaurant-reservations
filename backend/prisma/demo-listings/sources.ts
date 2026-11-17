@@ -6,7 +6,8 @@
 //
 // Photos are Commons file names, free to reuse when credited, or photos from the restaurant's own
 // site, credited to it. Those aren't under a free license: they're only for Seghan as a private
-// demo, and are replaced, or the restaurant's permission asked, before Seghan is deployed.
+// demo. The public demo's import leaves them out (withFreePhotosOnly in import-listings.ts), and
+// any other public use needs the restaurant's permission.
 //
 // The tables are made up, sized for the kind of place, so bookings can be tried: they aren't the
 // restaurant's own floor plan, and the restaurant never receives a booking made on Seghan.
