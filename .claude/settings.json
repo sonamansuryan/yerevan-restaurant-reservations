@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.env.demo)",
+      "Edit(/backend/src/generated/**)",
+      "Edit(/.idea/**)",
+      "Bash(npx prisma db push *)",
+      "Bash(docker *dine-yerevan*)",
+      "Bash(docker system prune *)",
+      "Bash(docker volume prune *)"
+    ],
+    "ask": [
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git reset *)",
+      "Bash(git clean *)",
+      "Bash(git restore *)",
+      "Bash(git checkout -- *)",
+      "Bash(rm *)",
+      "Bash(kill *)",
+      "Bash(pkill *)",
+      "Bash(killall *)",
+      "Bash(npm run db:reset *)",
+      "Bash(npx prisma migrate reset *)",
+      "Bash(npm run db:deploy *)",
+      "Bash(npx prisma migrate deploy *)",
+      "Edit(/backend/prisma/migrations/**)"
+    ],
+    "allow": [
+      "Bash(npm run typecheck)",
+      "Bash(npm run lint)",
+      "Bash(npm test)",
+      "Bash(npm run test:db -w backend)"
+    ]
+  }
+}
