@@ -64,3 +64,15 @@ test("a choice that narrows the list turns the pill ink, and other attributes re
   expect(select.parentElement?.className).toContain("bg-ink");
   expect(select.getAttribute("data-force")).toBe("focus");
 });
+
+test("once chosen, the list it opens keeps dark names on a light ground, not the pill's white", () => {
+  render(
+    <PillSelect label="Cuisine" value="ARMENIAN" options={cuisines} onChange={vi.fn()} active />,
+  );
+
+  // The browser draws the open list in the select's own colors.
+  const select = screen.getByLabelText("Cuisine");
+  expect(select.className).toContain("text-ink");
+  expect(select.className).toContain("bg-surface-raised");
+  expect(select.className).not.toContain("text-on-dark");
+});
