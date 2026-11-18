@@ -5,15 +5,36 @@
 [![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](#tech-stack)
 [![TypeScript 7](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)](#tech-stack)
 [![PostgreSQL 17](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)](#tech-stack)
-[![Local demo, not deployed](https://img.shields.io/badge/Local%20demo-not%20deployed-9F1D2B)](#run-it-locally)
+[![Live demo](https://img.shields.io/badge/Live%20demo-seghan--gamma.vercel.app-9F1D2B)](https://seghan-gamma.vercel.app)
 
 Seghan (Armenian _սեղան_, "table") is a full-stack restaurant reservation platform, built as an internship project. Guests browse Yerevan restaurants, see which tables are free, and book one. Restaurant owners run their tables, opening hours and bookings from a private dashboard. PostgreSQL itself guarantees that a table can never be booked twice.
 
 ![The Seghan home page: a dark opening with "Find a table in Yerevan, tonight or any night." and a search for restaurant, date, time and guests, then restaurant cards with tonight's free times](docs/screenshots/home.png)
 
-> **A local demo.** Seghan runs on your own computer with demo data, and isn't deployed anywhere. No booking ever reaches a real restaurant: the restaurants are samples, and the real Yerevan places that can be imported are marked "This is a test booking. The restaurant won't receive it."
+> **A demo, online and local.** Try it at **https://seghan-gamma.vercel.app**, or run it on your own computer. No booking ever reaches a real restaurant: the restaurants are samples, and the real Yerevan places listed are marked "This is a test booking. The restaurant won't receive it."
 
-**Get started:** [Run it locally](#run-it-locally) · [Try the demo](#try-the-demo) · [Tests and checks](#tests-and-checks)
+**Get started:** [Live demo](#live-demo) · [Run it locally](#run-it-locally) · [Try the demo](#try-the-demo) · [Tests and checks](#tests-and-checks)
+
+## Live demo
+
+**https://seghan-gamma.vercel.app** is the same app with demo data: the pages on Vercel, the API on Render and PostgreSQL on Neon.
+
+| Account                                                     | Role                                                    | Try                                                                   |
+| ----------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------- |
+| `lilit@example.com`, `aram@example.com`, `mane@example.com` | Guest                                                   | Book a table, cancel it on _My reservations_, save favorites          |
+| `ani.owner@example.com`                                     | Owner of Lori Smokehouse, Nurr and Tsiran Wine Room     | See the restaurant's bookings, confirm or decline them, mark arrivals |
+| `davit.owner@example.com`                                   | Owner of Sevan & Salt, Kond House and Tbilisi Courtyard | The same, for another owner's restaurants                             |
+
+**Password:** `<shared demo password>`, the same for every account above, given to you separately. The admin account isn't public.
+
+How it differs from running it locally:
+
+- **Test bookings only:** bookings never reach a restaurant, and no email is sent.
+- **Photos can't be changed:** owners see their restaurant's photos, read-only.
+- **No Google sign-in:** it works locally, but the live site has no Google button.
+- **Shared accounts:** anyone with the password can change the demo restaurants and their bookings.
+- **A slow first visit:** the free API sleeps when it's quiet, so the first visit after a while can take about a minute.
+- **Sign-ups are kept:** if you create an account, use a throwaway email and password.
 
 ## What you can do
 
@@ -192,7 +213,7 @@ backend/                   Express API
 
 ## Status and limitations
 
-- **A local internship demo:** it isn't deployed, and there's no live address. Bookings stay on your computer and never reach a restaurant.
+- **An internship demo:** live at https://seghan-gamma.vercel.app, and runnable on your own computer. Bookings are tests, and never reach a restaurant. The live demo's own limits are under [Live demo](#live-demo).
 - **Demo listings stay pending:** nobody confirms test bookings at the imported real places, so they stay pending, and those places get no reviews.
 - **Opening hours:** saving opening hours doesn't yet check upcoming bookings that would fall outside them.
 - **Late bookings:** a booking must start before midnight, though it may end after it.

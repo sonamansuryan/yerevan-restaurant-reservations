@@ -429,7 +429,10 @@ describe("a restaurant's dashboard", () => {
 
     expect(router.state.location.search).toBe("?date=2026-11-14");
     expect(await screen.findByText("Saturday 14 November · Open 18:00 – 02:00")).toBeDefined();
-    expect(screen.getByRole("link", { name: "Today" }).getAttribute("aria-current")).toBeNull();
+    // The day control names the new day, no longer Today, and still leads back to today.
+    const middle = screen.getByRole("link", { name: "Tomorrow, 14 Nov, back to today" });
+    expect(middle.textContent).toBe("Tomorrow, 14 Nov");
+    expect(middle.getAttribute("aria-current")).toBeNull();
     await waitFor(() =>
       expect(requests(fetch)).toContain(`${LORI}/reservations?date=2026-11-14&page=1`),
     );

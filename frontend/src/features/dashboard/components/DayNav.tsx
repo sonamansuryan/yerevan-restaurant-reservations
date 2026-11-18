@@ -11,7 +11,7 @@ import { FieldError } from "@/components/Field";
 import { controlClass } from "@/components/field-styles";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/components/icons";
 import { cx } from "@/lib/cx";
-import { isCalendarDate, shiftDate } from "@/lib/time";
+import { formatShortDay, isCalendarDate, shiftDate } from "@/lib/time";
 
 // A date input holds YYYY-MM-DD, or nothing while it isn't a whole date.
 const goToSchema = z.object({
@@ -35,12 +35,16 @@ const part =
 
 /**
  * Moving between days, as the export's dashboard has it: one white control with the day before,
- * Today, and the day after, then a date to go to. Picking a date doesn't open it straight away,
- * because a date input changes with each digit typed, so it waits for Show. The day shown is said in
- * the part's heading above.
+ * the day shown, and the day after, then a date to go to. Picking a date doesn't open it straight
+ * away, because a date input changes with each digit typed, so it waits for Show. The day shown is
+ * also said in full in the part's heading above.
  */
 export function DayNav({ date, today, hrefFor, onGoTo }: DayNavProps): ReactElement {
   const errorId = useId();
+  // The middle names the day shown, "Today" or such as "Tomorrow, 14 Nov", and always leads back
+  // to today. On another day its name says so, after the words on screen.
+  const isToday = date === today;
+  const shown = isToday ? "Today" : formatShortDay(date, today);
   const {
     register,
     handleSubmit,
@@ -58,10 +62,11 @@ export function DayNav({ date, today, hrefFor, onGoTo }: DayNavProps): ReactElem
         </Link>
         <Link
           to={hrefFor(today)}
-          aria-current={date === today ? "page" : undefined}
-          className={cx(part, "border-x border-line-strong")}
+          aria-current={isToday ? "page" : undefined}
+          aria-label={isToday ? undefined : `${shown}, back to today`}
+          className={cx(part, "border-x border-line-strong whitespace-nowrap")}
         >
-          Today
+          {shown}
         </Link>
         <Link to={hrefFor(shiftDate(date, 1))} aria-label="Next day" className={part}>
           <ArrowRightIcon />
