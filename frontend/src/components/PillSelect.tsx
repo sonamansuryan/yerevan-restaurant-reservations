@@ -59,12 +59,15 @@ export function PillSelect({
         strokeWidth="1.6"
         className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2"
       />
+      {/* The browser draws the open list in the select's own colors. Unseen as it is, it would
+          inherit the chosen pill's white text and a clear ground: white names on a white list.
+          So it keeps ink on the raised surface whatever the pill looks like. */}
       <select
         {...rest}
         aria-label={label}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="absolute inset-0 cursor-pointer appearance-none rounded-pill opacity-0"
+        className="absolute inset-0 cursor-pointer appearance-none rounded-pill bg-surface-raised text-ink opacity-0"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>

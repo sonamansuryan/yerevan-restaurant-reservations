@@ -488,6 +488,20 @@ describe("booking a table", () => {
     expect(isDisabled(RESERVE)).toBe(false);
   });
 
+  test("choosing a time, a table or the guests keeps the page where it is", async () => {
+    fakeApi({ user: lilit });
+    renderAt(`${LORI}?date=2026-11-14&guests=2`);
+    await main().findByRole("button", { name: "19:00" });
+    // Each choice changes the address, and ScrollRestoration scrolls to the top unless told not to.
+    vi.mocked(window.scrollTo).mockClear();
+
+    await userEvent.click(main().getByRole("button", { name: "19:00" }));
+    await userEvent.click(main().getByRole("radio", { name: /^T2/ }));
+    await userEvent.click(main().getByRole("button", { name: "More guests" }));
+
+    expect(window.scrollTo).not.toHaveBeenCalled();
+  });
+
   test("more guests go into the address, and their tables are asked for", async () => {
     const fetch = fakeApi();
     const router = renderAt(`${LORI}?date=2026-11-14&guests=2`);
