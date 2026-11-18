@@ -4,7 +4,7 @@
 
 **Seghan** is a two-sided web app built as an internship project. Its project title is the Yerevan Restaurant Reservation Platform.
 
-- **Status:** Steps 1–9 are built, and Step 10 puts Seghan online as a public demo (PROJECT_PLAN.md §7). Visitors explore it, and it never accepts or processes real reservations. Until then it runs locally with Docker and demo data.
+- **Status:** Steps 1–10 are built: Seghan is online as a public demo, at https://seghan-gamma.vercel.app (PROJECT_PLAN.md §7). Visitors explore it, and it never accepts or processes real reservations. It also runs locally with Docker and demo data.
 - **Customers** browse, search and filter Yerevan restaurants, then pick a date, time and number of guests. They see which tables are free, book or cancel, and review places they visited.
 - **Restaurant owners** get a private dashboard. There they manage restaurant information and photos, tables and capacity, opening hours, and blocked tables or dates. They also confirm or cancel bookings and mark guests as arrived or no-show.
 - **Also built, once the core worked:** reviews, favorites, email confirmations, a map on each restaurant page (OpenStreetMap), an admin panel, basic analytics, and real Yerevan restaurants as demo listings.

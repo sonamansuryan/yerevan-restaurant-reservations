@@ -1,8 +1,8 @@
 # Seghan: Project Plan
 
-Yerevan Restaurant Reservation Platform, an internship project. Version 3, 9 November 2026, updated 17 November 2026.
+Yerevan Restaurant Reservation Platform, an internship project. Version 3, 9 November 2026, updated 18 November 2026.
 
-**Steps 1–9 are built, and Step 10 puts Seghan online as a public demo.** Visitors explore it, and it never accepts or processes real reservations: its bookings never reach a restaurant. Until then it runs locally with Docker and demo data, as `README.md` explains.
+**Steps 1–10 are built: Seghan is online as a public demo, at https://seghan-gamma.vercel.app.** Visitors explore it, and it never accepts or processes real reservations: its bookings never reach a restaurant. It also runs locally with Docker and demo data, as `README.md` explains.
 
 - **Requirements:** your Team Lead's assignment, word for word, in `ASSIGNMENT.md` (kept on your machine only). If this plan disagrees with it, the assignment wins.
 - **How we work:** `.claude/rules/general-rules.md`.
@@ -49,7 +49,7 @@ The public name is **Seghan**, and the logo says `seghan`. Internal names such a
 | Admin panel | 9 | ✅ Admins look through every user, restaurant and booking, and hide a restaurant from guests (9.5) |
 | Basic analytics | 9 | ✅ Owners see each restaurant's numbers on its dashboard, and admins all of Seghan's (9.6) |
 | **Delivery** | | |
-| Deployment: Vercel, Render or Railway, Supabase or Neon | 10 | ⬜ A public demo that visitors can explore. It never accepts or processes real reservations |
+| Deployment: Vercel, Render or Railway, Supabase or Neon | 10 | ✅ A public demo that visitors can explore. It never accepts or processes real reservations |
 
 ### 2.2 Technical decisions
 
@@ -82,11 +82,11 @@ None of these is required. Add one only after Step 10, or when your Team Lead as
 
 **Out of scope:** payments, combining tables, waitlists, SMS, more languages, staff accounts, floor plans with tables' real positions, "near me" search, walk-ins.
 
-## 3. Status (13 November 2026)
+## 3. Status (18 November 2026)
 
-Every requirement in §2.1 is built, in Steps 1–9 (§7), except deployment: Step 10 is next.
+Every requirement in §2.1 is built, in Steps 1–10 (§7), and Seghan is online as a public demo.
 
-- **Checks:** typecheck ✅, lint ✅, 2455 tests ✅ (1347 frontend, 1108 backend), and 122 database tests on real PostgreSQL ✅.
+- **Checks:** typecheck ✅, lint ✅, 2493 tests ✅ (1359 frontend, 1134 backend). The database tests weren't rerun on `yerevan_test` for Step 10's last changes; the three new demo-photo ones passed on a throwaway database.
 - **Demo data:**
   - The seed (`npm run db:seed -w backend`) writes only to `yerevan_dev`. It adds 6 demo accounts that sign in with `DEMO_PASSWORD`, and 7 restaurants with tables, opening hours and bookings.
   - 10 real Yerevan places can be imported as demo listings (9.7).
@@ -215,7 +215,7 @@ Every requirement in §2.1 is built, in Steps 1–9 (§7), except deployment: St
 
 ## 7. Roadmap
 
-Steps 1–9 are done, and Step 10 is next. Where it helps, a task's **Check** says what proves it.
+Steps 1–10 are done. Where it helps, a task's **Check** says what proves it.
 
 ### Step 1: Project setup ✅
 
@@ -309,7 +309,7 @@ Steps 1–9 are done, and Step 10 is next. Where it helps, a task's **Check** sa
 - [x] **9.6 Basic analytics:** bookings, guests, cancellations, no-shows and ratings, shown as numbers and simple bars.
 - [x] **9.7 Real Yerevan restaurants, as demo listings:** a reviewed list of real restaurants and their photos, imported by a repeatable script, with sample tables to try booking, each booking clearly marked as a test.
 
-### Step 10: Deployment, as a public demo ⬜
+### Step 10: Deployment, as a public demo ✅
 
 **The goal:** anyone can open Seghan online and explore it. It stays a demo: it never accepts or processes real reservations, so every booking is a test that reaches no restaurant, and no email goes out. Only what visitors need to explore the interface and its functionality is deployed: no custom domain, monitoring, backups or real restaurant accounts. Before the live address is shared (10.4), the deployment changes get a security review.
 
@@ -331,12 +331,16 @@ Steps 1–9 are done, and Step 10 is next. Where it helps, a task's **Check** sa
   - **Deploys are manual,** from the public repository, so Render gets no access to the GitHub account.
 
   *Check:* `/api/health` answers ok, and API tests prove both refusals and that no email is sent.
-- [ ] **10.3 Frontend** on Vercel, forwarding `/api` to the backend. In the public demo, the photo manager shows the photos and says they can't be changed in the demo, with that state in `/design`. *Check:* sign in on the live site.
-- [ ] **10.4 Visitors' access:** Google sign-in accepts the live address, and the README gives the live address and the demo accounts visitors can use. *Check:* the final result works on the live site with a test booking: find a restaurant → choose date, time and guests → see a free table → book it → the demo owner sees it on their dashboard.
+- [x] **10.3 Frontend** on Vercel, forwarding `/api` to the backend. In the public demo, the photo manager shows the photos and says they can't be changed in the demo, with that state in `/design`. *Check:* sign in on the live site.
+  - **Live** at https://seghan-gamma.vercel.app, deployed by hand with Vercel's command-line tool from a fresh copy of `main`.
+- [x] **10.4 Visitors' access:** the README gives the live address and the demo accounts, with the shared password left out, to be given separately. Google sign-in stays local: its OAuth app stays in Testing, so the live site shows no Google button.
+  - **Security review:** accepted for a demo rather than fixed: anyone with the shared password can change the demo restaurants and their bookings, bookings per guest aren't capped, and the sign-in limit counts by proxy address rather than by visitor. The admin password stays private.
+
+  *Check:* the final result works on the live site with a test booking: find a restaurant → choose date, time and guests → see a free table → book it → the demo owner sees it on their dashboard and confirms it, and the same table at the same time can't be booked again.
 
 ## 8. Limitations that still apply
 
-- **A demo, not a booking service:** Seghan runs locally until Step 10, then online as a public demo. Either way, bookings are tests that never reach a restaurant. The public demo also keeps photos read-only and sends no email (10.2).
+- **A demo, not a booking service:** Seghan runs online as a public demo, and locally. Either way, bookings are tests that never reach a restaurant. The public demo also keeps photos read-only and sends no email (10.2), has no Google sign-in (10.4), and its free API sleeps when idle, so a first visit can take about a minute.
 - **Private demo photos:** the demo listings' photos from the restaurants' own sites are for the private demo only (9.7). The public demo leaves them out (10.1); any other public use needs the restaurant's permission. Commons photos keep their credits.
 - **Demo listings stay pending:** nobody can confirm a demo listing's bookings or mark guests arrived, so they stay pending, and its reviews stay empty.
 - **Emails:** they need a Resend key. Until a domain is verified, Resend's test sender only delivers to its own account's address.
