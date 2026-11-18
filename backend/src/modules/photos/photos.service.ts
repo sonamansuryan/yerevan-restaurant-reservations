@@ -1,5 +1,6 @@
-// A restaurant's photos. The images themselves live at Cloudinary; the database keeps each one's
-// name there, its address, which one is the cover, and their order.
+// A restaurant's photos. The images themselves live at Cloudinary, apart from the local demo photos
+// (local-photos.ts); the database keeps each one's name, its address, which one is the cover, and
+// their order.
 import type { Prisma } from "../../generated/prisma/client.ts";
 import {
   deleteUpload,
@@ -14,6 +15,7 @@ import { ConflictError, NotFoundError, ValidationError } from "../../lib/errors.
 import { logger } from "../../lib/logger.ts";
 import { prisma } from "../../lib/prisma.ts";
 import { lockOwnedRestaurant } from "../restaurants/owner.service.ts";
+import { isLocalPhoto } from "./local-photos.ts";
 
 /** A cover and the six more the restaurant page shows, with a few to spare. */
 export const MAX_PHOTOS = 10;
@@ -144,7 +146,7 @@ export async function makeCover(
 
 /**
  * Deletes one of the restaurant's photos. If it was the cover, the next photo takes over. Then the
- * image is deleted at Cloudinary too.
+ * image is deleted at Cloudinary too, unless it's a local demo photo, which Cloudinary never had.
  */
 export async function deletePhoto(
   ownerId: string,
@@ -171,6 +173,7 @@ export async function deletePhoto(
   // After the database is done, never inside its transaction: Cloudinary is another service, over
   // the network. If it fails, the photo is still gone from Seghan, and all that's left is an unused
   // image at Cloudinary. Its name is logged so it can be found.
+  if (isLocalPhoto(publicId)) return photos;
   try {
     await deleteUpload(publicId);
   } catch (err) {

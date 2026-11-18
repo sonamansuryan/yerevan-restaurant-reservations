@@ -284,6 +284,20 @@ describe("deletePhoto", () => {
     });
   });
 
+  test("a local demo photo is deleted here only: Cloudinary never had it", async () => {
+    tx.restaurantPhoto.findFirst.mockResolvedValueOnce({
+      id: PHOTO,
+      publicId: "local/demo-photos/lori-smokehouse/2",
+      isCover: false,
+    });
+    tx.restaurantPhoto.findMany.mockResolvedValue([]);
+
+    await expect(deletePhoto(ani.id, RESTAURANT, PHOTO)).resolves.toEqual([]);
+
+    expect(tx.restaurantPhoto.delete).toHaveBeenCalledWith({ where: { id: PHOTO } });
+    expect(deleteUpload).not.toHaveBeenCalled();
+  });
+
   test("if Cloudinary fails, the photo is still gone from Seghan, and the failure is logged", async () => {
     tx.restaurantPhoto.findFirst.mockResolvedValueOnce({
       id: PHOTO,

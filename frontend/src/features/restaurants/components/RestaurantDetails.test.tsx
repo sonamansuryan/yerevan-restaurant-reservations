@@ -8,6 +8,7 @@ import {
   dolmamaPage,
   kamanchaPage,
   loriPage,
+  loriUnsplashPage,
   mayrigPage,
   reviewedPage,
   sampleReviews,
@@ -378,6 +379,20 @@ describe("a demo listing (9.7)", () => {
     expect(screen.getAllByText(/^Photos:/)).toHaveLength(1);
     expect(credits.parentElement?.previousElementSibling).toBe(aboutLine());
   });
+});
+
+test("demo photos from Unsplash credit each photographer, then Unsplash once", () => {
+  renderDetails({ restaurant: loriUnsplashPage });
+
+  const credits = screen.getByText(/^Photos:/);
+  expect(credits.textContent).toBe(
+    "Photos: amin ramezani, opens in a new tab · Alex Belogub, opens in a new tab · Gang Hao, opens in a new tab, via Unsplash",
+  );
+  const links = [...credits.querySelectorAll("a")];
+  expect(links.map((link) => link.getAttribute("href"))).toEqual(
+    loriUnsplashPage.photos.map(({ creditUrl }) => creditUrl),
+  );
+  expect(links.every((link) => link.getAttribute("target") === "_blank")).toBe(true);
 });
 
 test("an owner's own photos need no credit, so none is shown", () => {

@@ -53,8 +53,8 @@ The backend's own rules: Express, Prisma and PostgreSQL. They add to the shared 
 - **Hand-written migrations:** constraints Prisma can't express go in a `--create-only` migration. If it has several statements, wrap them in `BEGIN;` and `COMMIT;`, because Prisma doesn't use a transaction.
 - **Never hard-delete** restaurants, tables or reservations. Use `isPublished`, `isActive` or `status`.
 - **Docker Compose:** keep `name: yerevan-reservations` in the compose file, or Compose starts on a new, empty volume. Pass `backend/.env` with `--env-file`, never `env_file:`, which would copy every secret into the container.
-- **Which database:** the seed and `demo:import` write only to `yerevan_dev` and the public demo's `seghan_demo`, and database tests only use `yerevan_test`. On `seghan_demo`, the admin gets `DEMO_ADMIN_PASSWORD`, and the import keeps only freely licensed photos.
-- **Rebuilding:** the local database holds only demo data. If it breaks, rebuild it with `db:reset` and `db:seed`, after asking.
+- **Which database:** the seed, `demo:import` and `demo:photos` write only to `yerevan_dev` and the public demo's `seghan_demo`, and database tests only use `yerevan_test`. On `seghan_demo`, the admin gets `DEMO_ADMIN_PASSWORD`, and the import keeps only freely licensed photos.
+- **Rebuilding:** the local database holds only demo data. If it breaks, rebuild it with `db:reset`, `db:seed` and `demo:photos`, after asking.
 
 ## Testing
 

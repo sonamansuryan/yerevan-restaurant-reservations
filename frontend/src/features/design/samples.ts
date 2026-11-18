@@ -967,6 +967,27 @@ export const dolmamaPage = page(dolmamaListing, {
   osmUrl: "https://www.openstreetmap.org/node/6566646015",
 });
 
+const unsplash = (photo: OwnerPhoto, credit: string, id: string) => ({
+  url: photo.url,
+  isCover: photo.isCover,
+  credit,
+  creditUrl: `https://unsplash.com/photos/${id}`,
+});
+
+// Sample squares standing in for Lori Smokehouse's room, its skewers and its mixed grill.
+const [grillRoom, skewers, mixedGrill] = [samplePhoto(0), samplePhoto(2), samplePhoto(5)];
+
+/** Lori Smokehouse with its demo photos (npm run demo:photos), each credited at Unsplash. */
+export const loriUnsplashPage: RestaurantDetail = {
+  ...loriPage,
+  coverPhotoUrl: grillRoom.url,
+  photos: [
+    unsplash(grillRoom, "amin ramezani", "afOvuzIgxPU"),
+    unsplash(skewers, "Alex Belogub", "pQzdireN2Lc"),
+    unsplash(mixedGrill, "Gang Hao", "o__sIR_14dA"),
+  ],
+};
+
 /** Mayrig's page: no photo, so its cover is its name, on its tone. */
 export const mayrigPage = page(mayrigListing, {
   website: "http://mayrig.am",

@@ -12,6 +12,7 @@ import {
   armenianName,
   dolmamaListing,
   manyCuisines,
+  mayrigListing,
   noDescription,
   sampleRestaurants,
 } from "@/features/design/samples";
@@ -69,6 +70,8 @@ interface FakeOptions {
   saved?: string[];
   /** Restaurants with no table free this evening. */
   full?: string[];
+  /** How many times the home page's list of restaurants fails before it answers. */
+  listFailures?: number;
 }
 
 /**
@@ -81,8 +84,10 @@ function fakeApi({
   restaurants = sampleRestaurants,
   saved = [],
   full = [],
+  listFailures = 0,
 }: FakeOptions = {}): Mock {
   const savedNow = new Set(saved);
+  let failuresLeft = listFailures;
   const fetch = vi.fn((url: string, init?: RequestInit) => {
     const method = init?.method ?? "GET";
     const { pathname, searchParams } = new URL(url, "http://seghan.test");
@@ -108,6 +113,12 @@ function fakeApi({
     if (pathname === "/api/restaurants") {
       const q = searchParams.get("q")?.toLowerCase();
       const district = searchParams.get("district");
+      if (!q && !district && failuresLeft > 0) {
+        failuresLeft -= 1;
+        return Promise.resolve(
+          json({ error: { code: "INTERNAL_ERROR", message: "Something went wrong." } }, 500),
+        );
+      }
       const pageSize = Number(searchParams.get("pageSize") ?? 12);
       const found = restaurants.filter(
         (r) => (!q || r.name.toLowerCase().includes(q)) && (!district || r.district === district),
@@ -202,6 +213,52 @@ test("the search for a table starts today, at 19:30, for two", async () => {
   expect(search.getByRole("button", { name: "Find a table" })).toBeDefined();
 });
 
+test("leaves out a real place listed with no photo, even a featured one, and fills the rows with the rest", async () => {
+  // Featured: Mayrig, with no photo, then Dolmama and Kond House, which have one.
+  fakeApi({ restaurants: [mayrigListing, dolmamaListing, ...sampleRestaurants] });
+  renderAt("/");
+
+  expect(await main().findByRole("link", { name: "Kond House" })).toBeDefined();
+  expect(cardNames()).toEqual([
+    "Dolmama",
+    "Kond House",
+    "Lori Smokehouse",
+    "Nurr",
+    "Sevan & Salt",
+    "Tbilisi Courtyard",
+    "Tsiran Wine Room",
+  ]);
+});
+
+test("if the list fails and the page leaves out every featured restaurant, it says it couldn't load them, and Try again does", async () => {
+  // Featured: three real places with no photo, as in the public demo. The list fails, and so does
+  // its one retry, then answers.
+  const unphotographed = ["Gustav", "PAUL", "Dolmama"].map((name) => ({
+    ...mayrigListing,
+    slug: name.toLowerCase(),
+    name,
+  }));
+  fakeApi({ restaurants: [...unphotographed, ...sampleRestaurants], listFailures: 2 });
+  renderAt("/");
+
+  expect(
+    await main().findByText("We couldn’t load the restaurants.", {}, { timeout: 4000 }),
+  ).toBeDefined();
+  expect(main().queryByText("No restaurants yet")).toBeNull();
+
+  await userEvent.click(main().getByRole("button", { name: "Try again" }));
+
+  expect(await main().findByRole("link", { name: "Kond House" })).toBeDefined();
+  expect(cardNames()).toEqual([
+    "Kond House",
+    "Lori Smokehouse",
+    "Nurr",
+    "Sevan & Salt",
+    "Tbilisi Courtyard",
+    "Tsiran Wine Room",
+  ]);
+}, 10_000);
+
 test("shows the featured restaurants first, then others to fill the rows, each with tonight's first free times", async () => {
   const fetch = fakeApi();
   renderAt("/");
@@ -216,7 +273,7 @@ test("shows the featured restaurants first, then others to fill the rows, each w
     "Tsiran Wine Room",
   ]);
   expect(requests(fetch)).toEqual(
-    expect.arrayContaining(["GET /api/restaurants/featured", "GET /api/restaurants?pageSize=8"]),
+    expect.arrayContaining(["GET /api/restaurants/featured", "GET /api/restaurants?pageSize=16"]),
   );
   // Not lunch, and not the full 18:00: the first three free from 18:00.
   const times = await main().findByRole("list", { name: "Free tonight at Kond House" });
