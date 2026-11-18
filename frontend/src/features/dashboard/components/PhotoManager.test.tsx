@@ -146,6 +146,33 @@ test("an upload that failed says so, in the words it came with", () => {
   expect(screen.getByRole("alert").textContent).toBe("The photo didn’t upload. Please try again.");
 });
 
+test("in the public demo, the photos are only shown, with one line saying why", () => {
+  renderPhotos({ readOnly: true });
+
+  const names = screen.getAllByRole("img").map((image) => image.getAttribute("alt"));
+  expect(names[0]).toBe("Lori Smokehouse, cover photo");
+  expect(screen.getByText("Cover")).toBeDefined();
+  expect(
+    screen.getByText(
+      "The cover comes first, on your page and on Browse. Photos can’t be changed in the demo.",
+    ),
+  ).toBeDefined();
+  expect(screen.queryByText("5 of 10 photos.", { exact: false })).toBeNull();
+  // Nothing to press and no picker: the server refuses every change there (DEMO_READ_ONLY).
+  expect(screen.queryByRole("button", { name: "Add a photo" })).toBeNull();
+  expect(screen.queryAllByRole("button", { name: /^(Make cover|Delete), / })).toHaveLength(0);
+  expect(picker()).toBeNull();
+});
+
+test("in the public demo with no photos, it says what guests see instead", () => {
+  renderPhotos({ photos: [], readOnly: true });
+
+  expect(screen.getByText("Photos can’t be changed in the demo.")).toBeDefined();
+  expect(screen.getByText("No photos yet")).toBeDefined();
+  expect(screen.getByText("Guests see a cover with your restaurant’s name instead.")).toBeDefined();
+  expect(screen.queryByRole("button", { name: "Add a photo" })).toBeNull();
+});
+
 test("with no photos, the empty state's button opens the picker too", async () => {
   renderPhotos({ photos: [] });
   const click = vi.spyOn(picker(), "click");

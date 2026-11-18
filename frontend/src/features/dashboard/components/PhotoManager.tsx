@@ -24,12 +24,20 @@ interface PhotoManagerProps {
   busy?: boolean;
   /** What went wrong last: an upload, a cover or a delete. */
   error?: ApiError | null;
+  /**
+   * The public demo, as the API says (readOnly): the photos are only shown, because the server
+   * refuses every change there. Nothing to press is offered, and one line says why.
+   */
+  readOnly?: boolean;
 }
+
+// The server's own words for DEMO_READ_ONLY, so the page and any refusal say the same thing.
+const READ_ONLY = "Photos can’t be changed in the demo.";
 
 /**
  * The restaurant's photos, the cover first, as guests see them. A photo is added with one button,
  * which opens the device's own picker, and deleted only after a question, because that can't be
- * undone.
+ * undone. In the public demo, they're only shown.
  */
 export function PhotoManager({
   photos,
@@ -40,6 +48,7 @@ export function PhotoManager({
   onDelete,
   busy = false,
   error = null,
+  readOnly = false,
 }: PhotoManagerProps): ReactElement {
   const input = useRef<HTMLInputElement>(null);
   // A file that failed the checks above. It's about the file just chosen, so it's local.
@@ -67,27 +76,51 @@ export function PhotoManager({
     setConfirming(null);
   }
 
+  // With no photo, guests see a menu cover with the restaurant's name, which is all the demo can
+  // offer. Elsewhere the first photo is one press away.
+  const empty = readOnly ? (
+    <EmptyState
+      title="No photos yet"
+      description="Guests see a cover with your restaurant’s name instead."
+    />
+  ) : (
+    <EmptyState
+      title="No photos yet"
+      description="The first photo you add becomes the cover."
+      action={{ label: "Add a photo", onClick: choose }}
+    />
+  );
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
-        <p className="text-ui text-ink-secondary">
-          {photos.length} of {MAX_PHOTOS} photos. The cover comes first, on your page and on Browse.
+      {readOnly ? (
+        // Plain supporting text, like the test-booking line on a demo listing's page.
+        <p className="text-ui text-pretty text-ink-secondary">
+          {photos.length > 0 && "The cover comes first, on your page and on Browse. "}
+          {READ_ONLY}
         </p>
-        <Button loading={uploading} disabled={full || busy} onClick={choose}>
-          Add a photo
-        </Button>
-        {/* The real picker, opened by the button, so its look is ours. */}
-        <input
-          ref={input}
-          type="file"
-          accept={PHOTO_TYPES.join(",")}
-          tabIndex={-1}
-          aria-hidden="true"
-          className="hidden"
-          onChange={handleFile}
-        />
-      </div>
-      {full && (
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+          <p className="text-ui text-ink-secondary">
+            {photos.length} of {MAX_PHOTOS} photos. The cover comes first, on your page and on
+            Browse.
+          </p>
+          <Button loading={uploading} disabled={full || busy} onClick={choose}>
+            Add a photo
+          </Button>
+          {/* The real picker, opened by the button, so its look is ours. */}
+          <input
+            ref={input}
+            type="file"
+            accept={PHOTO_TYPES.join(",")}
+            tabIndex={-1}
+            aria-hidden="true"
+            className="hidden"
+            onChange={handleFile}
+          />
+        </div>
+      )}
+      {full && !readOnly && (
         <p className="text-meta text-ink-muted">
           A restaurant can have up to {MAX_PHOTOS} photos. Delete one to add another.
         </p>
@@ -95,11 +128,7 @@ export function PhotoManager({
       {(problem ?? error) && <FormNotice tone="error">{problem ?? error?.message}</FormNotice>}
 
       {photos.length === 0 && !uploading ? (
-        <EmptyState
-          title="No photos yet"
-          description="The first photo you add becomes the cover."
-          action={{ label: "Add a photo", onClick: choose }}
-        />
+        empty
       ) : (
         <ul className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-4">
           {photos.map((photo, position) => {
@@ -112,30 +141,39 @@ export function PhotoManager({
                   loading="lazy"
                   className="aspect-square w-full rounded-card bg-fill-slot object-cover"
                 />
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  {photo.isCover ? (
-                    <Badge tone="info">Cover</Badge>
-                  ) : (
+                {readOnly ? (
+                  // Only the cover is marked: there's nothing else to do with a photo here.
+                  photo.isCover && (
+                    <Badge tone="info" className="self-start">
+                      Cover
+                    </Badge>
+                  )
+                ) : (
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    {photo.isCover ? (
+                      <Badge tone="info">Cover</Badge>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="small"
+                        disabled={waiting}
+                        aria-label={`Make cover, ${name}`}
+                        onClick={() => onMakeCover(photo.id)}
+                      >
+                        Make cover
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="small"
                       disabled={waiting}
-                      aria-label={`Make cover, ${name}`}
-                      onClick={() => onMakeCover(photo.id)}
+                      aria-label={`Delete, ${name}`}
+                      onClick={() => setConfirming(photo)}
                     >
-                      Make cover
+                      Delete
                     </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="small"
-                    disabled={waiting}
-                    aria-label={`Delete, ${name}`}
-                    onClick={() => setConfirming(photo)}
-                  >
-                    Delete
-                  </Button>
-                </div>
+                  </div>
+                )}
               </li>
             );
           })}

@@ -30,6 +30,7 @@ const saved = {
       sortOrder: 0,
     },
   ],
+  readOnly: false,
 };
 
 /** Our API signs and saves. Cloudinary answers as told: a reply, or no connection at all. */
@@ -59,7 +60,8 @@ test("the photo goes straight to Cloudinary with the signed fields, then its ans
     json({ public_id: PUBLIC_ID, version: 1731240001, signature: "a".repeat(40), bytes: 7 }),
   );
 
-  await expect(uploadPhoto("r-1", file)).resolves.toEqual(saved.photos);
+  // The whole answer, as the photos page keeps it: the photos and whether they can change.
+  await expect(uploadPhoto("r-1", file)).resolves.toEqual(saved);
 
   type Call = [string, RequestInit];
   expect(fetch).toHaveBeenCalledTimes(3);

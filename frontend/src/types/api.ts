@@ -305,6 +305,11 @@ export interface OwnerPhoto {
  */
 export interface OwnerPhotosResponse {
   photos: OwnerPhoto[];
+  /**
+   * True only in the public demo (PUBLIC_DEMO on the server): the photos can be seen but not
+   * changed, so the photo manager offers no changes.
+   */
+  readOnly: boolean;
 }
 
 /**

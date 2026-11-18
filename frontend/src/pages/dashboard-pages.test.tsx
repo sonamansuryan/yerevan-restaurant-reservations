@@ -58,6 +58,8 @@ interface FakeOptions {
   blocking?: Response;
   /** What a change to a booking answers, if not a success. */
   bookingChange?: Response;
+  /** Whether Lori's photos answer that they can't be changed, as in the public demo. */
+  photosReadOnly?: boolean;
 }
 
 /**
@@ -73,6 +75,7 @@ function fakeApi({
   tableSwitch,
   blocking,
   bookingChange,
+  photosReadOnly = false,
 }: FakeOptions = {}): Mock {
   let created: OwnerRestaurant | null = null;
   let tablesNow = [...tables];
@@ -129,7 +132,9 @@ function fakeApi({
       }));
       return Promise.resolve(json({ openingHours: week }));
     }
-    if (url === `${LORI}/photos`) return Promise.resolve(json({ photos: samplePhotos }));
+    if (url === `${LORI}/photos`) {
+      return Promise.resolve(json({ photos: samplePhotos, readOnly: photosReadOnly }));
+    }
     if (url === `${LORI}/tables` && method === "GET") return Promise.resolve(list(tablesNow));
     if (url === `${LORI}/tables` && method === "POST") {
       const table = { id: "table-new", isActive: true, ...(body as object) } as OwnerTable;
@@ -553,6 +558,18 @@ describe("the restaurant's parts", () => {
 
     expect(await screen.findByRole("img", { name: "Lori Smokehouse, cover photo" })).toBeDefined();
     expect(screen.getByText("5 of 10 photos.", { exact: false })).toBeDefined();
+  });
+
+  test("Photos in the public demo shows them, with nothing to change, as the API says", async () => {
+    fakeApi({ photosReadOnly: true });
+    renderAt(`/dashboard/${ownedLori.id}/photos`);
+
+    expect(await screen.findByRole("img", { name: "Lori Smokehouse, cover photo" })).toBeDefined();
+    expect(
+      screen.getByText("Photos can’t be changed in the demo.", { exact: false }),
+    ).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Add a photo" })).toBeNull();
+    expect(screen.queryAllByRole("button", { name: /^(Make cover|Delete), / })).toHaveLength(0);
   });
 });
 

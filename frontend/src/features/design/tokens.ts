@@ -377,7 +377,15 @@ export const screenStates = {
     "Sending",
     "Saved",
   ],
-  photos: ["A cover and photos (live)", "No photos yet", "Uploading", "The limit", "Upload failed"],
+  photos: [
+    "A cover and photos (live)",
+    "No photos yet",
+    "Uploading",
+    "The limit",
+    "Upload failed",
+    "In the demo",
+    "In the demo, no photos",
+  ],
   tables: [
     "Every area (live)",
     "No tables yet",

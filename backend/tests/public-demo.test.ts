@@ -123,13 +123,20 @@ describe("photos in the public demo", () => {
     expect(reply.body.error.code).toBe("DEMO_READ_ONLY");
   });
 
-  test("the photos can still be read", async () => {
-    vi.mocked(getPhotos).mockResolvedValue([]);
+  test("the photos can still be read, and the answer says they're read-only", async () => {
+    const cover = {
+      id: PHOTO,
+      url: "https://res.cloudinary.com/test-cloud/image/upload/v1731240000/seghan/cover",
+      isCover: true,
+      sortOrder: 0,
+    };
+    vi.mocked(getPhotos).mockResolvedValue([cover]);
 
     const reply = await call("get", photos(ANIS), undefined, ani);
 
     expect(reply.status).toBe(200);
-    expect(reply.body).toEqual({ photos: [] });
+    // So the photo manager offers no changes (10.3), instead of offering ones that answer 403.
+    expect(reply.body).toEqual({ photos: [cover], readOnly: true });
   });
 
   test("the checks before it come first: someone else's restaurant is a 404, signed out a 401", async () => {
