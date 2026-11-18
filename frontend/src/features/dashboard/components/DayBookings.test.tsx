@@ -324,9 +324,20 @@ describe("moving between days", () => {
 
     expect(href("Previous day")).toBe("/?date=2026-11-29");
     expect(href("Next day")).toBe("/?date=2026-12-01");
-    expect(href("Today")).toBe("/?date=2026-11-13");
-    // Another day is shown, so Today isn't marked.
-    expect(screen.getByRole("link", { name: "Today" }).getAttribute("aria-current")).toBeNull();
+    // Another day is shown: the middle names it, isn't marked, and still leads back to today.
+    const middle = screen.getByRole("link", { name: "Mon 30 Nov, back to today" });
+    expect(middle.textContent).toBe("Mon 30 Nov");
+    expect(middle.getAttribute("href")).toBe("/?date=2026-11-13");
+    expect(middle.getAttribute("aria-current")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Today" })).toBeNull();
+  });
+
+  test("the day after today is named Tomorrow in the middle", () => {
+    renderNav("2026-11-14");
+
+    expect(screen.getByRole("link", { name: "Tomorrow, 14 Nov, back to today" }).textContent).toBe(
+      "Tomorrow, 14 Nov",
+    );
   });
 
   test("Show opens the date chosen", async () => {
