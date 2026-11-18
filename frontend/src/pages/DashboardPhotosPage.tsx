@@ -9,7 +9,7 @@ import { PhotoManager } from "@/features/dashboard/components/PhotoManager";
 import { useDashboardRestaurant } from "@/features/dashboard/hooks/useDashboardRestaurant";
 import { usePhotoActions, usePhotos } from "@/features/dashboard/hooks/usePhotos";
 
-/** A restaurant's photos: add, choose the cover, delete. */
+/** A restaurant's photos: add, choose the cover, delete. In the public demo, they're only shown. */
 export function DashboardPhotosPage(): ReactElement {
   const restaurant = useDashboardRestaurant();
   const photos = usePhotos(restaurant.id);
@@ -20,7 +20,8 @@ export function DashboardPhotosPage(): ReactElement {
   if (photos.data) {
     body = (
       <PhotoManager
-        photos={photos.data}
+        photos={photos.data.photos}
+        readOnly={photos.data.readOnly}
         restaurantName={restaurant.name}
         onUpload={actions.upload}
         uploading={actions.uploading}

@@ -3,16 +3,18 @@ import type { QueryClient, UseMutationResult, UseQueryResult } from "@tanstack/r
 
 import { ownerKeys, ownerRestaurantPath } from "@/features/dashboard/queryKeys";
 import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
-import type { OwnerPhoto, OwnerPhotosResponse, PhotoUploadResponse } from "@/types/api";
+import type { OwnerPhotosResponse, PhotoUploadResponse } from "@/types/api";
 
 export const UPLOAD_FAILED = "The photo didn’t upload. Please try again.";
 
-/** A restaurant's photos, the cover first. */
-export function usePhotos(id: string): UseQueryResult<OwnerPhoto[], ApiError> {
-  return useQuery<OwnerPhoto[], ApiError>({
+/**
+ * A restaurant's photos, the cover first, and whether they can be changed: the API's whole answer,
+ * kept as it came. In the public demo, readOnly says they can't.
+ */
+export function usePhotos(id: string): UseQueryResult<OwnerPhotosResponse, ApiError> {
+  return useQuery<OwnerPhotosResponse, ApiError>({
     queryKey: ownerKeys.photos(id),
-    queryFn: async () =>
-      (await apiGet<OwnerPhotosResponse>(`${ownerRestaurantPath(id)}/photos`)).photos,
+    queryFn: () => apiGet<OwnerPhotosResponse>(`${ownerRestaurantPath(id)}/photos`),
   });
 }
 
@@ -37,7 +39,7 @@ function isCloudinaryReply(
  * step is the one request that doesn't go through lib/api.ts, because it isn't to our API: the
  * rules allow it for Cloudinary uploads our server has signed.
  */
-export async function uploadPhoto(id: string, file: File): Promise<OwnerPhoto[]> {
+export async function uploadPhoto(id: string, file: File): Promise<OwnerPhotosResponse> {
   const photos = `${ownerRestaurantPath(id)}/photos`;
   const { upload } = await apiPost<PhotoUploadResponse>(`${photos}/signature`);
 
@@ -54,38 +56,37 @@ export async function uploadPhoto(id: string, file: File): Promise<OwnerPhoto[]>
   if (!isCloudinaryReply(reply)) throw new ApiError(0, "UPLOAD_FAILED", UPLOAD_FAILED);
 
   const { public_id: publicId, version, signature } = reply;
-  return (await apiPost<OwnerPhotosResponse>(photos, { publicId, version, signature })).photos;
+  return apiPost<OwnerPhotosResponse>(photos, { publicId, version, signature });
 }
 
 /**
- * Every change answers with the photos as they now are, so they're shown at once. The pages guests
- * see show the cover too, so they're fetched again the next time they're needed.
+ * Every change answers with the photos as they now are, in the same shape as reading them, so
+ * they're shown at once. The pages guests see show the cover too, so they're fetched again the
+ * next time they're needed.
  */
-function remember(queryClient: QueryClient, id: string, photos: OwnerPhoto[]): void {
-  queryClient.setQueryData(ownerKeys.photos(id), photos);
+function remember(queryClient: QueryClient, id: string, answer: OwnerPhotosResponse): void {
+  queryClient.setQueryData(ownerKeys.photos(id), answer);
   void queryClient.invalidateQueries({ queryKey: ["restaurants"] });
   void queryClient.invalidateQueries({ queryKey: ["restaurant"] });
 }
 
-export function useUploadPhoto(id: string): UseMutationResult<OwnerPhoto[], ApiError, File> {
+export function useUploadPhoto(id: string): UseMutationResult<OwnerPhotosResponse, ApiError, File> {
   const queryClient = useQueryClient();
-  return useMutation<OwnerPhoto[], ApiError, File>({
+  return useMutation<OwnerPhotosResponse, ApiError, File>({
     mutationFn: (file) => uploadPhoto(id, file),
-    onSuccess: (photos) => remember(queryClient, id, photos),
+    onSuccess: (answer) => remember(queryClient, id, answer),
   });
 }
 
-export function useMakeCover(id: string): UseMutationResult<OwnerPhoto[], ApiError, string> {
+export function useMakeCover(id: string): UseMutationResult<OwnerPhotosResponse, ApiError, string> {
   const queryClient = useQueryClient();
-  return useMutation<OwnerPhoto[], ApiError, string>({
-    mutationFn: async (photoId) =>
-      (
-        await apiPatch<OwnerPhotosResponse>(
-          `${ownerRestaurantPath(id)}/photos/${encodeURIComponent(photoId)}`,
-          { isCover: true },
-        )
-      ).photos,
-    onSuccess: (photos) => remember(queryClient, id, photos),
+  return useMutation<OwnerPhotosResponse, ApiError, string>({
+    mutationFn: (photoId) =>
+      apiPatch<OwnerPhotosResponse>(
+        `${ownerRestaurantPath(id)}/photos/${encodeURIComponent(photoId)}`,
+        { isCover: true },
+      ),
+    onSuccess: (answer) => remember(queryClient, id, answer),
   });
 }
 
@@ -130,15 +131,15 @@ export function usePhotoActions(id: string): PhotoActions {
   };
 }
 
-export function useDeletePhoto(id: string): UseMutationResult<OwnerPhoto[], ApiError, string> {
+export function useDeletePhoto(
+  id: string,
+): UseMutationResult<OwnerPhotosResponse, ApiError, string> {
   const queryClient = useQueryClient();
-  return useMutation<OwnerPhoto[], ApiError, string>({
-    mutationFn: async (photoId) =>
-      (
-        await apiDelete<OwnerPhotosResponse>(
-          `${ownerRestaurantPath(id)}/photos/${encodeURIComponent(photoId)}`,
-        )
-      ).photos,
-    onSuccess: (photos) => remember(queryClient, id, photos),
+  return useMutation<OwnerPhotosResponse, ApiError, string>({
+    mutationFn: (photoId) =>
+      apiDelete<OwnerPhotosResponse>(
+        `${ownerRestaurantPath(id)}/photos/${encodeURIComponent(photoId)}`,
+      ),
+    onSuccess: (answer) => remember(queryClient, id, answer),
   });
 }

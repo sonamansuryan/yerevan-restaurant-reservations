@@ -86,7 +86,8 @@ describe("GET /photos", () => {
     const reply = await call("get", photos(ANIS), undefined, ani);
 
     expect(reply.status).toBe(200);
-    expect(reply.body).toEqual({ photos: saved });
+    // Not read-only: only the public demo's are (public-demo.test.ts).
+    expect(reply.body).toEqual({ photos: saved, readOnly: false });
     expect(getPhotos).toHaveBeenCalledWith(ANIS);
   });
 });
@@ -134,7 +135,7 @@ describe("POST /photos", () => {
     );
 
     expect(reply.status).toBe(201);
-    expect(reply.body).toEqual({ photos: saved });
+    expect(reply.body).toEqual({ photos: saved, readOnly: false });
     expect(savePhoto).toHaveBeenCalledWith(ani.id, ANIS, upload);
   });
 
@@ -161,7 +162,7 @@ describe("PATCH /photos/:photoId", () => {
     const reply = await call("patch", `${photos(ANIS)}/${PHOTO}`, { isCover: true }, ani);
 
     expect(reply.status).toBe(200);
-    expect(reply.body).toEqual({ photos: saved });
+    expect(reply.body).toEqual({ photos: saved, readOnly: false });
     expect(makeCover).toHaveBeenCalledWith(ani.id, ANIS, PHOTO);
   });
 
@@ -184,7 +185,7 @@ describe("DELETE /photos/:photoId", () => {
     const reply = await call("delete", `${photos(ANIS)}/${PHOTO}`, undefined, ani);
 
     expect(reply.status).toBe(200);
-    expect(reply.body).toEqual({ photos: [] });
+    expect(reply.body).toEqual({ photos: [], readOnly: false });
     expect(deletePhoto).toHaveBeenCalledWith(ani.id, ANIS, PHOTO);
   });
 });

@@ -370,6 +370,9 @@ const photos: Record<StateOf<"photos">, ReactElement> = {
   Uploading: <PhotoManager photos={samplePhotos} uploading {...photoActions} />,
   "The limit": <PhotoManager photos={tenPhotos} {...photoActions} />,
   "Upload failed": <PhotoManager photos={samplePhotos} error={uploadFailed} {...photoActions} />,
+  // The public demo (10.3): the API answers readOnly, so the photos are only shown.
+  "In the demo": <PhotoManager photos={samplePhotos} readOnly {...photoActions} />,
+  "In the demo, no photos": <PhotoManager photos={[]} readOnly {...photoActions} />,
 };
 
 /** The owner's dashboard, /dashboard and each restaurant's parts, in their states. */

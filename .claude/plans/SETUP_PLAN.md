@@ -25,8 +25,8 @@ The agreed plan for setting up Claude Code, its progress, and what comes after i
 
 ## Decisions
 
-- **Deployment** is a public demo (Step 10): no real reservations, read-only photos, no emails, a private admin password, and the `seghan_demo` database. Its secrets live in a gitignored `backend/.env.demo` that only you use.
-- **Providers:** Neon (PostgreSQL 17 in Frankfurt, through its direct address), Render and Vercel. The rehearsal's local `seghan_demo` stays, for trying 10.2. Render, in Frankfurt too, deploys by hand from the public repository and holds no Cloudinary keys.
+- **Deployment** is a public demo (Step 10): no real reservations, read-only photos, no emails, a private admin password, and the `seghan_demo` database. Its secrets live in a gitignored `backend/.env.demo` that only you use. The photo manager learns it's the demo from the API (`readOnly`), so there's one switch.
+- **Providers:** Neon (PostgreSQL 17 in Frankfurt, through its direct address), Render and Vercel. The rehearsal's local `seghan_demo` stays, for trying 10.2. Render, in Frankfurt too, deploys by hand from the public repository and holds no Cloudinary keys. Vercel deploys by hand too, with its command-line tool run from a fresh copy of `main`, so neither gets access to the GitHub account.
 - **Each side's rules and skills:**
   - The rules go in `backend/CLAUDE.md` and `frontend/CLAUDE.md`.
   - The skills go in `backend/.claude/skills/` and `frontend/.claude/skills/`.
