@@ -21,7 +21,7 @@ The agreed plan for setting up Claude Code, its progress, and what comes after i
 - [x] **3f. Skill `browser-check`** (root): checks on :4001 and :5174 that never touch your dev servers. Its own commit (commit `9a8bca0`).
 - [x] **4. Memory cleanup:** notes keep only preferences, and their status lines point here (no commit: memory lives outside the repo).
 - [x] **5. Deployment:** `PROJECT_PLAN.md` Step 10, tasks 10.1 to 10.4, one at a time (PRs #13 to #20, and 10.4's own). The demo is live at https://seghan-gamma.vercel.app.
-- [ ] **6. Wrap-up:** the README gets the live address and the demo accounts, and the memory notes are updated.
+- [x] **6. Wrap-up:** the README gets the live address and the demo accounts, and the memory notes are updated.
 
 ## Decisions
 
