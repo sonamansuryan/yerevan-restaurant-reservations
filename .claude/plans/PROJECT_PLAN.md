@@ -323,7 +323,7 @@ Steps 1–9 are done, and Step 10 is next. Where it helps, a task's **Check** sa
   - **Loading order:** `db:deploy`, `db:seed`, then `demo:import`. The seed refuses once the listings exist.
 
   *Check:* the tables, the constraint and the demo restaurants exist, with only freely licensed photos.
-- [ ] **10.2 Backend** on Render, in Frankfurt, with `PUBLIC_DEMO` turned on. Its secrets live only in the provider's settings: the database address, the sign-in secret and, optionally, Geoapify's key for the maps. It holds no Cloudinary keys, because it never changes a photo.
+- [x] **10.2 Backend** on Render, in Frankfurt, with `PUBLIC_DEMO` turned on. Its secrets live only in the provider's settings: the database address, the sign-in secret and, optionally, Geoapify's key for the maps. It holds no Cloudinary keys, because it never changes a photo.
   - **Photos are read-only:** uploading, saving, choosing a cover and deleting answer `403 DEMO_READ_ONLY`, so no visitor can put files in our Cloudinary account.
   - **Email sending is off:** the backend never calls Resend, so it needs no real Resend key.
   - **`trust proxy`** lets the sign-in limit count each visitor separately. `TRUST_PROXY_HOPS` says how many proxies stand in front: 1 on Render, 2 once Vercel forwards `/api` (10.3).
