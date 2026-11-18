@@ -21,8 +21,11 @@ export function useBooking(slug: string): BookingWidgetProps {
   const booking = useBookTable(slug);
   const me = useMe();
 
-  // Replacing the entry, not adding one, keeps the Back button for leaving the page.
-  const keep = (next: BookingChoices): void => setParams(choicesParams(next), { replace: true });
+  // Replacing the entry, not adding one, keeps the Back button for leaving the page. Each choice
+  // changes the address, and ScrollRestoration (AppLayout) would scroll to the top for it, away
+  // from the widget, so the page stays where it is.
+  const keep = (next: BookingChoices): void =>
+    setParams(choicesParams(next), { replace: true, preventScrollReset: true });
 
   // A retry clears the error while it runs. Staying on the error keeps Try again in its place.
   const retrying = availability.isFetching && availability.errorUpdateCount > 0;
