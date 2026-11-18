@@ -6,6 +6,7 @@ import { env } from "../src/config/env.ts";
 import type { Prisma } from "../src/generated/prisma/client.ts";
 import { hashPassword, verifyPassword } from "../src/lib/password.ts";
 import { prisma } from "../src/lib/prisma.ts";
+import { LOCAL_PHOTO_PREFIX } from "../src/modules/photos/local-photos.ts";
 import {
   demoPasswords,
   isSeedDatabase,
@@ -146,10 +147,13 @@ async function findProblems(database: string, passwords: DemoPasswords): Promise
     }
   }
 
-  // The seed creates none of these, so any row at all was made by someone else.
+  // The seed creates none of these, so any row at all was made by someone else. The one exception is
+  // the fictional restaurants' local demo photos, which demo:photos adds after the seed.
   const otherRows = {
     Review: await prisma.review.count(),
-    RestaurantPhoto: await prisma.restaurantPhoto.count(),
+    RestaurantPhoto: await prisma.restaurantPhoto.count({
+      where: { NOT: { publicId: { startsWith: LOCAL_PHOTO_PREFIX } } },
+    }),
     BlockedPeriod: await prisma.blockedPeriod.count(),
     RefreshToken: await prisma.refreshToken.count(),
     Favorite: await prisma.favorite.count(),

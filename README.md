@@ -130,13 +130,16 @@ npm run db:migrate -w backend
 # 5. Load the demo data into yerevan_dev: users, 7 restaurants with tables and hours, and bookings.
 npm run db:seed -w backend
 
-# 6. Run the API (http://localhost:4000) and the app (http://localhost:5173) together.
+# 6. Give the six published restaurants their photos: free Unsplash photos in frontend/public.
+npm run demo:photos -w backend
+
+# 7. Run the API (http://localhost:4000) and the app (http://localhost:5173) together.
 npm run dev
 ```
 
 Open **http://localhost:5173**. Vite forwards `/api` to the API, so the browser only ever talks to one address.
 
-Two more database commands: `npm run db:studio -w backend` lets you browse the data, and `npm run db:reset -w backend` rebuilds the local database from scratch, erasing it, after which you run `db:seed` again.
+Two more database commands: `npm run db:studio -w backend` lets you browse the data, and `npm run db:reset -w backend` rebuilds the local database from scratch, erasing it, after which you run `db:seed` and `demo:photos` again.
 
 ### Try the demo
 
@@ -154,7 +157,7 @@ A good path: book a table as Lilit, sign in as Ani to confirm it, then mark Lili
 ### Optional services
 
 - **Google Sign-In:** a Google Cloud web client ID in both `.env` files, with `http://localhost:5173` as an authorized origin.
-- **Photos (Cloudinary):** real Cloudinary keys let owners upload photos. With the placeholders, restaurants show a colored cover instead.
+- **Photos (Cloudinary):** real Cloudinary keys let owners upload photos. The demo restaurants' own photos need no keys: they're free photos from Unsplash, kept with the app and credited on each restaurant's page. A restaurant with no photo shows a colored cover instead.
 - **Booking emails (Resend):** a real key emails guests when a booking is requested, confirmed or cancelled. Until a domain is verified, Resend's test sender only delivers to your own Resend address. With the placeholder, each email fails quietly and is logged, and the booking still goes through.
 - **Maps (Geoapify):** a free Geoapify key draws an OpenStreetMap map on each restaurant's page. Left empty, the page shows the address and a Google Maps link.
 - **Real Yerevan restaurants (demo listings):**

@@ -47,25 +47,32 @@ const NewTabNote = (): ReactElement => <span className="sr-only">, opens in a ne
 const inlineLink =
   "underline decoration-line-control underline-offset-2 transition-[text-decoration-color] duration-button hover:decoration-ink";
 
-const COMMONS = "https://commons.wikimedia.org/";
+/**
+ * Photo libraries whose photos are credited together: each photo's author, then the library once.
+ * Wikimedia Commons' credits also name each photo's license; Unsplash's one license needs no
+ * naming.
+ */
+const LIBRARIES = [
+  { prefix: "https://commons.wikimedia.org/", name: "Wikimedia Commons" },
+  { prefix: "https://unsplash.com/", name: "Unsplash" },
+];
 
 type CreditedPhoto = RestaurantDetail["photos"][number] & { credit: string; creditUrl: string };
 
 /**
- * Where a demo listing's photos come from, each linking to its source: what their licenses ask in
- * return for using them. Photos from Wikimedia Commons are listed together, each with its author
- * and license; a restaurant's own are credited to its site once, however many there are. They're
- * listed in the order their first photo appears.
+ * Where a restaurant's photos come from, each linking to its source: what their licenses ask in
+ * return for using them, or, for Unsplash, a courtesy. Photos from one library are listed together,
+ * each with its author (LIBRARIES); a restaurant's own are credited to its site once, however many
+ * there are. They're listed in the order their first photo appears.
  */
 function PhotoCredits({ credited }: { credited: CreditedPhoto[] }): ReactElement {
-  const groups: { key: string; photos: typeof credited }[] = [];
+  const groups: { key: string; library?: string; photos: typeof credited }[] = [];
   for (const photo of credited) {
-    const key = photo.creditUrl.startsWith(COMMONS)
-      ? COMMONS
-      : `${photo.credit} ${photo.creditUrl}`;
+    const library = LIBRARIES.find(({ prefix }) => photo.creditUrl.startsWith(prefix));
+    const key = library ? library.prefix : `${photo.credit} ${photo.creditUrl}`;
     const group = groups.find((one) => one.key === key);
     if (group) group.photos.push(photo);
-    else groups.push({ key, photos: [photo] });
+    else groups.push({ key, library: library?.name, photos: [photo] });
   }
   const link = (photo: (typeof credited)[number]): ReactElement => (
     <a href={photo.creditUrl} {...newTab} className={inlineLink}>
@@ -76,10 +83,10 @@ function PhotoCredits({ credited }: { credited: CreditedPhoto[] }): ReactElement
   return (
     <p>
       {credited.length === 1 ? "Photo" : "Photos"}:{" "}
-      {groups.map(({ key, photos: group }, index) => (
+      {groups.map(({ key, library, photos: group }, index) => (
         <span key={key}>
           {index > 0 && "; "}
-          {key === COMMONS ? (
+          {library ? (
             <>
               {group.map((photo, at) => (
                 <span key={photo.url}>
@@ -87,7 +94,7 @@ function PhotoCredits({ credited }: { credited: CreditedPhoto[] }): ReactElement
                   {link(photo)}
                 </span>
               ))}
-              , via Wikimedia Commons
+              , via {library}
             </>
           ) : (
             group[0] && link(group[0])

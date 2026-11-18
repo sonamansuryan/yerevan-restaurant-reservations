@@ -8,6 +8,7 @@ import {
   gustavPage,
   kamanchaPage,
   loriPage,
+  loriUnsplashPage,
   mayrigPage,
   reviewedPage,
   sampleReviews,
@@ -100,6 +101,10 @@ const states: Record<StateOf<"restaurantPage">, ReactElement> = {
   // Its restaurant group's site credited once for its four photos, then Commons for the fifth.
   "A demo listing, its photos from its own site": (
     <RestaurantDetails restaurant={sherepPage} today={FRIDAY} headingLevel={4} />
+  ),
+  // A fictional restaurant's demo photos: each photographer credited, then Unsplash once.
+  "Its photos from Unsplash, credited": (
+    <RestaurantDetails restaurant={loriUnsplashPage} today={FRIDAY} headingLevel={4} />
   ),
   // Details from public listings alone, so no credit: only OpenStreetMap's license asks for one.
   "A demo listing not in OpenStreetMap": (

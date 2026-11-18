@@ -320,7 +320,8 @@ Steps 1–9 are done, and Step 10 is next. Where it helps, a task's **Check** sa
   - **Free photos only:** for `seghan_demo`, the import keeps only freely licensed photos (Commons). A listing whose photos come from its restaurant's own site shows a color cover instead (9.7).
   - **Demo accounts:** guests and owners share one public demo password, which the README gives. The admin account gets its own private password (`DEMO_ADMIN_PASSWORD`), because the admin area lists every user.
   - **Production secrets:** you run the production commands yourself, with the database address and the passwords in a gitignored `backend/.env.demo` that Claude never reads.
-  - **Loading order:** `db:deploy`, `db:seed`, then `demo:import`. The seed refuses once the listings exist.
+  - **Loading order:** `db:deploy`, `db:seed`, `demo:import`, then `demo:photos`. The seed refuses once the listings exist.
+  - **Demo photos:** the six published fictional restaurants show free Unsplash photos, each its room first and then its food, kept in `frontend/public/demo-photos` rather than at Cloudinary, and credited on its page (`demo:photos`). The real listings with no free photo keep their colored covers, and the home page leaves them out.
 
   *Check:* the tables, the constraint and the demo restaurants exist, with only freely licensed photos.
 - [x] **10.2 Backend** on Render, in Frankfurt, with `PUBLIC_DEMO` turned on. Its secrets live only in the provider's settings: the database address, the sign-in secret and, optionally, Geoapify's key for the maps. It holds no Cloudinary keys, because it never changes a photo.

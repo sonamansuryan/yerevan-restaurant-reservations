@@ -337,6 +337,7 @@ export const screenStates = {
     "A demo listing with no photo",
     "A demo listing with details missing",
     "A demo listing, its photos from its own site",
+    "Its photos from Unsplash, credited",
     "A demo listing not in OpenStreetMap",
     "A cover shown whole",
     "Loading",

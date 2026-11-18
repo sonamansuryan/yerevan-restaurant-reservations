@@ -56,15 +56,41 @@ export const HOME_CUISINES: Cuisine[] = [
 export const HOME_COUNT = 8;
 
 /**
- * The home page's restaurants: the ones Seghan features, in their order, then others from the list
- * that aren't among them, up to HOME_COUNT.
+ * How many restaurants the home page asks the list for: twice what it shows, so the ones it leaves
+ * out (shownOnHome) still leave enough to fill both rows.
  */
-export function homeRestaurants<Restaurant extends { slug: string }>(
+export const HOME_LIST_SIZE = HOME_COUNT * 2;
+
+/** What the home page needs to know about a restaurant to choose it. */
+interface HomeCandidate {
+  slug: string;
+  isDemoListing: boolean;
+  coverPhotoUrl: string | null;
+}
+
+/**
+ * Whether the home page shows a restaurant: every one but a real place listed for the demo (9.7)
+ * with no photo, whose card would show only its name on a colored cover. Browse and search still
+ * list them. In the public demo, those are Dolmama, Gustav, Lavash and PAUL: their only photos came
+ * from their own sites, which it leaves out (10.1).
+ */
+export function shownOnHome({ isDemoListing, coverPhotoUrl }: HomeCandidate): boolean {
+  return !(isDemoListing && coverPhotoUrl === null);
+}
+
+/**
+ * The home page's restaurants: the ones Seghan features, in their order, then others from the list
+ * that aren't among them, up to HOME_COUNT, leaving out those it doesn't show (shownOnHome).
+ */
+export function homeRestaurants<Restaurant extends HomeCandidate>(
   featured: readonly Restaurant[],
   others: readonly Restaurant[],
 ): Restaurant[] {
-  const more = others.filter((one) => !featured.some(({ slug }) => slug === one.slug));
-  return [...featured, ...more].slice(0, HOME_COUNT);
+  const chosen = featured.filter(shownOnHome);
+  const more = others.filter(
+    (one) => shownOnHome(one) && !featured.some(({ slug }) => slug === one.slug),
+  );
+  return [...chosen, ...more].slice(0, HOME_COUNT);
 }
 
 /** "1 restaurant", "13 restaurants". */
