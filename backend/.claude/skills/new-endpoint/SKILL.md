@@ -8,7 +8,7 @@ description: Adds or changes an endpoint in Seghan's Express API, in order - Zod
 
 ## First
 
-Agree the endpoint's contract: its method and address, who may call it, its input, its reply and its errors. Then wait for approval. The rules are in `backend/CLAUDE.md` under "Code", "Security" and "Testing"; this skill is the order of work.
+Agree the endpoint's contract: its method and address, who may call it, its input, its reply and its errors. Then wait for approval. The rules are in `.claude/rules/backend.md` under "Code", "Security" and "Testing"; this skill is the order of work.
 
 ## Steps
 

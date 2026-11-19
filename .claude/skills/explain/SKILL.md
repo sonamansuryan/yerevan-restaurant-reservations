@@ -15,7 +15,7 @@ If no part is named, ask which one. The final review asks most about how availab
 2. **The path through the code,** in order, naming each file:
    - frontend: page → hook → `lib/api.ts` → components, with their states in `/design`
    - backend: route → controller → service → database, with any lock or constraint involved
-3. **The rules** that apply, and where they're written: `PROJECT_PLAN.md` §5, `backend/CLAUDE.md` or `frontend/CLAUDE.md`.
+3. **The rules** that apply, and where they're written: `PROJECT_PLAN.md` §5, `.claude/rules/backend.md` or `.claude/rules/frontend.md`.
 4. **The proof:** the tests that show it works, such as `backend/tests/db/race.test.ts` for double booking.
 5. **Three questions** a reviewer might ask, each with a short answer.
 
