@@ -8,7 +8,7 @@ description: Adds or changes a screen in Seghan's React frontend, in order - com
 
 ## First
 
-Agree the screen's layout and its states, which can be a quick browser preview. A significant UI/UX change needs approval before it's built. The rules are in `frontend/CLAUDE.md`; this skill is the order of work.
+Agree the screen's layout and its states, which can be a quick browser preview. A significant UI/UX change needs approval before it's built. The rules are in `.claude/rules/frontend.md`; this skill is the order of work.
 
 ## Steps
 

@@ -2,7 +2,7 @@
 
 How we work on Seghan. The Team Lead's requirements are in `.claude/plans/ASSIGNMENT.md`, what we build is in `.claude/plans/PROJECT_PLAN.md`, and how we work is here.
 
-Each side's own rules are in `backend/CLAUDE.md` and `frontend/CLAUDE.md`, which load when Claude reads or edits a file on that side. The backend's rules on double booking are critical.
+Each side's own rules are in `.claude/rules/backend.md` and `.claude/rules/frontend.md`, which load when Claude reads or edits a file on that side. The backend's rules on double booking are critical.
 
 ## Working together
 
@@ -14,7 +14,7 @@ Each side's own rules are in `backend/CLAUDE.md` and `frontend/CLAUDE.md`, which
 - **Ask first** before any of these:
   - adding a dependency that isn't listed below
   - changing the data model beyond the plan
-  - a significant UI/UX change (see `frontend/CLAUDE.md`)
+  - a significant UI/UX change (see `.claude/rules/frontend.md`)
   - anything destructive (`db:reset`, deleting migrations, force-pushing)
   - every commit and push
 - **Maintenance,** such as repository fixes, tooling and document updates, is agreed one change at a time too.
@@ -33,7 +33,7 @@ Each side's own rules are in `backend/CLAUDE.md` and `frontend/CLAUDE.md`, which
 - **Where it lives:**
   - `.claude/settings.json`: the permission rules and the session-start hook
   - `.claude/rules/general-rules.md`: these shared rules, loaded in every session
-  - `backend/CLAUDE.md` and `frontend/CLAUDE.md`: each side's rules
+  - `.claude/rules/backend.md` and `.claude/rules/frontend.md`: each side's rules, loaded for that side's files
   - `.claude/skills/`, `backend/.claude/skills/` and `frontend/.claude/skills/`: the skills
   - `.claude/plans/SETUP_PLAN.md`: the agreed setup plan and its progress
 - **Start Claude from the repository root,** so `.claude/settings.json` applies.
@@ -58,7 +58,7 @@ Each side's own rules are in `backend/CLAUDE.md` and `frontend/CLAUDE.md`, which
 - **frontend:** `@react-oauth/google`
 - **development only:** `jsdom`, `@testing-library/react`, `@testing-library/dom`, `@testing-library/user-event`, `concurrently`, `tsx`
 
-**Version gotchas** (older tutorials get these wrong; each side's own are in its `CLAUDE.md`):
+**Version gotchas** (older tutorials get these wrong; each side's own are in its rules file in `.claude/rules/`):
 - **Install with an explicit major** (`npm i prisma@7`, `vite@8`), never `@latest`, because `prisma@latest` is a release candidate. Keep `@types/node@24`.
 - **Zod 4:** use the top-level formats (`z.email()`, `z.uuid()`, `z.iso.date()`).
 - **Linting** uses oxlint, not ESLint, which doesn't support TypeScript 7.
@@ -83,7 +83,7 @@ npm run dev                              # API on :4000, app on :5173
 npm run typecheck && npm run lint && npm test
 ```
 
-The database commands are in `backend/CLAUDE.md`.
+The database commands are in `.claude/rules/backend.md`.
 
 ## Security
 

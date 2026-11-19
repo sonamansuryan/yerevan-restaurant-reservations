@@ -10,7 +10,7 @@ description: Safe database schema changes in Seghan's backend. Use when changing
 
 ## First
 
-Explain the change, its migration and what it means for existing data, then wait for approval. The rules are in `backend/CLAUDE.md` under "Database and migrations" and "Reservations and double booking"; this skill is the procedure.
+Explain the change, its migration and what it means for existing data, then wait for approval. The rules are in `.claude/rules/backend.md` under "Database and migrations" and "Reservations and double booking"; this skill is the procedure.
 
 ## Steps
 
