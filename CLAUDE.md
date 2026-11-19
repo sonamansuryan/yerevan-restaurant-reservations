@@ -17,4 +17,4 @@
 - **[PROJECT_PLAN.md](.claude/plans/PROJECT_PLAN.md)** says what we build: the requirements, booking rules, data model and roadmap. The current task is the first unticked box in §7.
 - **[SETUP_PLAN.md](.claude/plans/SETUP_PLAN.md)** is the single source of truth for what we do next, in order, Step 10 included: start from its first unticked box.
 - **[README.md](README.md)** explains how to set up, run, try and test the demo.
-- **[general-rules.md](.claude/rules/general-rules.md)** says how we work across the project, and Claude Code loads it automatically. Each side's own rules are in `.claude/rules/backend.md` and `.claude/rules/frontend.md`, which load when Claude works there.
+- **[general-rules.md](.claude/rules/general-rules.md)** says how we work across the project, and Claude Code loads it automatically. Each side's own rules are in `backend/.claude/rules/` and `frontend/.claude/rules/`, one file per topic, which load when Claude works on the files they apply to.
