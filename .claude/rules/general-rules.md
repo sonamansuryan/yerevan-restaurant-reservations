@@ -2,7 +2,7 @@
 
 How we work on Seghan. The Team Lead's requirements are in `.claude/plans/ASSIGNMENT.md`, what we build is in `.claude/plans/PROJECT_PLAN.md`, and how we work is here.
 
-Each side's own rules are in `.claude/rules/backend.md` and `.claude/rules/frontend.md`, which load when Claude reads or edits a file on that side. The backend's rules on double booking are critical.
+Each side's own rules are in `backend/.claude/rules/` and `frontend/.claude/rules/`, one file per topic, and each loads when Claude reads or edits a file it applies to. The backend's rules on double booking (`reservations.md`) are critical.
 
 ## Working together
 
@@ -14,7 +14,7 @@ Each side's own rules are in `.claude/rules/backend.md` and `.claude/rules/front
 - **Ask first** before any of these:
   - adding a dependency that isn't listed below
   - changing the data model beyond the plan
-  - a significant UI/UX change (see `.claude/rules/frontend.md`)
+  - a significant UI/UX change (see `frontend/.claude/rules/design.md`)
   - anything destructive (`db:reset`, deleting migrations, force-pushing)
   - every commit and push
 - **Maintenance,** such as repository fixes, tooling and document updates, is agreed one change at a time too.
@@ -33,7 +33,9 @@ Each side's own rules are in `.claude/rules/backend.md` and `.claude/rules/front
 - **Where it lives:**
   - `.claude/settings.json`: the permission rules and the session-start hook
   - `.claude/rules/general-rules.md`: these shared rules, loaded in every session
-  - `.claude/rules/backend.md` and `.claude/rules/frontend.md`: each side's rules, loaded for that side's files
+  - `backend/.claude/rules/` and `frontend/.claude/rules/`: each side's rules, one file per topic, each loaded for the files it applies to
+    - backend: `architecture` (where things live, layers) · `conventions` (errors, lists, raw SQL) · `security` · `reservations` (double booking, critical) · `database` (migrations, Docker, data, commands) · `testing` · `review-checks`
+    - frontend: `architecture` (where things live, data, requests) · `components` (forms, styling, states, images, accessibility) · `design` (the Seghan design, tokens, `/design`) · `protected-designs` · `testing` · `review-checks`
   - `.claude/skills/`, `backend/.claude/skills/` and `frontend/.claude/skills/`: the skills
   - `.claude/plans/SETUP_PLAN.md`: the agreed setup plan and its progress
 - **Start Claude from the repository root,** so `.claude/settings.json` applies.
@@ -58,7 +60,7 @@ Each side's own rules are in `.claude/rules/backend.md` and `.claude/rules/front
 - **frontend:** `@react-oauth/google`
 - **development only:** `jsdom`, `@testing-library/react`, `@testing-library/dom`, `@testing-library/user-event`, `concurrently`, `tsx`
 
-**Version gotchas** (older tutorials get these wrong; each side's own are in its rules file in `.claude/rules/`):
+**Version gotchas** (older tutorials get these wrong; each side's own are in its rules folder, next to the topic they affect):
 - **Install with an explicit major** (`npm i prisma@7`, `vite@8`), never `@latest`, because `prisma@latest` is a release candidate. Keep `@types/node@24`.
 - **Zod 4:** use the top-level formats (`z.email()`, `z.uuid()`, `z.iso.date()`).
 - **Linting** uses oxlint, not ESLint, which doesn't support TypeScript 7.
@@ -83,7 +85,7 @@ npm run dev                              # API on :4000, app on :5173
 npm run typecheck && npm run lint && npm test
 ```
 
-The database commands are in `.claude/rules/backend.md`.
+The database commands are in `backend/.claude/rules/database.md`.
 
 ## Security
 

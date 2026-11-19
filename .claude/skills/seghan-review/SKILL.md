@@ -1,5 +1,5 @@
 ---
-description: Full code review of Seghan changes - bugs, logic errors, security vulnerabilities, regressions and code quality - applying the shared rules and the rules of each changed side in .claude/rules/. Use when the user types /seghan-review or asks for a review, or when a change genuinely needs one, such as booking, locks, sign-in, ownership or a migration. Not after every change or commit by default.
+description: Full code review of Seghan changes - bugs, logic errors, security vulnerabilities, regressions and code quality - applying the shared rules and the rules of each changed side in each side's .claude/rules/. Use when the user types /seghan-review or asks for a review, or when a change genuinely needs one, such as booking, locks, sign-in, ownership or a migration. Not after every change or commit by default.
 argument-hint: "[branch to compare with origin/main]"
 ---
 
@@ -17,7 +17,7 @@ The branch to review: $ARGUMENTS
 
 ## Steps
 
-1. **Rules:** sort the changed files by side. Read `.claude/rules/backend.md` if any is under `backend/`, and `.claude/rules/frontend.md` if any is under `frontend/`, even when they seem loaded. `general-rules.md` applies to every file. When booking, blocks, tables or statuses change, also read `PROJECT_PLAN.md` §5.
+1. **Rules:** sort the changed files by side. Read every file in `backend/.claude/rules/` if any is under `backend/`, and every file in `frontend/.claude/rules/` if any is under `frontend/`, even when some seem loaded. `general-rules.md` applies to every file. When booking, blocks, tables or statuses change, also read `PROJECT_PLAN.md` §5.
 2. **Context:** read the whole diff, then each changed file in full. For each changed function, type or API reply that other code uses, find its callers and read them.
 3. **Review** every change for:
    - **Bugs:** wrong conditions, off-by-one, a missing `await`, empty or missing values, unhandled error paths, time zone and date mistakes.
@@ -25,7 +25,7 @@ The branch to review: $ARGUMENTS
    - **Security:** identity and ownership, input checks, secrets, logs, raw SQL, cookies, and anything a browser could abuse, such as unsafe HTML or an open redirect.
    - **Regressions:** behavior that changes for existing callers, tests deleted or weakened, and API replies that no longer match `frontend/src/types/api.ts`.
    - **Code quality:** explicit, simple code, duplication, naming, a *why* comment where a pattern isn't obvious, and no `any` or `@ts-ignore`. Working code isn't flagged only because it's advanced.
-   - **Project rules:** every Essential check of each changed side, and the shared rules.
+   - **Project rules:** every check in each changed side's `review-checks.md`, and the shared rules.
 4. **Checks:** run `npm run typecheck`, `npm run lint` and `npm test`, plus `npm run test:db -w backend` when database behavior changed. If Docker isn't running, say so instead of starting it. For a branch that isn't checked out, say the checks didn't run on it.
 5. **Verify** each finding before reporting it: reread the code and write a concrete case, the input or state and the wrong result. If there's no such case, mark the finding "unsure" or drop it.
 
